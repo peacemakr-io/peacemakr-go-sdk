@@ -1,0 +1,8 @@
+
+# Simple config for example encryption and decision.
+integrationTest:
+  companyName: "Acme Corp"
+  numClients: 10
+  numOfCryptoTrips: 100
+  host: "api.peacemakr.io"
+  port: 443

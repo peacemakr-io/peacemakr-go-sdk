@@ -1,0 +1,23 @@
+FROM peacemakr-go-sdk-dependencies as builder
+
+ADD src/peacemakr/generated/peacemakr-client /go/src/peacemakr/generated/peacemakr-client
+ADD src/peacemakr/sdk /go/src/peacemakr/sdk
+ADD src/peacemakr/integration /go/src/peacemakr/integration
+
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+ENV GOPATH=/go
+
+RUN go install peacemakr/integration
+
+FROM 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto:latest
+
+WORKDIR /go/bin/
+COPY --from=builder /go/bin/integration /go/bin/integration
+
+ADD src/peacemakr/integration/config.yml /go/bin/config.yml
+
+
+RUN apk update && apk add ca-certificates
+RUN update-ca-certificates
+
+CMD ./integration

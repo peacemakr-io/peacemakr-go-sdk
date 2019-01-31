@@ -1,0 +1,22 @@
+FROM 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto-dependencies:latest as builder
+
+FROM golang:1.11-alpine
+
+COPY --from=builder /usr/local/lib/cmake /usr/local/lib/cmake
+COPY --from=builder /usr/local/lib/libpeacemakr* /usr/local/lib/
+COPY --from=builder /usr/local/include/peacemakr /usr/local/include/peacemakr
+COPY --from=builder /usr/include/openssl /usr/include/openssl
+COPY --from=builder /go/src /go/src
+
+RUN apk update && apk upgrade && apk add --no-cache git curl gcc musl-dev libbsd-dev
+
+RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
+WORKDIR /go/.
+
+ENV GOPATH=/go
+
+ADD src /go/src/.
+
+RUN cd src/peacemakr; dep ensure
+
