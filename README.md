@@ -16,12 +16,6 @@ The SDK's perform all encryption and decryption operations. This allows for inte
 # Services
 The SDK's are backed by a collection of cloud or on-prem services.
 
-### Edit Swagger
-```
-./swagger-edit.sh peacemakr-services.yml
-./swagger-edit.sh key-derivation-service.yml
-```
-
 ### Generate all stubs from swagger
 ```
 ./generate-all-stubs.sh
@@ -37,16 +31,7 @@ The SDK's are backed by a collection of cloud or on-prem services.
 ./build-binaries.sh
 ```
 
-### Something is exploding, how do I debug?
-Run it in GDB,
-
-(1) Get GDB inside your docker images:
-# Get core dumps and gdb
-RUN apk update && apk upgrade && apk add --no-cache gdb
-RUN ulimit -c unlimited
-ENV GOTRACEBACK=crash
-
-Run your binary in an image with reduced security constraints:
-docker run --cap-add=SYS_PTRACE --security-opt seccomp=unconfined -it key-derivation-service:latest /bin/sh
-
-and now use GDB like a regular person.
+### Run example integration,
+```
+docker run peacemakr-go-sdk-example-integration:latest
+```
