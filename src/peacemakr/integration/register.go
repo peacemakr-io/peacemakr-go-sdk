@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"peacemakr/sdk/client"
 	"peacemakr/sdk/utils"
-	"time"
+	"sync"
 )
 
 type TestMessage struct {
@@ -13,9 +13,9 @@ type TestMessage struct {
 	plaintext string
 }
 
-func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan TestMessage) {
+func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan TestMessage, wg sync.WaitGroup) {
 
-	log.Printf("Registereing a new client%d for encryption to host %s", clientNum, hostname)
+	log.Printf("Registereing a new client %d for encryption to host %s", clientNum, hostname)
 	sdk := client.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
 	err := sdk.Register()
 
@@ -63,10 +63,12 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 		log.Println("encryption client number", clientNum, "en/decryption round trips:", i)
 	}
 
+
 	log.Println("client number", clientNum, "done.")
+	wg.Done()
 }
 
-func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan TestMessage) {
+func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan TestMessage, wg sync.WaitGroup) {
 	sdk := client.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
 
 	err := sdk.Register()
@@ -93,7 +95,7 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 	}
 
 	log.Println("client number", clientNum, "done.")
-
+	wg.Done()
 }
 
 func main() {
@@ -101,25 +103,27 @@ func main() {
 	log.Println("Loading configs...")
 	config := LoadConfigs()
 
-	apiKey := "peacemakr-123-123-123"
+	apiKey := "peacemaker-key-123-123-123"
 
 
 	// Channel of encrypted things.
 	encrypted := make(chan TestMessage)
+	var wg sync.WaitGroup
 
 	// Fire up the encryption clients.
 	for i := 0; i < config.IntegrationTest.NumClients; i++ {
-		go runEncryptingClient(i, apiKey, config.IntegrationTest.Host, config.IntegrationTest.NumOfCryptoTrips, encrypted)
+		wg.Add(1)
+		go runEncryptingClient(i, apiKey, config.IntegrationTest.Host, config.IntegrationTest.NumOfCryptoTrips, encrypted, wg)
 	}
 
 	// Fire up the decryption-only clients.
 	for i := 0; i < config.IntegrationTest.NumClients; i++ {
-		go runDecryptingClient(i, apiKey, config.IntegrationTest.Host, encrypted)
+		wg.Add(1)
+		go runDecryptingClient(i, apiKey, config.IntegrationTest.Host, encrypted, wg)
 	}
 
-	time.Sleep(10 * time.Second)
+	wg.Wait()
 
 	// This actually frees up the runDecryptingClient's
 	close(encrypted)
-
 }
