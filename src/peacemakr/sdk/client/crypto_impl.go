@@ -126,9 +126,6 @@ func (sdk *standardPeacemakrSDK) populateOrgInfo() error {
 	sdk.cryptoConfigId = ret.Payload.CryptoConfigID
 	sdk.orgId = ret.Payload.ID
 
-	log.Println("org populated cryptoConfigId: ", *sdk.cryptoConfigId)
-	log.Println("org populated orgId: ", *sdk.orgId)
-
 	return nil
 }
 
@@ -588,30 +585,24 @@ func (sdk *standardPeacemakrSDK) getClientId() (string, error) {
 
 func (sdk *standardPeacemakrSDK) Register() error {
 
-	log.Println("PeacemakrInit...")
 	if !coreCrypto.PeacemakrInit() {
 		err := errors.New("unable to initialize core crypto lib")
 		sdk.phonehomeError(err)
 		return err
 	}
 
-	log.Println("getNewKey...")
 	priv, pub := getNewKey()
 
-	log.Println("saving... priv ", priv)
 	if !sdk.persister.Exists("priv") {
 		err := sdk.persister.Save("priv", priv)
 		if err != nil {
-			log.Println("saving... priv ERROR ", err)
 			err := errors.New("unable to save private key")
 			sdk.phonehomeError(err)
 			return err
 		}
 
-		log.Println("saving... pub ", pub)
 		err = sdk.persister.Save("pub", pub)
 		if err != nil {
-			log.Println("saving... pub ERROR ", err)
 			err := errors.New("unable to save public key")
 			sdk.phonehomeError(err)
 			return err
@@ -630,7 +621,6 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		priv = privLoaded
 	}
 
-	log.Println("getting clinet... ")
 	sdkClient := sdk.getClient()
 
 	//
@@ -652,7 +642,6 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		KeyType:      &keyType,
 	}
 
-	log.Printf("Adding a client ... %s\n", pub)
 	ok, err := sdkClient.Client.AddClient(params, sdk.authInfo)
 	if err != nil {
 		sdk.phonehomeError(err)
