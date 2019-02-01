@@ -567,15 +567,15 @@ func (sdk *standardPeacemakrSDK) getClient() *client.PeacemakrClient {
 
 func (sdk *standardPeacemakrSDK) getClientId() (string, error) {
 
+	// Do not phone home these errors, inf loop.
+
 	if !sdk.persister.Exists("clientId") {
 		err := errors.New("client is not registered")
-		sdk.phonehomeError(err)
 		return "", err
 	}
 
 	clientId, err := sdk.persister.Load("clientId")
 	if err != nil {
-		sdk.phonehomeError(err)
 		return "", err
 	}
 
@@ -588,27 +588,49 @@ func (sdk *standardPeacemakrSDK) getClientId() (string, error) {
 
 func (sdk *standardPeacemakrSDK) Register() error {
 
+	log.Println("PeacemakrInit...")
 	if !coreCrypto.PeacemakrInit() {
 		err := errors.New("unable to initialize core crypto lib")
 		sdk.phonehomeError(err)
 		return err
 	}
 
+	log.Println("getNewKey...")
 	priv, pub := getNewKey()
 
-	err := sdk.persister.Save("priv", priv)
-	if err != nil {
-		err := errors.New("unable to save private key")
-		sdk.phonehomeError(err)
-		return err
-	}
-	err = sdk.persister.Save("pub", pub)
-	if err != nil {
-		err := errors.New("unable to save public key")
-		sdk.phonehomeError(err)
-		return err
+	log.Println("saving... priv ", priv)
+	if !sdk.persister.Exists("priv") {
+		err := sdk.persister.Save("priv", priv)
+		if err != nil {
+			log.Println("saving... priv ERROR ", err)
+			err := errors.New("unable to save private key")
+			sdk.phonehomeError(err)
+			return err
+		}
+
+		log.Println("saving... pub ", pub)
+		err = sdk.persister.Save("pub", pub)
+		if err != nil {
+			log.Println("saving... pub ERROR ", err)
+			err := errors.New("unable to save public key")
+			sdk.phonehomeError(err)
+			return err
+		}
+	} else {
+		pubLoaded, err := sdk.persister.Load("pub")
+		if err != nil {
+			return err
+		}
+		pub = pubLoaded
+
+		privLoaded, err := sdk.persister.Load("priv")
+		if err != nil {
+			return err
+		}
+		priv = privLoaded
 	}
 
+	log.Println("getting clinet... ")
 	sdkClient := sdk.getClient()
 
 	//
@@ -630,6 +652,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		KeyType:      &keyType,
 	}
 
+	log.Printf("Adding a client ... %s\n", pub)
 	ok, err := sdkClient.Client.AddClient(params, sdk.authInfo)
 	if err != nil {
 		sdk.phonehomeError(err)
