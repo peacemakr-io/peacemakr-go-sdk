@@ -27,7 +27,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	}
 	log.Println("registration successful of client", clientNum, "starting", numRuns, "crypto round trips...")
 
-	log.Println("Client debug info: %s\n", sdk.GetDebugInfo())
+	log.Println("Encrypting client debug info: %s\n", sdk.GetDebugInfo())
 
 	for i := 0; i < numRuns; i++ {
 
@@ -38,7 +38,6 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 			log.Fatalf("%d Failed to get random plaintext to encrypt %s", clientNum, err)
 		}
 
-		log.Println("Client", clientNum, "encrypt a msg ...")
 		ciphertext, err := sdk.EncryptStr(plaintext)
 		if err != nil {
 			log.Fatalf("Failed to encrypt string (clientDebugInfo = %s, clientNum = %d) %s", sdk.GetDebugInfo(), clientNum, err)
@@ -53,7 +52,6 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 		}
 		encrypted <- testMessage
 
-		log.Println("Client", clientNum, "decrypting the same msg ...")
 		decrypted, err := sdk.DecryptStr(ciphertext)
 		if err != nil {
 			log.Fatalf("%d Failed to decrypt string %s", clientNum, err)
@@ -63,7 +61,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 			log.Fatalf("%d Failed to decrypt to original plaintext.", clientNum)
 		}
 
-		log.Println("encryption client number", clientNum, "en/decryption round trips:", i)
+		log.Println("Encrypting client", clientNum, "encrypted", i, " messages")
 	}
 
 
@@ -82,8 +80,6 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 
 	i := 0
 	for msg := range encrypted {
-
-		log.Println("Client", clientNum, "decrypting a msg ...")
 		decrypted, err := sdk.DecryptStr(msg.encrypted)
 		if err != nil {
 			log.Fatalf("%d Failed to decrypt in DECYRTION CLIENT string %s", clientNum, err)
@@ -92,9 +88,7 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 		if decrypted != msg.plaintext {
 			log.Fatalf("%d Failed to decrypt in DECYRTION CLIENT decrypted %s but expected %s", clientNum, decrypted, msg.plaintext)
 		}
-
-		log.Println("decryption client number", clientNum, "decrypted :", i)
-
+		log.Println("Decrypting client", clientNum, "decrypted", i," messages")
 		i++
 	}
 

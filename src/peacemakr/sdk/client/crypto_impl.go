@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-openapi/runtime"
-	"log"
 	"math/rand"
 	coreCrypto "peacemakr/crypto"
 	"peacemakr/generated/peacemakr-client/client"
@@ -205,6 +204,8 @@ func (sdk *standardPeacemakrSDK) populateUseDomains(cryptoConfigId string) error
 func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *coreCrypto.CiphertextBlob, plaintext *coreCrypto.Plaintext) error {
 	senderKeyStr, err := sdk.getPublicKey(aad.SenderKeyID)
 
+	// TODO: WTF is this... This is wrong
+
 	var senderKeyCfg coreCrypto.CryptoConfig
 	if RSAKEYLENGTH == 4096 {
 		senderKeyCfg = coreCrypto.CryptoConfig{
@@ -337,37 +338,65 @@ func (sdk *standardPeacemakrSDK) pickOneKeySymmetricKey(keyId string) ([]byte, e
 	return []byte(foundKey), nil
 }
 
-func (sdk *standardPeacemakrSDK) selectEncryptionKey() (string, *coreCrypto.CryptoConfig, error) {
+func (sdk *standardPeacemakrSDK) selectUserDomain(useDomain *string) (*models.SymmetricKeyUseDomain, error) {
 	err := sdk.populateOrgInfo()
 	if err != nil {
 		sdk.phonehomeError(err)
-		return "", nil, err
+		return nil, err
 	}
 	err = sdk.populateUseDomains(*sdk.cryptoConfigId)
 	if err != nil {
 		sdk.phonehomeError(err)
-		return "", nil, err
+		return nil, err
 	}
 
 	if len(sdk.useDomains) <= 0 {
 		err := errors.New("no available useDomains to select")
 		sdk.phonehomeError(err)
+		return nil, err
+	}
+
+	var selectedDomain *models.SymmetricKeyUseDomain
+
+	if useDomain == nil {
+		numSelectedUseDomains := len(sdk.useDomains)
+		selectedDomainIdx := rand.Intn(numSelectedUseDomains)
+		selectedDomain = sdk.useDomains[selectedDomainIdx]
+	} else {
+
+		for _, domain := range sdk.useDomains {
+
+			if domain.Name == *useDomain {
+				return domain, nil
+			}
+
+		}
+
+		// Else just fall back on a well known domain.
+
+		numSelectedUseDomains := len(sdk.useDomains)
+		selectedDomainIdx := rand.Intn(numSelectedUseDomains)
+		selectedDomain = sdk.useDomains[selectedDomainIdx]
+	}
+
+
+	return selectedDomain, nil
+}
+
+func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomain *string) (string, *coreCrypto.CryptoConfig, error) {
+
+	// Select a use domain.
+	selectedDomain, err := sdk.selectUserDomain(useDomain)
+	if err != nil {
 		return "", nil, err
 	}
 
-	var selectedDomainIdx int
-	if *sdk.domainSelectorAlg == "nameYourUseDomainOrRandom" {
-		numSelectedUseDomains := len(sdk.useDomains)
-		selectedDomainIdx = rand.Intn(numSelectedUseDomains)
-	}
-
-	selectedDomain := sdk.useDomains[selectedDomainIdx]
+	// Select a key in the use domain.
 	numPossibleKeys := len(selectedDomain.EncryptionKeyIds)
 	selectedKeyIdx := rand.Intn(numPossibleKeys)
-
 	keyId := selectedDomain.EncryptionKeyIds[selectedKeyIdx]
 
-	// Some defaults.
+	// Setup the crypto config for the encryption.
 	mode := coreCrypto.SYMMETRIC
 	asymmetricCipher := coreCrypto.NONE
 	symmetricCipher := coreCrypto.AES_256_GCM
@@ -392,9 +421,9 @@ type PeacemakrAAD struct {
 	SenderKeyID string `json:"senderKeyID"`
 }
 
-func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
+func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomain *string) ([]byte, error) {
 
-	keyId, cfg, err := sdk.selectEncryptionKey()
+	keyId, cfg, err := sdk.selectEncryptionKey(useDomain)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return nil, err
@@ -463,6 +492,23 @@ func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
 
 	return coreCrypto.Serialize(ciphertext)
 }
+
+func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
+	return sdk.encrypt(plaintext, nil)
+}
+
+func (sdk *standardPeacemakrSDK) EncryptInDomainStr(plaintext string, useDomain string) (string, error) {
+	encryptedBytes, err := sdk.encrypt([]byte(plaintext), &useDomain)
+	if err != nil {
+		return "", err
+	}
+	return string(encryptedBytes), nil
+}
+
+func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomain string) ([]byte, error) {
+	return sdk.encrypt(plaintext, &useDomain)
+}
+
 
 func (sdk *standardPeacemakrSDK) DecryptStr(ciphertext string) (string, error) {
 	plain, err := sdk.Decrypt([]byte(ciphertext))
