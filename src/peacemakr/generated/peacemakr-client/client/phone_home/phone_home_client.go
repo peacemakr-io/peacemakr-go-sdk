@@ -41,7 +41,7 @@ func (a *Client) PostLog(params *PostLogParams, authInfo runtime.ClientAuthInfoW
 		PathPattern:        "/log",
 		ProducesMediaTypes: []string{""},
 		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"https"},
+		Schemes:            []string{"http"},
 		Params:             params,
 		Reader:             &PostLogReader{formats: a.formats},
 		AuthInfo:           authInfo,

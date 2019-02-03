@@ -29,6 +29,15 @@ type PeacemakrSDK interface {
 	Encrypt(plaintext []byte) ([]byte, error)
 
 	//
+	// Encrypt the plaintext, but restrict which key will be used to one specific Use Domain. Returns ciphertexts on
+	// success, else returns a non-nil error.
+	//
+	EncryptInDomainStr(plaintext string, useDomain string) (string, error)
+
+	EncryptInDomain(plaintext []byte, useDomain string) ([]byte, error)
+
+
+	//
 	// Decrypt the ciphertexts. Returns original plaintext on success, else returns a non-nil error.
 	//
 	DecryptStr(ciphertext string) (string, error)

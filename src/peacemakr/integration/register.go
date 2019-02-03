@@ -6,6 +6,7 @@ import (
 	"peacemakr/sdk/client"
 	"peacemakr/sdk/utils"
 	"sync"
+	"flag"
 )
 
 type TestMessage struct {
@@ -13,18 +14,20 @@ type TestMessage struct {
 	plaintext string
 }
 
-func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan TestMessage, wg sync.WaitGroup) {
+func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan TestMessage, wg *sync.WaitGroup) {
+
+
+	log.Printf("Getting Peacemakr SDK...\n")
+	sdk := client.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
 
 	log.Printf("Registereing a new client %d for encryption to host %s", clientNum, hostname)
-	sdk := client.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
 	err := sdk.Register()
-
 	if err != nil {
 		log.Fatalf("%d registration failed %s", clientNum, err)
 	}
 	log.Println("registration successful of client", clientNum, "starting", numRuns, "crypto round trips...")
 
-	log.Println("Client debug info: %s\n", sdk.GetDebugInfo())
+	log.Println("Encrypting client debug info: %s\n", sdk.GetDebugInfo())
 
 	for i := 0; i < numRuns; i++ {
 
@@ -35,7 +38,6 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 			log.Fatalf("%d Failed to get random plaintext to encrypt %s", clientNum, err)
 		}
 
-		log.Println("Client", clientNum, "encrypt a msg ...")
 		ciphertext, err := sdk.EncryptStr(plaintext)
 		if err != nil {
 			log.Fatalf("Failed to encrypt string (clientDebugInfo = %s, clientNum = %d) %s", sdk.GetDebugInfo(), clientNum, err)
@@ -50,7 +52,6 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 		}
 		encrypted <- testMessage
 
-		log.Println("Client", clientNum, "decrypting the same msg ...")
 		decrypted, err := sdk.DecryptStr(ciphertext)
 		if err != nil {
 			log.Fatalf("%d Failed to decrypt string %s", clientNum, err)
@@ -60,15 +61,16 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 			log.Fatalf("%d Failed to decrypt to original plaintext.", clientNum)
 		}
 
-		log.Println("encryption client number", clientNum, "en/decryption round trips:", i)
+		log.Println("Encrypting client", clientNum, "encrypted", i, " messages")
 	}
 
 
-	log.Println("client number", clientNum, "done.")
+	log.Println("encryption number", clientNum, "done.")
+	close(encrypted)
 	wg.Done()
 }
 
-func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan TestMessage, wg sync.WaitGroup) {
+func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan TestMessage, wg *sync.WaitGroup) {
 	sdk := client.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
 
 	err := sdk.Register()
@@ -78,8 +80,6 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 
 	i := 0
 	for msg := range encrypted {
-
-		log.Println("Client", clientNum, "decrypting a msg ...")
 		decrypted, err := sdk.DecryptStr(msg.encrypted)
 		if err != nil {
 			log.Fatalf("%d Failed to decrypt in DECYRTION CLIENT string %s", clientNum, err)
@@ -88,42 +88,41 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 		if decrypted != msg.plaintext {
 			log.Fatalf("%d Failed to decrypt in DECYRTION CLIENT decrypted %s but expected %s", clientNum, decrypted, msg.plaintext)
 		}
-
-		log.Println("decryption client number", clientNum, "decrypted :", i)
-
+		log.Println("Decrypting client", clientNum, "decrypted", i," messages")
 		i++
 	}
 
-	log.Println("client number", clientNum, "done.")
+	log.Println("decryption client number", clientNum, "done.")
 	wg.Done()
 }
 
 func main() {
+	apiKey := flag.String("apiKey", "", "apiKey")
+	host := flag.String("host", "api.peacemakr.io", "host of peacemakr services")
+	numCryptoTrips := flag.Int("numCryptoTrips", 100, "Total number of example encrypt and decrypt operations.")
+	numCryptoThreads := flag.Int("numCryptoThreads", 1, "Total number of encryption and decryption threads.")
+	flag.Parse()
 
-	log.Println("Loading configs...")
-	config := LoadConfigs()
-
-	apiKey := "peacemaker-key-123-123-123"
-
+	log.Println("apiKey:", *apiKey)
+	log.Println("host:", *host)
+	log.Println("numCryptoTrips:", *numCryptoTrips)
+	log.Println("numCryptoThreads:", *numCryptoThreads)
 
 	// Channel of encrypted things.
 	encrypted := make(chan TestMessage)
 	var wg sync.WaitGroup
 
 	// Fire up the encryption clients.
-	for i := 0; i < config.IntegrationTest.NumClients; i++ {
+	for i := 0; i < *numCryptoThreads; i++ {
 		wg.Add(1)
-		go runEncryptingClient(i, apiKey, config.IntegrationTest.Host, config.IntegrationTest.NumOfCryptoTrips, encrypted, wg)
+		go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &wg)
 	}
 
 	// Fire up the decryption-only clients.
-	for i := 0; i < config.IntegrationTest.NumClients; i++ {
+	for i := 0; i < *numCryptoThreads; i++ {
 		wg.Add(1)
-		go runDecryptingClient(i, apiKey, config.IntegrationTest.Host, encrypted, wg)
+		go runDecryptingClient(i, *apiKey, *host, encrypted, &wg)
 	}
 
 	wg.Wait()
-
-	// This actually frees up the runDecryptingClient's
-	close(encrypted)
 }

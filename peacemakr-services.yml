@@ -30,7 +30,7 @@ tags:
   - name: ServerManagement
   - name: PhoneHome
 schemes:
-  - https
+  - http
 paths:
   /health:
     get:

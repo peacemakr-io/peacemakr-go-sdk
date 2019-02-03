@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-openapi/runtime"
-	"log"
 	"math/rand"
 	coreCrypto "peacemakr/crypto"
 	"peacemakr/generated/peacemakr-client/client"
@@ -126,9 +125,6 @@ func (sdk *standardPeacemakrSDK) populateOrgInfo() error {
 	sdk.cryptoConfigId = ret.Payload.CryptoConfigID
 	sdk.orgId = ret.Payload.ID
 
-	log.Println("org populated cryptoConfigId: ", *sdk.cryptoConfigId)
-	log.Println("org populated orgId: ", *sdk.orgId)
-
 	return nil
 }
 
@@ -207,6 +203,8 @@ func (sdk *standardPeacemakrSDK) populateUseDomains(cryptoConfigId string) error
 
 func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *coreCrypto.CiphertextBlob, plaintext *coreCrypto.Plaintext) error {
 	senderKeyStr, err := sdk.getPublicKey(aad.SenderKeyID)
+
+	// TODO: WTF is this... This is wrong
 
 	var senderKeyCfg coreCrypto.CryptoConfig
 	if RSAKEYLENGTH == 4096 {
@@ -340,37 +338,65 @@ func (sdk *standardPeacemakrSDK) pickOneKeySymmetricKey(keyId string) ([]byte, e
 	return []byte(foundKey), nil
 }
 
-func (sdk *standardPeacemakrSDK) selectEncryptionKey() (string, *coreCrypto.CryptoConfig, error) {
+func (sdk *standardPeacemakrSDK) selectUserDomain(useDomain *string) (*models.SymmetricKeyUseDomain, error) {
 	err := sdk.populateOrgInfo()
 	if err != nil {
 		sdk.phonehomeError(err)
-		return "", nil, err
+		return nil, err
 	}
 	err = sdk.populateUseDomains(*sdk.cryptoConfigId)
 	if err != nil {
 		sdk.phonehomeError(err)
-		return "", nil, err
+		return nil, err
 	}
 
 	if len(sdk.useDomains) <= 0 {
 		err := errors.New("no available useDomains to select")
 		sdk.phonehomeError(err)
+		return nil, err
+	}
+
+	var selectedDomain *models.SymmetricKeyUseDomain
+
+	if useDomain == nil {
+		numSelectedUseDomains := len(sdk.useDomains)
+		selectedDomainIdx := rand.Intn(numSelectedUseDomains)
+		selectedDomain = sdk.useDomains[selectedDomainIdx]
+	} else {
+
+		for _, domain := range sdk.useDomains {
+
+			if domain.Name == *useDomain {
+				return domain, nil
+			}
+
+		}
+
+		// Else just fall back on a well known domain.
+
+		numSelectedUseDomains := len(sdk.useDomains)
+		selectedDomainIdx := rand.Intn(numSelectedUseDomains)
+		selectedDomain = sdk.useDomains[selectedDomainIdx]
+	}
+
+
+	return selectedDomain, nil
+}
+
+func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomain *string) (string, *coreCrypto.CryptoConfig, error) {
+
+	// Select a use domain.
+	selectedDomain, err := sdk.selectUserDomain(useDomain)
+	if err != nil {
 		return "", nil, err
 	}
 
-	var selectedDomainIdx int
-	if *sdk.domainSelectorAlg == "nameYourUseDomainOrRandom" {
-		numSelectedUseDomains := len(sdk.useDomains)
-		selectedDomainIdx = rand.Intn(numSelectedUseDomains)
-	}
-
-	selectedDomain := sdk.useDomains[selectedDomainIdx]
+	// Select a key in the use domain.
 	numPossibleKeys := len(selectedDomain.EncryptionKeyIds)
 	selectedKeyIdx := rand.Intn(numPossibleKeys)
-
 	keyId := selectedDomain.EncryptionKeyIds[selectedKeyIdx]
 
-	// Some defaults.
+	// Setup the crypto config for the encryption.
 	mode := coreCrypto.SYMMETRIC
 	asymmetricCipher := coreCrypto.NONE
 	symmetricCipher := coreCrypto.AES_256_GCM
@@ -395,9 +421,9 @@ type PeacemakrAAD struct {
 	SenderKeyID string `json:"senderKeyID"`
 }
 
-func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
+func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomain *string) ([]byte, error) {
 
-	keyId, cfg, err := sdk.selectEncryptionKey()
+	keyId, cfg, err := sdk.selectEncryptionKey(useDomain)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return nil, err
@@ -466,6 +492,23 @@ func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
 
 	return coreCrypto.Serialize(ciphertext)
 }
+
+func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
+	return sdk.encrypt(plaintext, nil)
+}
+
+func (sdk *standardPeacemakrSDK) EncryptInDomainStr(plaintext string, useDomain string) (string, error) {
+	encryptedBytes, err := sdk.encrypt([]byte(plaintext), &useDomain)
+	if err != nil {
+		return "", err
+	}
+	return string(encryptedBytes), nil
+}
+
+func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomain string) ([]byte, error) {
+	return sdk.encrypt(plaintext, &useDomain)
+}
+
 
 func (sdk *standardPeacemakrSDK) DecryptStr(ciphertext string) (string, error) {
 	plain, err := sdk.Decrypt([]byte(ciphertext))
@@ -567,15 +610,15 @@ func (sdk *standardPeacemakrSDK) getClient() *client.PeacemakrClient {
 
 func (sdk *standardPeacemakrSDK) getClientId() (string, error) {
 
+	// Do not phone home these errors, inf loop.
+
 	if !sdk.persister.Exists("clientId") {
 		err := errors.New("client is not registered")
-		sdk.phonehomeError(err)
 		return "", err
 	}
 
 	clientId, err := sdk.persister.Load("clientId")
 	if err != nil {
-		sdk.phonehomeError(err)
 		return "", err
 	}
 
@@ -596,17 +639,32 @@ func (sdk *standardPeacemakrSDK) Register() error {
 
 	priv, pub := getNewKey()
 
-	err := sdk.persister.Save("priv", priv)
-	if err != nil {
-		err := errors.New("unable to save private key")
-		sdk.phonehomeError(err)
-		return err
-	}
-	err = sdk.persister.Save("pub", pub)
-	if err != nil {
-		err := errors.New("unable to save public key")
-		sdk.phonehomeError(err)
-		return err
+	if !sdk.persister.Exists("priv") {
+		err := sdk.persister.Save("priv", priv)
+		if err != nil {
+			err := errors.New("unable to save private key")
+			sdk.phonehomeError(err)
+			return err
+		}
+
+		err = sdk.persister.Save("pub", pub)
+		if err != nil {
+			err := errors.New("unable to save public key")
+			sdk.phonehomeError(err)
+			return err
+		}
+	} else {
+		pubLoaded, err := sdk.persister.Load("pub")
+		if err != nil {
+			return err
+		}
+		pub = pubLoaded
+
+		privLoaded, err := sdk.persister.Load("priv")
+		if err != nil {
+			return err
+		}
+		priv = privLoaded
 	}
 
 	sdkClient := sdk.getClient()

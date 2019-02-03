@@ -41,7 +41,7 @@ func (a *Client) GetHealth(params *GetHealthParams) (*GetHealthOK, error) {
 		PathPattern:        "/health",
 		ProducesMediaTypes: []string{""},
 		ConsumesMediaTypes: []string{""},
-		Schemes:            []string{"https"},
+		Schemes:            []string{"http"},
 		Params:             params,
 		Reader:             &GetHealthReader{formats: a.formats},
 		Context:            params.Context,
