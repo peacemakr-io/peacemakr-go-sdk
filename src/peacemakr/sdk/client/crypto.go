@@ -1,11 +1,16 @@
 package client
 
-import "peacemakr/sdk/utils"
+import (
+	"peacemakr/sdk/utils"
+	"errors"
+)
 
 type PeacemakrSDK interface {
 
 	//
-	// Registers to PeaceMaker as a client with the provided apiKey. Once successful invocation is required before any
+	// Registers to PeaceMaker as a client. The persister is used to detect prior registrations on this client, so safe
+	// to call multiple times. Once a successful invocation of Register is executed once, subsequent calls become a
+	// noop. One successful call is required before any
 	// cryptographic use of this SDK. Successful registration returns a nil error.
 	//
 	// Registration may fail with invalid apiKey, missing network connectivity, or an invalid persister. On failure,
@@ -67,7 +72,12 @@ type PeacemakrSDK interface {
 //
 // The provided persister, will be used to save local cryptographic material, used for key deliver, encryption,
 // decyrption, signing, and verification.
-func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister) PeacemakrSDK {
+func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister) (PeacemakrSDK, error) {
+
+	if persister == nil {
+		return nil, errors.New("persister is required")
+	}
+
 	sdk := &standardPeacemakrSDK{
 		clientName:        clientName,
 		apiKey:            apiKey,
@@ -77,6 +87,7 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 		version:           "0.0.1",
 		peacemakrHostname: peacemakrHostname,
 		persister:         persister,
+		isRegisteredCache: false,
 	}
-	return PeacemakrSDK(sdk)
+	return PeacemakrSDK(sdk), nil
 }

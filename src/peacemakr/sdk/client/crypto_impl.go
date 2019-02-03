@@ -30,6 +30,7 @@ type standardPeacemakrSDK struct {
 	version           string
 	peacemakrHostname *string
 	persister         utils.Persister
+	isRegisteredCache bool
 }
 
 func (sdk *standardPeacemakrSDK) getDebugInfo() string {
@@ -48,16 +49,32 @@ func (sdk *standardPeacemakrSDK) getDebugInfo() string {
 }
 
 func (sdk *standardPeacemakrSDK) GetDebugInfo() string {
+	err := sdk.errOnNotRegistered()
+	if err != nil {
+		return "not registered"
+	}
+
 	debugInfo := sdk.getDebugInfo()
 	sdk.phonehomeString(debugInfo)
 	return debugInfo
 }
 
 func (sdk *standardPeacemakrSDK) PreLoad() error {
-	panic("implement me")
+	err := sdk.errOnNotRegistered()
+	if err != nil {
+		return err
+	}
+
+	// TODO: yea, load all the things.
+	panic("no implemented yet")
 }
 
 func (sdk *standardPeacemakrSDK) EncryptStr(plaintext string) (string, error) {
+	err := sdk.errOnNotRegistered()
+	if err != nil {
+		return "", err
+	}
+
 	encryptedBytes, err := sdk.Encrypt([]byte(plaintext))
 	if err != nil {
 		return "", err
@@ -511,10 +528,26 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomain *string) ([
 }
 
 func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
+	err := sdk.errOnNotRegistered()
+	if err != nil {
+		return nil, err
+	}
+
+
 	return sdk.encrypt(plaintext, nil)
 }
 
 func (sdk *standardPeacemakrSDK) EncryptInDomainStr(plaintext string, useDomain string) (string, error) {
+	err := sdk.errOnNotRegistered()
+	if err != nil {
+		return "", err
+	}
+
+	err = sdk.verifyUserSelectedUseDomain(useDomain)
+	if err != nil {
+		return "", err
+	}
+
 	encryptedBytes, err := sdk.encrypt([]byte(plaintext), &useDomain)
 	if err != nil {
 		return "", err
@@ -523,11 +556,26 @@ func (sdk *standardPeacemakrSDK) EncryptInDomainStr(plaintext string, useDomain 
 }
 
 func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomain string) ([]byte, error) {
+	err := sdk.errOnNotRegistered()
+	if err != nil {
+		return nil, err
+	}
+
+	err = sdk.verifyUserSelectedUseDomain(useDomain)
+	if err != nil {
+		return nil, err
+	}
+
 	return sdk.encrypt(plaintext, &useDomain)
 }
 
 
 func (sdk *standardPeacemakrSDK) DecryptStr(ciphertext string) (string, error) {
+	err := sdk.errOnNotRegistered()
+	if err != nil {
+		return "", err
+	}
+
 	plain, err := sdk.Decrypt([]byte(ciphertext))
 	if err != nil {
 		sdk.phonehomeError(err)
@@ -576,6 +624,11 @@ func (sdk *standardPeacemakrSDK) getPublicKey(keyID string) (string, error) {
 }
 
 func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
+	err := sdk.errOnNotRegistered()
+	if err != nil {
+		return nil, err
+	}
+
 	aad, err := sdk.getKeyIdFromCiphertext(ciphertext)
 	if err != nil {
 		sdk.phonehomeError(err)
@@ -654,10 +707,27 @@ func (sdk *standardPeacemakrSDK) getClientId() (string, error) {
 	return clientId, nil
 }
 
+func (sdk *standardPeacemakrSDK) errOnNotRegistered() error {
+
+	if sdk.isRegisteredCache == true {
+		return nil
+	}
+
+	sdk.isRegisteredCache = sdk.persister.Exists("priv") &&
+		sdk.persister.Exists("pub") &&
+		sdk.persister.Exists("keyId") &&
+		sdk.persister.Exists("clientId")
+
+	if sdk.isRegisteredCache == false {
+		return errors.New("client not registered")
+	}
+
+	return nil
+}
+
 //
 // SDK impl
 //
-
 func (sdk *standardPeacemakrSDK) Register() error {
 
 	if !coreCrypto.PeacemakrInit() {
@@ -666,9 +736,13 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		return err
 	}
 
-	priv, pub := getNewKey()
+	var pub, priv string
 
-	if !sdk.persister.Exists("priv") {
+	// If either key is missing, bail.
+	if !sdk.persister.Exists("priv") || !sdk.persister.Exists("pub") {
+
+		priv, pub = getNewKey()
+
 		err := sdk.persister.Save("priv", priv)
 		if err != nil {
 			err := errors.New("unable to save private key")
@@ -698,41 +772,103 @@ func (sdk *standardPeacemakrSDK) Register() error {
 
 	sdkClient := sdk.getClient()
 
+	keyIdExists := sdk.persister.Exists("keyId")
+	clientIdExists := sdk.persister.Exists("clientId")
 	//
-	// Register as a client.
+	// Register as a new client.
 	//
-	params := clientReq.NewAddClientParams()
-	params.Client = &models.Client{}
-	tempId := ""
-	params.Client.ID = &tempId
-	params.Client.Sdk = sdk.version
-	encoding := "pem"
-	keyType := "rsa"
-	now := time.Now().Unix()
-	params.Client.PublicKey = &models.PublicKey{
-		CreationTime: &now,
-		Encoding:     &encoding,
-		ID:           &tempId,
-		Key:          &pub,
-		KeyType:      &keyType,
+	if !keyIdExists || !clientIdExists {
+		params := clientReq.NewAddClientParams()
+		params.Client = &models.Client{}
+		tempId := ""
+		params.Client.ID = &tempId
+		params.Client.Sdk = sdk.version
+		encoding := "pem"
+		keyType := "rsa"
+		now := time.Now().Unix()
+		params.Client.PublicKey = &models.PublicKey{
+			CreationTime: &now,
+			Encoding:     &encoding,
+			ID:           &tempId,
+			Key:          &pub,
+			KeyType:      &keyType,
+		}
+
+		ok, err := sdkClient.Client.AddClient(params, sdk.authInfo)
+		if err != nil {
+			sdk.phonehomeError(err)
+			return err
+		}
+
+		saveErr := sdk.persister.Save("keyId", *ok.Payload.PublicKey.ID)
+		if saveErr != nil {
+			sdk.phonehomeError(err)
+			return saveErr
+		}
+		saveErr = sdk.persister.Save("clientId", *ok.Payload.ID)
+		if saveErr != nil {
+			sdk.phonehomeError(err)
+			return saveErr
+		}
+
+		return nil
 	}
 
-	ok, err := sdkClient.Client.AddClient(params, sdk.authInfo)
+	//
+	// Already loaded info from previously registered client.
+	//
+	if keyIdExists && clientIdExists {
+		// if it exists, verify we can read it.
+		_, err := sdk.getClientId()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return errors.New("Unreachable hit, new unhandled case detected.")
+}
+
+func (sdk *standardPeacemakrSDK)  verifyRegistrationAndInit() error {
+
+
+
+	err := sdk.populateOrgInfo()
 	if err != nil {
 		sdk.phonehomeError(err)
 		return err
 	}
 
-	saveErr := sdk.persister.Save("keyId", *ok.Payload.PublicKey.ID)
-	if saveErr != nil {
+	if sdk.cryptoConfigId == nil {
+		err := errors.New("failed to populate cryptoConfigId for use domain verification")
 		sdk.phonehomeError(err)
-		return saveErr
+		return err
 	}
-	saveErr = sdk.persister.Save("clientId", *ok.Payload.ID)
-	if saveErr != nil {
+
+	err = sdk.populateUseDomains(*sdk.cryptoConfigId)
+	if err != nil {
 		sdk.phonehomeError(err)
-		return saveErr
+		return err
 	}
 
 	return nil
+}
+
+func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomain string) error {
+
+	if sdk.persister.Exists("useDomain:" + useDomain) {
+		return nil
+	}
+
+
+
+	if sdk.persister.Exists("useDomain:" + useDomain) {
+		err := errors.New(fmt.Sprintf("unknown use doamin: %s", useDomain))
+		sdk.phonehomeError(err)
+		return err
+	}
+
+	return nil
+
 }
