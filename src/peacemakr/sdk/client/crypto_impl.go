@@ -201,20 +201,36 @@ func (sdk *standardPeacemakrSDK) populateUseDomains(cryptoConfigId string) error
 	return nil
 }
 
-func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *coreCrypto.CiphertextBlob, plaintext *coreCrypto.Plaintext) error {
-	senderKeyStr, err := sdk.getPublicKey(aad.SenderKeyID)
+func getBitLenFromRsaPemStr(pubRSA string) (int, error) {
+	rsaKey, err := ParseRsaPublicKeyFromPemStr(pubRSA)
+	if err != nil {
+		return 0, err
+	}
+	return rsaKey.N.BitLen(), nil
+}
 
-	// TODO: WTF is this... This is wrong
+func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *coreCrypto.CiphertextBlob, plaintext *coreCrypto.Plaintext) error {
+	senderRsaPubKey, err := sdk.getPublicKey(aad.SenderKeyID)
+	if err != nil {
+		sdk.phonehomeError(err)
+		return err
+	}
+
+	rsaKeyLen, err := getBitLenFromRsaPemStr(senderRsaPubKey)
+	if err != nil {
+		sdk.phonehomeError(err)
+		return err
+	}
 
 	var senderKeyCfg coreCrypto.CryptoConfig
-	if RSAKEYLENGTH == 4096 {
+	if rsaKeyLen == 4096 {
 		senderKeyCfg = coreCrypto.CryptoConfig{
 			Mode:             coreCrypto.ASYMMETRIC,
 			SymmetricCipher:  coreCrypto.AES_256_GCM,
 			AsymmetricCipher: coreCrypto.RSA_4096,
 			DigestAlgorithm:  coreCrypto.SHA3_512,
 		}
-	} else if RSAKEYLENGTH == 2048 {
+	} else if rsaKeyLen == 2048 {
 		senderKeyCfg = coreCrypto.CryptoConfig{
 			Mode:             coreCrypto.ASYMMETRIC,
 			SymmetricCipher:  coreCrypto.AES_256_GCM,
@@ -223,7 +239,7 @@ func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *co
 		}
 	}
 
-	senderKey := coreCrypto.NewPeacemakrKeyFromPubPem(senderKeyCfg, senderKeyStr)
+	senderKey := coreCrypto.NewPeacemakrKeyFromPubPem(senderKeyCfg, []byte(senderRsaPubKey))
 
 	err = coreCrypto.Verify(senderKey, plaintext, ciphertext)
 	if err != nil {
@@ -465,6 +481,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomain *string) ([
 	}
 
 	myKeyStr, err := sdk.persister.Load("priv")
+	// TODO: this is wrong, fix it.
 	var myKeyCfg coreCrypto.CryptoConfig
 	if RSAKEYLENGTH == 4096 {
 		myKeyCfg = coreCrypto.CryptoConfig{
@@ -533,17 +550,29 @@ func (sdk *standardPeacemakrSDK) getKeyIdFromCiphertext(ciphertext []byte) (*Pea
 	return ret, nil
 }
 
-func (sdk *standardPeacemakrSDK) getPublicKey(keyID string) ([]byte, error) {
+func (sdk *standardPeacemakrSDK) getPublicKey(keyID string) (string, error) {
+
+	if sdk.persister.Exists(keyID) {
+		key, err := sdk.persister.Load(keyID)
+		if err != nil {
+			sdk.phonehomeError(err)
+			return "", err
+		}
+		return key, nil
+	}
+
 	getPubKeyParams := key_service.NewGetPublicKeyParams()
 	getPubKeyParams.KeyID = keyID
 
 	result, err := sdk.getClient().KeyService.GetPublicKey(getPubKeyParams, sdk.authInfo)
 	if err != nil {
 		sdk.phonehomeError(err)
-		return nil, err
+		return "", err
 	}
 
-	return []byte(*result.Payload.Key), nil
+	sdk.persister.Save(keyID, *result.Payload.Key)
+
+	return *result.Payload.Key, nil
 }
 
 func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {

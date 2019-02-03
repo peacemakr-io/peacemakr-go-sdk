@@ -27,7 +27,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	}
 	log.Println("registration successful of client", clientNum, "starting", numRuns, "crypto round trips...")
 
-	log.Println("Encrypting client debug info: %s\n", sdk.GetDebugInfo())
+	log.Printf("Encrypting client debug info: %s\n", sdk.GetDebugInfo())
 
 	for i := 0; i < numRuns; i++ {
 
@@ -65,7 +65,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	}
 
 
-	log.Println("encryption number", clientNum, "done.")
+	log.Println("Encryption client number", clientNum, "done.")
 	close(encrypted)
 	wg.Done()
 }
