@@ -537,18 +537,18 @@ func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
 	return sdk.encrypt(plaintext, nil)
 }
 
-func (sdk *standardPeacemakrSDK) EncryptStrInDomain(plaintext string, useDomainId string) (string, error) {
+func (sdk *standardPeacemakrSDK) EncryptStrInDomain(plaintext string, useDomainName string) (string, error) {
 	err := sdk.errOnNotRegistered()
 	if err != nil {
 		return "", err
 	}
 
-	err = sdk.verifyUserSelectedUseDomain(useDomainId)
+	err = sdk.verifyUserSelectedUseDomain(useDomainName)
 	if err != nil {
 		return "", err
 	}
 
-	encryptedBytes, err := sdk.encrypt([]byte(plaintext), &useDomainId)
+	encryptedBytes, err := sdk.encrypt([]byte(plaintext), &useDomainName)
 	if err != nil {
 		return "", err
 	}
@@ -855,18 +855,29 @@ func (sdk *standardPeacemakrSDK)  verifyRegistrationAndInit() error {
 	return nil
 }
 
-func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomain string) error {
+func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomainName string) error {
 
-	if sdk.persister.Exists("useDomain:" + useDomain) {
-		return nil
+	cryptoConfigId, err := sdk.getCryptoConfigIdFromAPIToken()
+	if err != nil {
+		e := errors.New("failed to get crypt config id from api token")
+		sdk.phonehomeError(e)
+		return e
 	}
 
-	if sdk.persister.Exists("useDomain:" + useDomain) {
-		err := errors.New(fmt.Sprintf("unknown use doamin: %s", useDomain))
-		sdk.phonehomeError(err)
-		return err
+	err = sdk.populateUseDomains(cryptoConfigId)
+	if err != nil {
+		e := errors.New("failed to populate use doamins from crypto config id")
+		sdk.phonehomeError(e)
+		return e
 	}
 
-	return nil
+	for _, domain := range sdk.useDomains {
+		if domain.Name == useDomainName {
+			return nil
+		}
+	}
 
+	err = errors.New(fmt.Sprintf("unknown use doamin: %s", useDomainName))
+	sdk.phonehomeError(err)
+	return err
 }
