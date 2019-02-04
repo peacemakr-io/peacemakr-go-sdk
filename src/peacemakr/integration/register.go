@@ -14,23 +14,23 @@ type TestMessage struct {
 	plaintext string
 }
 
-func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan *TestMessage, wg *sync.WaitGroup) {
+func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan *TestMessage, wg *sync.WaitGroup, useDomainId string) {
 
 
 	log.Printf("Getting Peacemakr SDK for encrypting client %d...\n", clientNum)
 	sdk, err := client.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
 	if err != nil {
-		log.Fatalf("Encrypting client %d getting peacemakr sdk failed %s", clientNum, err)
+		log.Fatalf("Encrypting client %d%s getting peacemakr sdk failed %s", clientNum, useDomainId, err)
 	}
 
-	log.Printf("Encrypting client %d: registering to host %s", clientNum, hostname)
+	log.Printf("Encrypting client %d%s: registering to host %s", clientNum, useDomainId, hostname)
 	err = sdk.Register()
 	if err != nil {
-		log.Fatalf("Encrypting cleint %d: registration failed %s", clientNum, err)
+		log.Fatalf("Encrypting cleint %d%s: registration failed %s", clientNum, useDomainId, err)
 	}
-	log.Printf("Encrypting client %d: starting %d registered.  Starting crypto round trips ...", clientNum, numRuns)
+	log.Printf("Encrypting client %d%s: starting %d registered.  Starting crypto round trips ...", clientNum, useDomainId, numRuns)
 
-	log.Printf("Encrypting client %d: debug info: %s\n", clientNum, sdk.GetDebugInfo())
+	log.Printf("Encrypting client %d%s: debug info: %s\n", clientNum, useDomainId, sdk.GetDebugInfo())
 
 	for i := 0; i < numRuns; i++ {
 
@@ -38,15 +38,20 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 		plaintext, err := utils.GenerateRandomString(randLen)
 		if err != nil {
-			log.Fatalf("Encrypting client %d: failed to get random plaintext to encrypt %s", clientNum, err)
+			log.Fatalf("Encrypting client %d%s: failed to get random plaintext to encrypt %s", clientNum, useDomainId, err)
 		}
 
-		ciphertext, err := sdk.EncryptStr(plaintext)
+		var ciphertext string
+		if len(useDomainId) == 0 {
+			ciphertext, err = sdk.EncryptStr(plaintext)
+		} else {
+			ciphertext, err = sdk.EncryptStrInDomain(plaintext, useDomainId)
+		}
 		if err != nil {
 			log.Fatalf("Failed to encrypt string (clientDebugInfo = %s, clientNum = %d) %s", sdk.GetDebugInfo(), clientNum, err)
 		}
 		if ciphertext == plaintext {
-			log.Fatalf("Encrypting client %d: encryption did nothing.", clientNum)
+			log.Fatalf("Encrypting client %d%s: encryption did nothing.", clientNum, useDomainId)
 		}
 
 		testMessage := TestMessage{
@@ -57,18 +62,18 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 		decrypted, err := sdk.DecryptStr(ciphertext)
 		if err != nil {
-			log.Fatalf("Encrypting client %d: failed to decrypt string %s", clientNum, err)
+			log.Fatalf("Encrypting client %d%s: failed to decrypt string %s", clientNum, useDomainId, err)
 		}
 
 		if plaintext != decrypted {
-			log.Fatalf("Encrypting client %d: failed to decrypt to original plaintext.", clientNum)
+			log.Fatalf("Encrypting client %d%s: failed to decrypt to original plaintext.", clientNum, useDomainId)
 		}
 
-		log.Printf("Encrypting client %d: encrypted %d messages\n", clientNum, i)
+		log.Printf("Encrypting client %d%s: encrypted %d messages\n", clientNum, useDomainId, i)
 	}
 
 
-	log.Printf("Encryption client %d: done.\n", clientNum)
+	log.Printf("Encryption client %d%s: done.\n", clientNum, useDomainId)
 	wg.Done()
 }
 
@@ -112,12 +117,14 @@ func main() {
 	host := flag.String("host", "api.peacemakr.io", "host of peacemakr services")
 	numCryptoTrips := flag.Int("numCryptoTrips", 100, "Total number of example encrypt and decrypt operations.")
 	numCryptoThreads := flag.Int("numCryptoThreads", 1, "Total number of encryption and decryption threads.")
+	useDomainId := flag.String("useDomainName", "", "The specific and enforced Use Domain's name for encryption")
 	flag.Parse()
 
 	log.Println("apiKey:", *apiKey)
 	log.Println("host:", *host)
 	log.Println("numCryptoTrips:", *numCryptoTrips)
 	log.Println("numCryptoThreads:", *numCryptoThreads)
+	log.Println("useDomainId:", *useDomainId)
 
 	// Channel of encrypted things.
 	encrypted := make(chan *TestMessage)
@@ -125,8 +132,16 @@ func main() {
 
 	// Fire up the encryption clients.
 	for i := 0; i < *numCryptoThreads; i++ {
+
+		// Do it once with indescriminate useDomains.
 		encryptionWork.Add(1)
-		go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &encryptionWork)
+		go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &encryptionWork, "")
+
+		if len(*useDomainId) > 0 {
+			encryptionWork.Add(1)
+			go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &encryptionWork, *useDomainId)
+		}
+
 	}
 
 	// Fire up the decryption-only clients.

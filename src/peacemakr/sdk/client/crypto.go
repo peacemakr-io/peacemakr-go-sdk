@@ -34,12 +34,18 @@ type PeacemakrSDK interface {
 	Encrypt(plaintext []byte) ([]byte, error)
 
 	//
-	// Encrypt the plaintext, but restrict which key will be used to one specific Use Domain. Returns ciphertexts on
-	// success, else returns a non-nil error.
+	// Encrypt the plaintext, but restrict which keys may be used to a Use Domain of this specific name. Names of Use
+	// Domains are not unique, and this non-unique property of your Organization's Use Domains allows for graceful
+	// rotation of encryption keys off of old (retiring, stale, or compromised) Use Domains, simply by creating a new
+	// Use Domain with the same name. The transitional purity, both Use Domains may be selected for encryption use by
+	// clients restricted to one particular name. Then, retiring of one of the two Use Domains is possible without
+	// disrupting your deployed application.
 	//
-	EncryptInDomainStr(plaintext string, useDomain string) (string, error)
+	// Returns a ciphertext blob on success, else returns a non-nil error.
+	//
+	EncryptStrInDomain(plaintext string, useDomainName string) (string, error)
 
-	EncryptInDomain(plaintext []byte, useDomain string) ([]byte, error)
+	EncryptInDomain(plaintext []byte, useDomainName string) ([]byte, error)
 
 
 	//

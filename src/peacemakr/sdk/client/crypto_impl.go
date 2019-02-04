@@ -371,7 +371,7 @@ func (sdk *standardPeacemakrSDK) pickOneKeySymmetricKey(keyId string) ([]byte, e
 	return []byte(foundKey), nil
 }
 
-func (sdk *standardPeacemakrSDK) selectUserDomain(useDomain *string) (*models.SymmetricKeyUseDomain, error) {
+func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models.SymmetricKeyUseDomain, error) {
 	err := sdk.populateOrgInfo()
 	if err != nil {
 		sdk.phonehomeError(err)
@@ -391,7 +391,7 @@ func (sdk *standardPeacemakrSDK) selectUserDomain(useDomain *string) (*models.Sy
 
 	var selectedDomain *models.SymmetricKeyUseDomain
 
-	if useDomain == nil {
+	if useDomainName == nil {
 		numSelectedUseDomains := len(sdk.useDomains)
 		selectedDomainIdx := rand.Intn(numSelectedUseDomains)
 		selectedDomain = sdk.useDomains[selectedDomainIdx]
@@ -399,7 +399,8 @@ func (sdk *standardPeacemakrSDK) selectUserDomain(useDomain *string) (*models.Sy
 
 		for _, domain := range sdk.useDomains {
 
-			if domain.Name == *useDomain {
+			// Is right? is this really want we want?
+			if domain.Name == *useDomainName {
 				return domain, nil
 			}
 
@@ -416,10 +417,10 @@ func (sdk *standardPeacemakrSDK) selectUserDomain(useDomain *string) (*models.Sy
 	return selectedDomain, nil
 }
 
-func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomain *string) (string, *coreCrypto.CryptoConfig, error) {
+func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (string, *coreCrypto.CryptoConfig, error) {
 
 	// Select a use domain.
-	selectedDomain, err := sdk.selectUserDomain(useDomain)
+	selectedDomain, err := sdk.selectUseDomain(useDomainName)
 	if err != nil {
 		return "", nil, err
 	}
@@ -454,9 +455,9 @@ type PeacemakrAAD struct {
 	SenderKeyID string `json:"senderKeyID"`
 }
 
-func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomain *string) ([]byte, error) {
+func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string) ([]byte, error) {
 
-	keyId, cfg, err := sdk.selectEncryptionKey(useDomain)
+	keyId, cfg, err := sdk.selectEncryptionKey(useDomainName)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return nil, err
@@ -533,40 +534,39 @@ func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
 		return nil, err
 	}
 
-
 	return sdk.encrypt(plaintext, nil)
 }
 
-func (sdk *standardPeacemakrSDK) EncryptInDomainStr(plaintext string, useDomain string) (string, error) {
+func (sdk *standardPeacemakrSDK) EncryptStrInDomain(plaintext string, useDomainId string) (string, error) {
 	err := sdk.errOnNotRegistered()
 	if err != nil {
 		return "", err
 	}
 
-	err = sdk.verifyUserSelectedUseDomain(useDomain)
+	err = sdk.verifyUserSelectedUseDomain(useDomainId)
 	if err != nil {
 		return "", err
 	}
 
-	encryptedBytes, err := sdk.encrypt([]byte(plaintext), &useDomain)
+	encryptedBytes, err := sdk.encrypt([]byte(plaintext), &useDomainId)
 	if err != nil {
 		return "", err
 	}
 	return string(encryptedBytes), nil
 }
 
-func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomain string) ([]byte, error) {
+func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomainName string) ([]byte, error) {
 	err := sdk.errOnNotRegistered()
 	if err != nil {
 		return nil, err
 	}
 
-	err = sdk.verifyUserSelectedUseDomain(useDomain)
+	err = sdk.verifyUserSelectedUseDomain(useDomainName)
 	if err != nil {
 		return nil, err
 	}
 
-	return sdk.encrypt(plaintext, &useDomain)
+	return sdk.encrypt(plaintext, &useDomainName)
 }
 
 
@@ -860,8 +860,6 @@ func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomain string) e
 	if sdk.persister.Exists("useDomain:" + useDomain) {
 		return nil
 	}
-
-
 
 	if sdk.persister.Exists("useDomain:" + useDomain) {
 		err := errors.New(fmt.Sprintf("unknown use doamin: %s", useDomain))
