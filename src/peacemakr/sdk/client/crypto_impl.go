@@ -63,14 +63,97 @@ func (sdk *standardPeacemakrSDK) GetDebugInfo() string {
 	return debugInfo
 }
 
+func (sdk *standardPeacemakrSDK) preloadAll(keyIds []string) error {
+
+	// Load all keys from key service.
+	clientId, err := sdk.getClientId()
+	if err != nil {
+		sdk.phonehomeError(err)
+		return err
+	}
+
+	params := key_service.NewGetAllEncryptedKeysParams()
+	params.EncryptingKeyID = clientId
+	if keyIds != nil {
+		params.SymmetricKeyIds = keyIds
+	}
+	ret, err := sdk.getClient().KeyService.GetAllEncryptedKeys(params, sdk.authInfo)
+	if err != nil {
+		sdk.phonehomeError(err)
+		return err
+	}
+
+	privateKey, err := sdk.persister.Load("priv")
+	if err != nil {
+		sdk.phonehomeError(err)
+		return err
+	}
+
+	for _, key := range ret.Payload {
+
+		if key == nil {
+			continue
+		}
+
+		numKeys := len(key.KeyIds)
+
+		blob, cfg, err := coreCrypto.Deserialize([]byte(*key.PackagedCiphertext))
+		if err != nil {
+			sdk.phonehomeError(err)
+			return err
+		}
+		decryptKey := coreCrypto.NewPeacemakrKeyFromPrivPem(*cfg, []byte(privateKey))
+
+		// Decrypt the binary ciphertext
+		plaintext, needVerify, err := coreCrypto.Decrypt(decryptKey, blob)
+		if err != nil {
+			sdk.phonehomeError(err)
+			return err
+		}
+
+		if needVerify {
+			aad, err := sdk.getKeyIdFromCiphertext([]byte(*key.PackagedCiphertext))
+			if err != nil {
+				sdk.phonehomeError(err)
+				return err
+			}
+
+			err = sdk.verifyMessage(aad, blob, plaintext)
+			if err != nil {
+				sdk.phonehomeError(err)
+				return err
+			}
+		}
+
+		// Since these are keys, convert the decrypted base64 string into binary.
+		keyBytes, err := base64.StdEncoding.DecodeString(string(plaintext.Data))
+		if err != nil {
+			sdk.phonehomeError(err)
+			return err
+		}
+
+		keyLen := int(*key.KeyLength)
+
+		// Iterate over the byte array, saving symmetric key we extract in the clear for future use.
+		for i := 0; i < numKeys; i++ {
+
+			keyBytes := keyBytes[i*keyLen : (i+1)*keyLen]
+			keyBytesId := key.KeyIds[i]
+
+			sdk.persister.Save(keyBytesId, string(keyBytes))
+		}
+	}
+
+	return nil
+}
+
 func (sdk *standardPeacemakrSDK) PreLoad() error {
 	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return err
 	}
 
-	// TODO: yea, load all the things.
-	panic("no implemented yet")
+	return sdk.preloadAll(nil)
 }
 
 func (sdk *standardPeacemakrSDK) EncryptStr(plaintext string) (string, error) {
@@ -271,7 +354,7 @@ func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *co
 	return nil
 }
 
-func (sdk *standardPeacemakrSDK) pickOneKeySymmetricKey(keyId string) ([]byte, error) {
+func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, error) {
 	// If it was already loaded, we're done.
 	if sdk.persister.Exists(keyId) {
 		key, err := sdk.persister.Load(keyId)
@@ -284,88 +367,20 @@ func (sdk *standardPeacemakrSDK) pickOneKeySymmetricKey(keyId string) ([]byte, e
 	}
 
 	// Else, we just load it from key service.
-	clientId, err := sdk.getClientId()
+	err := sdk.preloadAll([]string{keyId})
 	if err != nil {
 		sdk.phonehomeError(err)
 		return nil, err
 	}
 
-	params := key_service.NewGetAllEncryptedKeysParams()
-	params.EncryptingKeyID = clientId
-	params.SymmetricKeyIds = []string{keyId}
-	ret, err := sdk.getClient().KeyService.GetAllEncryptedKeys(params, sdk.authInfo)
-	if err != nil {
-		sdk.phonehomeError(err)
-		return nil, err
-	}
-
-	privateKey, err := sdk.persister.Load("priv")
-	if err != nil {
-		sdk.phonehomeError(err)
-		return nil, err
-	}
-
-	for _, key := range ret.Payload {
-
-		if key == nil {
-			continue
-		}
-
-		numKeys := len(key.KeyIds)
-
-		blob, cfg, err := coreCrypto.Deserialize([]byte(*key.PackagedCiphertext))
-		if err != nil {
-			sdk.phonehomeError(err)
-			return nil, err
-		}
-		decryptKey := coreCrypto.NewPeacemakrKeyFromPrivPem(*cfg, []byte(privateKey))
-
-		// Decrypt the binary ciphertext
-		plaintext, needVerify, err := coreCrypto.Decrypt(decryptKey, blob)
-		if err != nil {
-			sdk.phonehomeError(err)
-			return nil, err
-		}
-
-		if needVerify {
-			aad, err := sdk.getKeyIdFromCiphertext([]byte(*key.PackagedCiphertext))
-			if err != nil {
-				sdk.phonehomeError(err)
-				return nil, err
-			}
-
-			err = sdk.verifyMessage(aad, blob, plaintext)
-			if err != nil {
-				sdk.phonehomeError(err)
-				return nil, err
-			}
-		}
-
-		// Since these are keys, convert the decrypted base64 string into binary.
-		keyBytes, err := base64.StdEncoding.DecodeString(string(plaintext.Data))
-		if err != nil {
-			sdk.phonehomeError(err)
-			return nil, err
-		}
-
-		keyLen := int(*key.KeyLength)
-
-		// Iterate over the byte array, saving symmetric key we extract in the clear for future use.
-		for i := 0; i < numKeys; i++ {
-
-			keyBytes := keyBytes[i*keyLen : (i+1)*keyLen]
-			keyBytesId := key.KeyIds[i]
-
-			sdk.persister.Save(keyBytesId, string(keyBytes))
-		}
-	}
-
+	// Verify we got it.
 	if !sdk.persister.Exists(keyId) {
 		err :=  errors.New("failed to find the key, keyId = " + keyId)
 		sdk.phonehomeError(err)
 		return nil, err
 	}
 
+	// Return it.
 	foundKey, err := sdk.persister.Load(keyId)
 	if err != nil {
 		err := errors.New("failed to load a found key, keyId = " + keyId)
@@ -468,7 +483,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 		return nil, err
 	}
 
-	key, err := sdk.pickOneKeySymmetricKey(keyId)
+	key, err := sdk.loadOneKeySymmetricKey(keyId)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return nil, err
@@ -640,7 +655,7 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	key, err := sdk.pickOneKeySymmetricKey(aad.CryptoKeyID)
+	key, err := sdk.loadOneKeySymmetricKey(aad.CryptoKeyID)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return nil, err

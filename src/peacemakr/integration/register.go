@@ -30,6 +30,11 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	}
 	log.Printf("Encrypting client %d%s: starting %d registered.  Starting crypto round trips ...", clientNum, useDomainName, numRuns)
 
+	err = sdk.PreLoad()
+	if err != nil {
+		log.Fatalf("Encrypting clinet %d%s: failed to preload all keys", clientNum, useDomainName)
+	}
+
 	log.Printf("Encrypting client %d%s: debug info: %s\n", clientNum, useDomainName, sdk.GetDebugInfo())
 
 	for i := 0; i < numRuns; i++ {
