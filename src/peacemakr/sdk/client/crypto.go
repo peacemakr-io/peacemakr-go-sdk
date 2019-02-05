@@ -3,6 +3,7 @@ package client
 import (
 	"peacemakr/sdk/utils"
 	"errors"
+	"time"
 )
 
 type PeacemakrSDK interface {
@@ -85,15 +86,19 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 	}
 
 	sdk := &standardPeacemakrSDK{
-		clientName:        clientName,
-		apiKey:            apiKey,
-		orgId:             nil,
-		cryptoConfigId:    nil,
-		authInfo:          utils.GetAuthWriter(apiKey),
-		version:           "0.0.1",
-		peacemakrHostname: peacemakrHostname,
-		persister:         persister,
-		isRegisteredCache: false,
+		clientName,
+		apiKey,
+		nil,
+		nil,
+		nil,
+		nil,
+		utils.GetAuthWriter(apiKey),
+		"0.0.1",
+		peacemakrHostname,
+		persister,
+		false,
+		0,
+		int64(time.Duration(time.Hour * 24)),
 	}
 	return PeacemakrSDK(sdk), nil
 }

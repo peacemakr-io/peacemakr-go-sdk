@@ -20,18 +20,22 @@ import (
 )
 
 type standardPeacemakrSDK struct {
-	clientName        string
-	apiKey            string
-	orgId             *string
-	cryptoConfigId    *string
-	useDomains        []*models.SymmetricKeyUseDomain
-	domainSelectorAlg *string
-	authInfo          runtime.ClientAuthInfoWriter
-	version           string
-	peacemakrHostname *string
-	persister         utils.Persister
-	isRegisteredCache bool
+	clientName         string
+	apiKey             string
+	orgId              *string
+	cryptoConfigId     *string
+	useDomains         []*models.SymmetricKeyUseDomain
+	domainSelectorAlg  *string
+	authInfo           runtime.ClientAuthInfoWriter
+	version            string
+	peacemakrHostname  *string
+	persister          utils.Persister
+	isRegisteredCache  bool
+	lastUpdatedAt      int64
+	secondsTillRefresh int64
 }
+
+
 
 func (sdk *standardPeacemakrSDK) getDebugInfo() string {
 	id, err := sdk.getClientId()
@@ -60,7 +64,7 @@ func (sdk *standardPeacemakrSDK) GetDebugInfo() string {
 }
 
 func (sdk *standardPeacemakrSDK) PreLoad() error {
-	err := sdk.errOnNotRegistered()
+	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return err
 	}
@@ -70,7 +74,7 @@ func (sdk *standardPeacemakrSDK) PreLoad() error {
 }
 
 func (sdk *standardPeacemakrSDK) EncryptStr(plaintext string) (string, error) {
-	err := sdk.errOnNotRegistered()
+	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return "", err
 	}
@@ -214,6 +218,7 @@ func (sdk *standardPeacemakrSDK) populateUseDomains(cryptoConfigId string) error
 	}
 
 	sdk.useDomains = useDomains
+	sdk.lastUpdatedAt = time.Now().Unix()
 
 	return nil
 }
@@ -529,7 +534,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 }
 
 func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
-	err := sdk.errOnNotRegistered()
+	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return nil, err
 	}
@@ -538,7 +543,7 @@ func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
 }
 
 func (sdk *standardPeacemakrSDK) EncryptStrInDomain(plaintext string, useDomainName string) (string, error) {
-	err := sdk.errOnNotRegistered()
+	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return "", err
 	}
@@ -556,7 +561,7 @@ func (sdk *standardPeacemakrSDK) EncryptStrInDomain(plaintext string, useDomainN
 }
 
 func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomainName string) ([]byte, error) {
-	err := sdk.errOnNotRegistered()
+	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return nil, err
 	}
@@ -571,7 +576,7 @@ func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomainName
 
 
 func (sdk *standardPeacemakrSDK) DecryptStr(ciphertext string) (string, error) {
-	err := sdk.errOnNotRegistered()
+	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return "", err
 	}
@@ -624,7 +629,7 @@ func (sdk *standardPeacemakrSDK) getPublicKey(keyID string) (string, error) {
 }
 
 func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
-	err := sdk.errOnNotRegistered()
+	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return nil, err
 	}
@@ -832,9 +837,24 @@ func (sdk *standardPeacemakrSDK) Register() error {
 
 func (sdk *standardPeacemakrSDK)  verifyRegistrationAndInit() error {
 
+	err := sdk.errOnNotRegistered()
+	if err != nil {
+		return err
+	}
 
+	// This info only lasts for so long.
+	if time.Now().Unix() - sdk.lastUpdatedAt > sdk.secondsTillRefresh {
+		// Clear populateOrgInfo
+		sdk.cryptoConfigId = nil
+		sdk.orgId = nil
 
-	err := sdk.populateOrgInfo()
+		// Clear populateUseDomains
+		sdk.domainSelectorAlg = nil
+		sdk.useDomains = nil
+		sdk.lastUpdatedAt = 0
+	}
+
+	err = sdk.populateOrgInfo()
 	if err != nil {
 		sdk.phonehomeError(err)
 		return err
