@@ -53,7 +53,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 			ciphertext, err = sdk.EncryptStrInDomain(plaintext, useDomainName)
 		}
 		if err != nil {
-			log.Fatalf("Failed to encrypt string (clientDebugInfo = %s, clientNum = %d) %s", sdk.GetDebugInfo(), clientNum, err)
+			log.Fatalf("Failed to encrypt string (clientDebugInfo = %s, clientNum = %d) %v", sdk.GetDebugInfo(), clientNum, err)
 		}
 		if ciphertext == plaintext {
 			log.Fatalf("Encrypting client %d%s: encryption did nothing.", clientNum, useDomainName)
@@ -138,10 +138,11 @@ func main() {
 	// Fire up the encryption clients.
 	for i := 0; i < *numCryptoThreads; i++ {
 
-		// Do it once with indescriminate useDomains.
+		// Do it once with indiscriminate useDomains.
 		encryptionWork.Add(1)
 		go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &encryptionWork, "")
 
+		// And, again with a specific useDomain.
 		if len(*useDomainName) > 0 {
 			encryptionWork.Add(1)
 			go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &encryptionWork, *useDomainName)

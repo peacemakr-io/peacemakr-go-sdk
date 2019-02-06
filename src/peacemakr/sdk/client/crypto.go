@@ -99,6 +99,8 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 		false,
 		0,
 		int64(time.Duration(time.Hour * 24)),
+		nil,
+		nil,
 	}
 	return PeacemakrSDK(sdk), nil
 }
