@@ -36,6 +36,7 @@ type standardPeacemakrSDK struct {
 	secondsTillRefresh int64
 	privKey		       *string
 	pubKey             *string
+	symKeyCache		   map[string][]byte
 }
 
 
@@ -365,6 +366,11 @@ func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *co
 }
 
 func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, error) {
+
+	if val, ok := sdk.symKeyCache[keyId]; ok {
+		return val, nil
+	}
+
 	// If it was already loaded, we're done.
 	if sdk.persister.Exists(keyId) {
 		key, err := sdk.persister.Load(keyId)
@@ -372,6 +378,8 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 			// We failed to load the key, so just load it again from the server.
 			sdk.phonehomeError(err)
 		} else {
+			// Hot cache.
+			sdk.symKeyCache[keyId] = []byte(key)
 			return []byte(key), nil
 		}
 	}
@@ -398,6 +406,8 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 		return nil, err
 	}
 
+	// Hot cache.
+	sdk.symKeyCache[keyId] = []byte(foundKey)
 	return []byte(foundKey), nil
 }
 
