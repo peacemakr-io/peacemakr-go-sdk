@@ -75,7 +75,14 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 		}
 
 		log.Printf("Encrypting client %d%s: encrypted %d messages\n", clientNum, useDomainName, i)
+
+		if i == 42 {
+			// Example how to release memory back to the system.  Forces keys to be re-loaded.
+			sdk.ReleaseMemory()
+		}
 	}
+
+
 
 
 	log.Printf("Encryption client %d%s: done.\n", clientNum, useDomainName)

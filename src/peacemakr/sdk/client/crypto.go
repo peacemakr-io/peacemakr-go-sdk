@@ -61,6 +61,15 @@ type PeacemakrSDK interface {
 	// Also forwards debug info to peacemakr if phonehome enabled.
 	//
 	GetDebugInfo() string
+
+	//
+	// Under certain conditions, it may be necessary to release back to the system memory space consumed by this
+	// SDK instance. This method releases internally managed hot cache of keys and metadata used for cryptographic
+	// operations. Note: Invoking this method my result in increased network traffic and latency during subsequent
+	// cryptographic operations, as these keys must be retrieved and decrypted before they're cached and available
+	// for use again.
+	//
+	ReleaseMemory()
 }
 
 // Get a PeaceMakr SDK instance, given an apiKey, clientName, customerKeyManagerId, and persister.

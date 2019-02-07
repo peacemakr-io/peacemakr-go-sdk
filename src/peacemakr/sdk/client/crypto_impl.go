@@ -39,8 +39,6 @@ type standardPeacemakrSDK struct {
 	symKeyCache		   map[string][]byte
 }
 
-
-
 func (sdk *standardPeacemakrSDK) getDebugInfo() string {
 	id, err := sdk.getClientId()
 	if err != nil {
@@ -936,14 +934,7 @@ func (sdk *standardPeacemakrSDK)  verifyRegistrationAndInit() error {
 
 	// This info only lasts for so long.
 	if time.Now().Unix() - sdk.lastUpdatedAt > sdk.secondsTillRefresh {
-		// Clear populateOrgInfo
-		sdk.cryptoConfigId = nil
-		sdk.orgId = nil
-
-		// Clear populateUseDomains
-		sdk.domainSelectorAlg = nil
-		sdk.useDomains = nil
-		sdk.lastUpdatedAt = 0
+		clearAllMetadata(sdk)
 	}
 
 	err = sdk.populateOrgInfo()
@@ -965,6 +956,16 @@ func (sdk *standardPeacemakrSDK)  verifyRegistrationAndInit() error {
 	}
 
 	return nil
+}
+
+func clearAllMetadata(sdk *standardPeacemakrSDK) {
+	// Clear populateOrgInfo
+	sdk.cryptoConfigId = nil
+	sdk.orgId = nil
+	// Clear populateUseDomains
+	sdk.domainSelectorAlg = nil
+	sdk.useDomains = nil
+	sdk.lastUpdatedAt = 0
 }
 
 func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomainName string) error {
@@ -992,4 +993,9 @@ func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomainName strin
 	err = errors.New(fmt.Sprintf("unknown use doamin: %s", useDomainName))
 	sdk.phonehomeError(err)
 	return err
+}
+
+func (sdk *standardPeacemakrSDK) ReleaseMemory() {
+	sdk.symKeyCache = map[string][]byte{}
+	clearAllMetadata(sdk)
 }
