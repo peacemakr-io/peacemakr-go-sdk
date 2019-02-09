@@ -411,13 +411,49 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 
 func isUseDomainEncryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
 	currentTime := time.Now().Unix()
-	// Beyond InceptionTTL, this domain is available.
-	// Before EncryptionTTL, this domain is available.
-	if currentTime > *useDomain.CreationTime + *useDomain.SymmetricKeyInceptionTTL ||
-		currentTime < *useDomain.CreationTime + *useDomain.SymmetricKeyEncryptionUseTTL{
+	if (*useDomain.SymmetricKeyInceptionTTL     <= 0 || currentTime > *useDomain.CreationTime + *useDomain.SymmetricKeyInceptionTTL) ||
+	   (*useDomain.SymmetricKeyEncryptionUseTTL <= 0 || currentTime < *useDomain.CreationTime + *useDomain.SymmetricKeyEncryptionUseTTL) {
 		return true
 	}
 	return false
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+func (sdk *standardPeacemakrSDK) isKeyIdDecryptionViable(keyId string) bool {
+	viableDecryptionDomains := sdk.findViableDecryptionUseDomains()
+	for _, domain := range viableDecryptionDomains {
+		if contains(domain.EncryptionKeyIds, keyId) {
+			return true
+		}
+	}
+	return false
+}
+
+func isUseDomainDecryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
+	currentTime := time.Now().Unix()
+	if (*useDomain.SymmetricKeyInceptionTTL     <= 0 || currentTime > *useDomain.CreationTime + *useDomain.SymmetricKeyInceptionTTL) ||
+	   (*useDomain.SymmetricKeyDecryptionUseTTL <= 0 || currentTime < *useDomain.CreationTime + *useDomain.SymmetricKeyDecryptionUseTTL) {
+		return true
+	}
+	return false
+}
+
+func (sdk *standardPeacemakrSDK) findViableDecryptionUseDomains() []*models.SymmetricKeyUseDomain {
+	availableDomains := []*models.SymmetricKeyUseDomain{}
+	for _, useDomain := range sdk.useDomains {
+		if isUseDomainDecryptionViable(useDomain) {
+			availableDomains = append(availableDomains, useDomain)
+		}
+	}
+	return availableDomains
 }
 
 func findViableEncryptionUseDomains(useDomains []*models.SymmetricKeyUseDomain)  []*models.SymmetricKeyUseDomain {
@@ -761,6 +797,11 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 	if err != nil {
 		sdk.phonehomeError(err)
 		return nil, err
+	}
+
+	if !sdk.isKeyIdDecryptionViable(aad.CryptoKeyID) {
+		sdk.phonehomeString("key is no longer viable for decryption")
+		return nil, errors.New("ciphertext is no longer viable for decryption")
 	}
 
 	key, err := sdk.loadOneKeySymmetricKey(aad.CryptoKeyID)
