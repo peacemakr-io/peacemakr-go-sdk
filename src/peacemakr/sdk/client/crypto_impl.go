@@ -673,7 +673,7 @@ func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomainName
 func (sdk *standardPeacemakrSDK) DecryptStr(ciphertext string) (string, error) {
 	plain, err := sdk.Decrypt([]byte(ciphertext))
 	if err != nil {
-		sdk.phonehomeError(err)
+		// No phonehome here, it was already taken care of in Decrypt.
 		return "", err
 	}
 
@@ -724,6 +724,14 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	ciphertextblob, cfg, err := coreCrypto.Deserialize(ciphertext)
+	if err != nil {
+		// If we did not encrypt this blob, we can not decrypt it.
+		// No need to phonehome this specific error.
+		return nil, errors.New("not a peacemakr ciphertext")
+	}
+
+
 	aad, err := sdk.getKeyIdFromCiphertext(ciphertext)
 	if err != nil {
 		sdk.phonehomeError(err)
@@ -736,13 +744,7 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	ciphertextblob, cfg, err := coreCrypto.Deserialize(ciphertext)
-	if err != nil {
-		sdk.phonehomeError(err)
-		return nil, err
-	}
 	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(*cfg, key)
-
 	plaintext, needsVerification, err := coreCrypto.Decrypt(pmKey, ciphertextblob)
 	if err != nil {
 		sdk.phonehomeError(err)

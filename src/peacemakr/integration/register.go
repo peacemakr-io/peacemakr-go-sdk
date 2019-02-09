@@ -101,6 +101,8 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 		log.Fatalf("Decrypting client %d registration failed %s", clientNum, err)
 	}
 
+	testBadDecryption(err, clientNum, sdk)
+
 	i := 0
 	for msg := range encrypted {
 
@@ -117,11 +119,25 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 		if decrypted != msg.plaintext {
 			log.Fatalf("%Decrypting client %d failed to decrypt in DECYRTION CLIENT decrypted %s but expected %s", clientNum, decrypted, msg.plaintext)
 		}
-		log.Println("Decrypting client", clientNum, "decrypted", i," messages")
+		log.Println("Decrypting client", clientNum, "decrypted", i, " messages")
 		i++
 	}
 
 	log.Println("decryption client number", clientNum, "done.")
+}
+func testBadDecryption(err error, clientNum int, sdk client.PeacemakrSDK) {
+	// Attempt a single "bad" decryption:
+	randLen := rand.Intn(1<<16) + 1
+	notPeaceMakrCiphertext, err := utils.GenerateRandomString(randLen)
+	if err != nil {
+		log.Fatalf("Decrypting client %d: failed to get random string %s", clientNum, err)
+	}
+	decrypted, err := sdk.DecryptStr(notPeaceMakrCiphertext)
+	if decrypted != "" || err == nil {
+		log.Fatalf("Decrypting client %d: failed to detect non-peacemkr ciphertext %s", clientNum, notPeaceMakrCiphertext)
+	}
+
+	log.Printf("Decrypting client %d: invalid ciphertext detected", clientNum)
 }
 
 func main() {
