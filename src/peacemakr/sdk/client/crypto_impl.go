@@ -409,17 +409,29 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 	return []byte(foundKey), nil
 }
 
+func isUseDomainEncryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
+	currentTime := time.Now().Unix()
+	// Beyond InceptionTTL, this domain is available.
+	// Before EncryptionTTL, this domain is available.
+	if currentTime > *useDomain.CreationTime + *useDomain.SymmetricKeyInceptionTTL ||
+		currentTime < *useDomain.CreationTime + *useDomain.SymmetricKeyEncryptionUseTTL{
+		return true
+	}
+	return false
+}
+
+func findViableEncryptionUseDomains(useDomains []*models.SymmetricKeyUseDomain)  []*models.SymmetricKeyUseDomain {
+	availableDomain := []*models.SymmetricKeyUseDomain{}
+
+	for _, useDomain := range useDomains {
+		if isUseDomainEncryptionViable(useDomain) {
+			availableDomain = append(availableDomain, useDomain)
+		}
+	}
+	return availableDomain
+}
+
 func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models.SymmetricKeyUseDomain, error) {
-	err := sdk.populateOrgInfo()
-	if err != nil {
-		sdk.phonehomeError(err)
-		return nil, err
-	}
-	err = sdk.populateUseDomains(*sdk.cryptoConfigId)
-	if err != nil {
-		sdk.phonehomeError(err)
-		return nil, err
-	}
 
 	if len(sdk.useDomains) <= 0 {
 		err := errors.New("no available useDomains to select")
@@ -427,28 +439,41 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 		return nil, err
 	}
 
-	var selectedDomain *models.SymmetricKeyUseDomain
+	var selectedDomain *models.SymmetricKeyUseDomain = nil
 
 	if useDomainName == nil {
-		numSelectedUseDomains := len(sdk.useDomains)
+		viableUseDomain := findViableEncryptionUseDomains(sdk.useDomains)
+		if len(viableUseDomain) == 0 {
+			// We only have invalid domains ... but we can't just fail. Just use something.
+			numSelectedUseDomains := len(sdk.useDomains)
+			selectedDomainIdx := rand.Intn(numSelectedUseDomains)
+			selectedDomain = sdk.useDomains[selectedDomainIdx]
+			sdk.phonehomeString("no viable use domains for encryption")
+			return selectedDomain, nil
+		}
+		numSelectedUseDomains := len(viableUseDomain)
 		selectedDomainIdx := rand.Intn(numSelectedUseDomains)
-		selectedDomain = sdk.useDomains[selectedDomainIdx]
+		selectedDomain = viableUseDomain[selectedDomainIdx]
 	} else {
-
 		for _, domain := range sdk.useDomains {
-
-			// Is right? is this really want we want?
-			if domain.Name == *useDomainName {
+			if domain.Name == *useDomainName && isUseDomainEncryptionViable(domain) {
 				return domain, nil
 			}
-
 		}
 
 		// Else just fall back on a well known domain.
-
-		numSelectedUseDomains := len(sdk.useDomains)
+		viableUseDomain := findViableEncryptionUseDomains(sdk.useDomains)
+		if len(viableUseDomain) == 0 {
+			// We only have invalid domains ... but we can't just fail. Just use something.
+			numSelectedUseDomains := len(sdk.useDomains)
+			selectedDomainIdx := rand.Intn(numSelectedUseDomains)
+			selectedDomain = sdk.useDomains[selectedDomainIdx]
+			sdk.phonehomeString(fmt.Sprintf("no viable use domains encryption for use domain %s", useDomainName))
+			return selectedDomain, nil
+		}
+		numSelectedUseDomains := len(viableUseDomain)
 		selectedDomainIdx := rand.Intn(numSelectedUseDomains)
-		selectedDomain = sdk.useDomains[selectedDomainIdx]
+		selectedDomain = viableUseDomain[selectedDomainIdx]
 	}
 
 
@@ -474,7 +499,7 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 	symmetricCipher := coreCrypto.AES_256_GCM
 	digestAlgorithm := coreCrypto.SHA_256
 
-	if *selectedDomain.SymmetricKeyEncryptionAlg == "AESGCM" {
+	if *selectedDomain.SymmetricKeyEncryptionAlg == "AES_256_GCM" {
 		symmetricCipher = coreCrypto.AES_256_GCM
 	}
 
