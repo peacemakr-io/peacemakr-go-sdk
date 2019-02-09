@@ -117,7 +117,7 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 		}
 
 		if decrypted != msg.plaintext {
-			log.Fatalf("%Decrypting client %d failed to decrypt in DECYRTION CLIENT decrypted %s but expected %s", clientNum, decrypted, msg.plaintext)
+			log.Fatalf("Decrypting client %d failed to decrypt in DECYRTION CLIENT decrypted %s but expected %s", clientNum, decrypted, msg.plaintext)
 		}
 		log.Println("Decrypting client", clientNum, "decrypted", i, " messages")
 		i++
