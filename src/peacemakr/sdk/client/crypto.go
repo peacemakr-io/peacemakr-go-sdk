@@ -9,7 +9,7 @@ import (
 type PeacemakrSDK interface {
 
 	//
-	// Registers to PeaceMaker as a client. The persister is used to detect prior registrations on this client, so safe
+	// Registers to PeaceMakr as a client. The persister is used to detect prior registrations on this client, so safe
 	// to call multiple times. Once a successful invocation of Register is executed once, subsequent calls become a
 	// noop. One successful call is required before any
 	// cryptographic use of this SDK. Successful registration returns a nil error.
@@ -25,10 +25,11 @@ type PeacemakrSDK interface {
 	//
 	// Pre-Loading may fail, if registration was not invoked, if there's network connectivity issues, or
 	// unexpected authorization issues.
+	//
 	PreLoad() error
 
 	//
-	// Encrypt the plaintexts. Returns ciphertexts on success, else returns a non-nil error.
+	// Encrypt the plaintext. Returns a b64 encoded ciphertext blob on success, else returns a non-nil error.
 	//
 	EncryptStr(plaintext string) (string, error)
 
@@ -42,7 +43,7 @@ type PeacemakrSDK interface {
 	// clients restricted to one particular name. Then, retiring of one of the two Use Domains is possible without
 	// disrupting your deployed application.
 	//
-	// Returns a ciphertext blob on success, else returns a non-nil error.
+	// Returns a b64 encoded ciphertext blob on success, else returns a non-nil error.
 	//
 	EncryptStrInDomain(plaintext string, useDomainName string) (string, error)
 
