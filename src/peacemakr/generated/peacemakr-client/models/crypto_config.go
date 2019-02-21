@@ -19,6 +19,15 @@ import (
 // swagger:model CryptoConfig
 type CryptoConfig struct {
 
+	// the bit length of all new client keys, for example, 2048
+	ClientKeyBitlength int64 `json:"clientKeyBitlength,omitempty"`
+
+	// the TTL on the client's local asymetric key
+	ClientKeyTTL int64 `json:"clientKeyTTL,omitempty"`
+
+	// the type of key that should be associated with clients, for example, rsa
+	ClientKeyType string `json:"clientKeyType,omitempty"`
+
 	// id
 	// Required: true
 	ID *string `json:"id"`

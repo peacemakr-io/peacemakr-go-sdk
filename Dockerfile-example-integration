@@ -14,7 +14,7 @@ FROM 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto:latest
 WORKDIR /go/bin/
 COPY --from=builder /go/bin /go/bin
 
-RUN apk update && apk add ca-certificates
-RUN update-ca-certificates
+#RUN apk update && apk add ca-certificates
+#RUN update-ca-certificates
 
 CMD ./integration

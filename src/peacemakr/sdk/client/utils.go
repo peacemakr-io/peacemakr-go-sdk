@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"log"
 	"errors"
+	"fmt"
 )
 
 var RSAKEYLENGTH = 4096
@@ -119,20 +120,32 @@ func publicPemKey(key rsa.PublicKey) string {
 	return string(pubPem)
 }
 
-func getNewKey() (string, string) {
-	reader := rand.Reader
-	bitSize := RSAKEYLENGTH
+func getNewKey(keyType string, bitlength int) (string, string) {
 
-	key, err := rsa.GenerateKey(reader, bitSize)
-	if err != nil {
-		if DEBUG {
-			log.Println("Failed to generate keypair ", err)
+	if keyType == "rsa" {
+		reader := rand.Reader
+
+		//
+		// Verify the bitlength is something that this library can handle.
+		// If it is not, the just fallback to a sane default.
+		//
+		if bitlength != 2048 || bitlength != 4096 {
+			bitlength = 2048
 		}
-		return "", ""
+
+		key, err := rsa.GenerateKey(reader, bitlength)
+		if err != nil {
+			return fmt.Sprintf("error %v", err), fmt.Sprintf("error %v", err)
+		}
+
+		pemPriv := pemString(key)
+		pemPub := publicPemKey(key.PublicKey)
+
+		return pemPriv, pemPub
+	} else {
+		// Then, just default to an RSA key type of 2048 bits.
+		return getNewKey("rsa", 2048)
 	}
 
-	pemPriv := pemString(key)
-	pemPub := publicPemKey(key.PublicKey)
 
-	return pemPriv, pemPub
 }

@@ -156,6 +156,10 @@ paths:
           required: true
           type: string
         - in: query
+          name: stripeCustomerId
+          required: true
+          type: string
+        - in: query
           name: orgName
           required: true
           type: string
@@ -282,6 +286,32 @@ paths:
       responses:
         '200':
           description: Successful addition of an API Key to its org
+          schema:
+            $ref: '#/definitions/APIKey'
+        '400':
+          description: Unable to process request
+        '401':
+          description: Not authenticated to perform request
+  /org/stripeId:
+    post:
+      security:
+      - header: []
+      tags:
+      - Org
+      summary: Update the stripe customer Id associated with this account
+      operationId: updateStripeCustomerId
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: query
+        name: stripeCustomerId
+        required: true
+        type: string
+      responses:
+        '200':
+          description: Successfully updated stripe customer id
           schema:
             $ref: '#/definitions/APIKey'
         '400':
@@ -729,6 +759,7 @@ definitions:
       - id
       - name
       - contacts
+      - stripeCustomerId
       - clientIds
       - apiKeys
       - cryptoConfigId
@@ -741,6 +772,9 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/Contact'
+      stripeCustomerId:
+        type: string
+        description: Identifies the the customer in Stripe associated with this org
       clientIds:
         type: array
         description: Array of client id's registered to this org
@@ -791,20 +825,6 @@ definitions:
         type: string
       phone:
         type: string
-      address:
-        type: string
-      addressSecond:
-        type: string
-      city:
-        type: string
-      zip:
-        type: string
-      state:
-        type: string
-      country:
-        type: string
-      verified:
-        type: boolean
 
   Client:
     type: object
@@ -841,6 +861,16 @@ definitions:
       ownerOrgId:
         description: the org id of the organization that owns these symmetric keys
         type: string
+      clientKeyType:
+        description: the type of key that should be associated with clients, for example, rsa
+        type: string
+      clientKeyBitlength:
+        description: the bit length of all new client keys, for example, 2048
+        type: integer
+      clientKeyTTL:
+        description: the TTL on the client's local asymetric key
+        type: integer
+
 
   SymmetricKeyUseDomain:
     type: object
