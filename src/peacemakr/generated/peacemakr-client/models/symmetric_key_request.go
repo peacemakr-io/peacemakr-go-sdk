@@ -37,6 +37,10 @@ type SymmetricKeyRequest struct {
 	// Required: true
 	KeyDerivationServiceID *string `json:"keyDerivationServiceId"`
 
+	// If true the key deriver must sign delivered symmetric keys ciphertext blobs
+	// Required: true
+	MustSignDeliveredSymmetricKeys *bool `json:"mustSignDeliveredSymmetricKeys"`
+
 	// After deriving symmetric keys, this determines the ciphertext packaging scheme required for encrypted key delivery.
 	// Required: true
 	PackagedCiphertextVersion *int64 `json:"packagedCiphertextVersion"`
@@ -67,6 +71,10 @@ func (m *SymmetricKeyRequest) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateKeyDerivationServiceID(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateMustSignDeliveredSymmetricKeys(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -123,6 +131,15 @@ func (m *SymmetricKeyRequest) validateID(formats strfmt.Registry) error {
 func (m *SymmetricKeyRequest) validateKeyDerivationServiceID(formats strfmt.Registry) error {
 
 	if err := validate.Required("keyDerivationServiceId", "body", m.KeyDerivationServiceID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *SymmetricKeyRequest) validateMustSignDeliveredSymmetricKeys(formats strfmt.Registry) error {
+
+	if err := validate.Required("mustSignDeliveredSymmetricKeys", "body", m.MustSignDeliveredSymmetricKeys); err != nil {
 		return err
 	}
 
