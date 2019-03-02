@@ -42,6 +42,10 @@ type Organization struct {
 	// name
 	// Required: true
 	Name *string `json:"name"`
+
+	// Identifies the the customer in Stripe associated with this org
+	// Required: true
+	StripeCustomerID *string `json:"stripeCustomerId"`
 }
 
 // Validate validates this organization
@@ -69,6 +73,10 @@ func (m *Organization) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateName(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateStripeCustomerID(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -158,6 +166,15 @@ func (m *Organization) validateID(formats strfmt.Registry) error {
 func (m *Organization) validateName(formats strfmt.Registry) error {
 
 	if err := validate.Required("name", "body", m.Name); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Organization) validateStripeCustomerID(formats strfmt.Registry) error {
+
+	if err := validate.Required("stripeCustomerId", "body", m.StripeCustomerID); err != nil {
 		return err
 	}
 

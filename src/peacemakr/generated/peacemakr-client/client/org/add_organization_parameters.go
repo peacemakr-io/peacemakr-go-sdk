@@ -70,6 +70,8 @@ type AddOrganizationParams struct {
 	IDToken string
 	/*OrgName*/
 	OrgName string
+	/*StripeCustomerID*/
+	StripeCustomerID string
 
 	timeout    time.Duration
 	Context    context.Context
@@ -142,6 +144,17 @@ func (o *AddOrganizationParams) SetOrgName(orgName string) {
 	o.OrgName = orgName
 }
 
+// WithStripeCustomerID adds the stripeCustomerID to the add organization params
+func (o *AddOrganizationParams) WithStripeCustomerID(stripeCustomerID string) *AddOrganizationParams {
+	o.SetStripeCustomerID(stripeCustomerID)
+	return o
+}
+
+// SetStripeCustomerID adds the stripeCustomerId to the add organization params
+func (o *AddOrganizationParams) SetStripeCustomerID(stripeCustomerID string) {
+	o.StripeCustomerID = stripeCustomerID
+}
+
 // WriteToRequest writes these params to a swagger request
 func (o *AddOrganizationParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -170,6 +183,15 @@ func (o *AddOrganizationParams) WriteToRequest(r runtime.ClientRequest, reg strf
 	qOrgName := qrOrgName
 	if qOrgName != "" {
 		if err := r.SetQueryParam("orgName", qOrgName); err != nil {
+			return err
+		}
+	}
+
+	// query param stripeCustomerId
+	qrStripeCustomerID := o.StripeCustomerID
+	qStripeCustomerID := qrStripeCustomerID
+	if qStripeCustomerID != "" {
+		if err := r.SetQueryParam("stripeCustomerId", qStripeCustomerID); err != nil {
 			return err
 		}
 	}

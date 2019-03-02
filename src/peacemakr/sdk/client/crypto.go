@@ -100,8 +100,6 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 		apiKey,
 		nil,
 		nil,
-		nil,
-		nil,
 		utils.GetAuthWriter(apiKey),
 		"0.0.1",
 		peacemakrHostname,

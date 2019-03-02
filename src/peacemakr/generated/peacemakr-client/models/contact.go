@@ -17,18 +17,6 @@ import (
 // swagger:model Contact
 type Contact struct {
 
-	// address
-	Address string `json:"address,omitempty"`
-
-	// address second
-	AddressSecond string `json:"addressSecond,omitempty"`
-
-	// city
-	City string `json:"city,omitempty"`
-
-	// country
-	Country string `json:"country,omitempty"`
-
 	// email
 	// Required: true
 	Email *string `json:"email"`
@@ -39,15 +27,6 @@ type Contact struct {
 
 	// phone
 	Phone string `json:"phone,omitempty"`
-
-	// state
-	State string `json:"state,omitempty"`
-
-	// verified
-	Verified bool `json:"verified,omitempty"`
-
-	// zip
-	Zip string `json:"zip,omitempty"`
 }
 
 // Validate validates this contact
