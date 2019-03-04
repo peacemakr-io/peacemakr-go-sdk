@@ -888,6 +888,7 @@ definitions:
       - symmetricKeyDerivationServiceId
       - encryptionKeyIds
       - endableKDSFallbackToCloud
+      - requireSignedKeyDelivery
     properties:
       id:
         type: string
@@ -929,6 +930,9 @@ definitions:
           type: string
       endableKDSFallbackToCloud:
         description: if all registered kds service become unreachable, then incoming requests for new and existing keys may fallback to the cloud provided KDS
+        type: boolean
+      requireSignedKeyDelivery:
+        description: if required, all clients must receive these keys in a signed symmetric key delivery from the key deriver
         type: boolean
 
   EncryptedSymmetricKey:
@@ -1022,6 +1026,7 @@ definitions:
       - creationTime
       - symmetricKeyLength
       - packagedCiphertextVersion
+      - mustSignDeliveredSymmetricKeys
     properties:
       id:
         type: string
@@ -1048,3 +1053,6 @@ definitions:
       packagedCiphertextVersion:
         type: integer
         description: After deriving symmetric keys, this determines the ciphertext packaging scheme required for encrypted key delivery.
+      mustSignDeliveredSymmetricKeys:
+        type: boolean
+        description: If true the key deriver must sign delivered symmetric keys ciphertext blobs

@@ -44,6 +44,10 @@ type SymmetricKeyUseDomain struct {
 	// Required: true
 	OwnerOrgID *string `json:"ownerOrgId"`
 
+	// if required, all clients must receive these keys in a signed symmetric key delivery from the key deriver
+	// Required: true
+	RequireSignedKeyDelivery *bool `json:"requireSignedKeyDelivery"`
+
 	// number of seconds since key creation that the key will be available for decryption
 	// Required: true
 	SymmetricKeyDecryptionUseTTL *int64 `json:"symmetricKeyDecryptionUseTTL"`
@@ -98,6 +102,10 @@ func (m *SymmetricKeyUseDomain) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateOwnerOrgID(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateRequireSignedKeyDelivery(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -183,6 +191,15 @@ func (m *SymmetricKeyUseDomain) validateID(formats strfmt.Registry) error {
 func (m *SymmetricKeyUseDomain) validateOwnerOrgID(formats strfmt.Registry) error {
 
 	if err := validate.Required("ownerOrgId", "body", m.OwnerOrgID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *SymmetricKeyUseDomain) validateRequireSignedKeyDelivery(formats strfmt.Registry) error {
+
+	if err := validate.Required("requireSignedKeyDelivery", "body", m.RequireSignedKeyDelivery); err != nil {
 		return err
 	}
 
