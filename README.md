@@ -11,6 +11,8 @@ How Do build this?
  * Docker
  * AWS CLI tools
  * AWS account with read permissions to peacemakr's AWS ECR
+   * 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto:latest
+   * 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto-dependencies:latest
 
 ### (2) Generate all stubs from swagger
 ```
