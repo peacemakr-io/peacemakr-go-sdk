@@ -831,11 +831,15 @@ definitions:
     required:
       - id
       - publicKey
+      - keyDeliveryUseDomainId
     properties:
       id:
         type: string
       sdk:
         type: string
+      keyDeliveryUseDomainId:
+        type: string
+        description: Id of the use domain which encrypts all delivered symmetric keys for this client
       publicKey:
         $ref: '#/definitions/PublicKey'
 
@@ -1022,6 +1026,8 @@ definitions:
       - id
       - deriveSymmetricKeyIds
       - deliveryPublicKeyIds
+      - deliverySymmetricKeyIds
+      - deliverySymmetricKeyServiceIds
       - keyDerivationServiceId
       - creationTime
       - symmetricKeyLength
@@ -1038,7 +1044,17 @@ definitions:
           type: string
       deliveryPublicKeyIds:
         type: array
-        description: These are the keyId's to deliver all of the derived symmetric keys.
+        description: These are the keyId's of public keys to deliver all of the derived symmetric keys.
+        items:
+          type: string
+      deliverySymmetricKeyIds:
+        type: array
+        description: These are the keyId's of symmetric keys to deliver all of the derived symmetric keys.
+        items:
+          type: string
+      deliverySymmetricKeyServiceIds:
+        type: array
+        description: These are the service ids for the corresponding deliverySymmetricKeyIds. This information permits the key deriver to derive them on the spot, instead of download and decrypt them like a standard client. However, if the key deriver does not service the delivery symmetric key service id, then it may be forced to download and decrypt it.
         items:
           type: string
       keyDerivationServiceId:

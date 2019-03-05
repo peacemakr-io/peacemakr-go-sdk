@@ -21,9 +21,17 @@ type SymmetricKeyRequest struct {
 	// Required: true
 	CreationTime *int64 `json:"creationTime"`
 
-	// These are the keyId's to deliver all of the derived symmetric keys.
+	// These are the keyId's of public keys to deliver all of the derived symmetric keys.
 	// Required: true
 	DeliveryPublicKeyIds []string `json:"deliveryPublicKeyIds"`
+
+	// These are the keyId's of symmetric keys to deliver all of the derived symmetric keys.
+	// Required: true
+	DeliverySymmetricKeyIds []string `json:"deliverySymmetricKeyIds"`
+
+	// These are the service ids for the corresponding deliverySymmetricKeyIds. This information permits the key deriver to derive them on the spot, instead of download and decrypt them like a standard client. However, if the key deriver does not service the delivery symmetric key service id, then it may be forced to download and decrypt it.
+	// Required: true
+	DeliverySymmetricKeyServiceIds []string `json:"deliverySymmetricKeyServiceIds"`
 
 	// These are the keyId's of for the symmetric keys to actually derive.
 	// Required: true
@@ -59,6 +67,14 @@ func (m *SymmetricKeyRequest) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateDeliveryPublicKeyIds(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateDeliverySymmetricKeyIds(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateDeliverySymmetricKeyServiceIds(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -104,6 +120,24 @@ func (m *SymmetricKeyRequest) validateCreationTime(formats strfmt.Registry) erro
 func (m *SymmetricKeyRequest) validateDeliveryPublicKeyIds(formats strfmt.Registry) error {
 
 	if err := validate.Required("deliveryPublicKeyIds", "body", m.DeliveryPublicKeyIds); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *SymmetricKeyRequest) validateDeliverySymmetricKeyIds(formats strfmt.Registry) error {
+
+	if err := validate.Required("deliverySymmetricKeyIds", "body", m.DeliverySymmetricKeyIds); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *SymmetricKeyRequest) validateDeliverySymmetricKeyServiceIds(formats strfmt.Registry) error {
+
+	if err := validate.Required("deliverySymmetricKeyServiceIds", "body", m.DeliverySymmetricKeyServiceIds); err != nil {
 		return err
 	}
 

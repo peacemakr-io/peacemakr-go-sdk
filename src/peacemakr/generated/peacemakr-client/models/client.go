@@ -21,6 +21,10 @@ type Client struct {
 	// Required: true
 	ID *string `json:"id"`
 
+	// Id of the use domain which encrypts all delivered symmetric keys for this client
+	// Required: true
+	KeyDeliveryUseDomainID *string `json:"keyDeliveryUseDomainId"`
+
 	// public key
 	// Required: true
 	PublicKey *PublicKey `json:"publicKey"`
@@ -37,6 +41,10 @@ func (m *Client) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateKeyDeliveryUseDomainID(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validatePublicKey(formats); err != nil {
 		res = append(res, err)
 	}
@@ -50,6 +58,15 @@ func (m *Client) Validate(formats strfmt.Registry) error {
 func (m *Client) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Client) validateKeyDeliveryUseDomainID(formats strfmt.Registry) error {
+
+	if err := validate.Required("keyDeliveryUseDomainId", "body", m.KeyDeliveryUseDomainID); err != nil {
 		return err
 	}
 
