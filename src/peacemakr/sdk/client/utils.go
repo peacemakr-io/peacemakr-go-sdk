@@ -6,7 +6,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"log"
 	"errors"
 	"fmt"
 	"crypto/ecdsa"
@@ -69,7 +68,6 @@ func GetConfigFromPubKey(pubKey string) (coreCrypto.CryptoConfig, error) {
 	// First try to get it as an EC key
 	asymKeyLen, err := GetECKeyTypeFromPubPemStr(pubKey)
 	if err != nil { // It's not an EC key
-		log.Printf("Not an EC key: %v\n", err)
 		bitLength, err := getBitLenFromRsaPubPemStr(string(pubKey))
 		if err != nil {
 			return coreCrypto.CryptoConfig{}, errors.New("failed to get bit length from public rsa key")
@@ -98,7 +96,6 @@ func ECPemString(key *ecdsa.PrivateKey) string {
 
 	marshalled, err := x509.MarshalECPrivateKey(key)
 	if err != nil {
-		log.Println("Failed to encode private key to PEM, ", err)
 		return ""
 	}
 
@@ -109,7 +106,6 @@ func ECPemString(key *ecdsa.PrivateKey) string {
 
 	err = pem.Encode(buf, privateKey)
 	if err != nil {
-		log.Println("Failed to encode private key to PEM, ", err)
 		return ""
 	}
 
@@ -137,7 +133,6 @@ func GetNewECKey(curve elliptic.Curve) (string, string) {
 
 	key, err := ecdsa.GenerateKey(curve, reader)
 	if err != nil {
-		log.Println("Failed to generate keypair ", err)
 		return "", ""
 	}
 
@@ -207,9 +202,6 @@ func pemString(key *rsa.PrivateKey) string {
 
 	err := pem.Encode(buf, privateKey)
 	if err != nil {
-		if DEBUG {
-			log.Println("Failed to encode private key to PEM, ", err)
-		}
 		return ""
 	}
 
