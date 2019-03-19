@@ -389,7 +389,14 @@ func TestSymmetricEncrypt(t *testing.T) {
 			key = NewPeacemakrKeyFromMasterKey(cfg, masterKey, []byte("abcdefghijklmnopqrstuvwxyz"))
 			DestroyPeacemakrKey(masterKey)
 		} else {
-			key = NewPeacemakrKey(cfg, randomDevice)
+			origKey := NewPeacemakrKey(cfg, randomDevice)
+			b, err := GetBytes(&origKey)
+			if err != nil {
+				DestroyPeacemakrKey(origKey)
+				t.Fatalf("%v", err)
+			}
+
+			key = NewPeacemakrKeyFromBytes(cfg, b)
 		}
 
 		ciphertext, err := Encrypt(key, plaintextIn, randomDevice)
@@ -522,6 +529,91 @@ func TestSerialize(t *testing.T) {
 	}
 }
 
+func TestECDHSerialize(t *testing.T) {
+	t.Parallel()
+	if !PeacemakrInit() {
+		t.Fatalf("Unable to successfully start and seed the CSPRNG")
+	}
+	for j := AES_128_GCM; j <= CHACHA20_POLY1305; j++ {
+		for k := SHA_224; k <= SHA_512; k++ {
+	        for curve := ECDH_P256; curve <= ECDH_P521; curve++ {
+                go func(j, k, curve int) {
+                    cfg := CryptoConfig{
+                        Mode:             ASYMMETRIC,
+                        AsymmetricCipher: AsymmetricCipher(curve),
+                        SymmetricCipher:  SymmetricCipher(j),
+                        DigestAlgorithm:  MessageDigestAlgorithm(k),
+                    }
+
+                    plaintextIn := SetUpPlaintext()
+
+                    randomDevice := NewRandomDevice()
+
+                    myKey := NewPeacemakrKey(cfg, randomDevice)
+                    defer DestroyPeacemakrKey(myKey)
+
+                    peerKey := NewPeacemakrKey(cfg, randomDevice)
+                    defer DestroyPeacemakrKey(peerKey)
+
+                    secKey := ECDHPeacemakrKeyGen(&myKey, &peerKey)
+                    defer DestroyPeacemakrKey(secKey)
+
+                    secKeyCfg, err := GetKeyConfig(&secKey)
+                    if err != nil {
+                        t.Fatalf("%v", err)
+                    }
+
+                    ciphertext, err := Encrypt(secKey, plaintextIn, randomDevice)
+                    if err != nil && len(plaintextIn.Data) == 0 {
+                        return
+                    }
+
+                    if err != nil {
+                        t.Fatalf("%v", err)
+                    }
+
+                    serialized, err := Serialize(ciphertext)
+                    if err != nil {
+                        t.Fatalf("%v", err)
+                    }
+
+                    if plaintextIn.Aad != nil {
+                        AAD, err := ExtractUnverifiedAAD(serialized)
+                        if err != nil {
+                            t.Fatalf("Extract failed")
+                        }
+                        if !bytes.Equal(plaintextIn.Aad, AAD) {
+                            t.Fatalf("extracted aad did not match")
+                        }
+                    }
+
+                    deserialized, deserializedConfig, err := Deserialize(serialized)
+                    if err != nil {
+                        t.Fatalf("%v", err)
+                    }
+
+                    if !reflect.DeepEqual(*deserializedConfig, secKeyCfg) {
+                        t.Fatalf("did not deserialize the correct configuration")
+                    }
+
+                    plaintextOut, _, err := Decrypt(secKey, deserialized)
+                    if err != nil {
+                        t.Fatalf("Decrypt failed")
+                    }
+
+                    if !bytes.Equal(plaintextIn.Data, plaintextOut.Data) {
+                        t.Fatalf("plaintext data did not match")
+                    }
+
+                    if !bytes.Equal(plaintextIn.Aad, plaintextOut.Aad) {
+                        t.Fatalf("plaintext data did not match")
+                    }
+                }(int(j), int(k), int(curve))
+            }
+		}
+	}
+}
+
 func TestSignatures(t *testing.T) {
 	t.Parallel()
 	if !PeacemakrInit() {
@@ -610,7 +702,7 @@ func TestIssueNumber27FailToDecrypt(t *testing.T) {
 	}
 
 	EncryptedBytes := "AAAEHgAABA0AAAAAAwAAAAEBAgIAAAIAAAAAAIWesorxYFmTFTivS6OXTemz+/dAeD6dd+TYBOIWqKVZGgbQ1VgnvcU+nDcPVJqIDBYPE5u4Vx283F+21wCeFWGeeMMST9be9bxRXqnRHcyu5q2zWJ86EJAS7fcJtqTqUNRHyCLpQaekYpp/VxKjk4qNXbdcttGqi69Vr9DH1Jjsks2ENETYkxWIRg4zfFTNqtm16OKY/zI0Gts3OBDlbQstRA/XhazbrxaU8EOfE4aW3AkjzubYGniAXUyn9/2UYsB0GA7ABptqA4Kb3lI4bzLDEgt77EOaLF+x/KcppS90zm+Oq8MX8E2JwzQH0UrRyY+mmvkGHFnLqZrApzpnbRhH3o8KgN1ynZJU7Azibd7zTCrBYxWdihUn10l+yGima9cbLcCTJXwOhytiW/ntOZo/L2noELHuXQ+00CDFAOTSvDq1d8dQqU9nPoFemplhz7j4zuHwJ1MRRVe999u/3/uzewZvdacOVXxR7nQTjT+RUeqh9xhNcpEn8WwPVEjvvgvWtxQ43oA1T76vd0W34w/FJUFfrcrLP36E3e1sl/0OuIzhX9aIy2+2198eT89oKFOsGgGYsS4Z8R/PnLwwcw4bGKBnoLV6qNy59e3PEtwCxmdtwEjRl+zUMQtguxB2vg9ujRHZVBDE5TwE6s321JlCbWZ+gD68MK2Hkc7WKnNKAAAADAAAAADT4hIm+8GJtFOaIegAAAAQAAAAACC444WSNi247Vylls+h/5kAAAAAAAAAAAAAAawAAAAALZso9KFyh29Ja3s6KVH/vdp+6P6GWH/zrnME3+8VwJC02vZ5FgLMJMjGmmdF1r3c7Bc5j4bUhKyKODLh+4tnYra6jR2ap15z1Afn5fP7uT2uqSXuPdFB7eRByFBrlNW9cuIfXhrQWjSp91Sz079oTEFarOfqTI/ORZyG/h3zUvCRKGSfgF+xDL00V0snROhg2HdK3CUZBvdCAJVDaFDYXaq1FtLFkJzNCeBd+PAtbMM9lcqTsYxHZEDHlEJDQA12Z52DzrFWonN7QgDey4bzgbN2WY9IClbEszpVZXhyrprZj4TsGyFCuwQT/dwLmlFWnYGFj3/sKcSNlHrG1YdtWJt0tvZaQf4fjc2TLwWiLSseMG6c97PVTn9blL1dgjm0VyvudEOFwJNMHGi0JvSY8leFD0tQ5qXo+w73AUmLWQ/F++qQc4hgT7XXuhJmXeuSh3fnvfhHqojPWHZ40e04Yr8HmoyOOaiBGVpjU7rbTIH4korcGcW3BMOMBzZTUIzexjeLTte63lUe/xvpgAuCVtLXBQgs81TlngXLmz8NvbAnlJj3mbGJE/Nkk2sAAAABAAAAAAAAAABAAAAAAIQBX8pvxbKj84Um0UMGQWNUjggUVRiU7liVNPMZPdVoLS12YBhNBy8hvcUKdnWRI3FwcbPqiUh1TDC+Dr85vYo="
-	privKeyPem := "-----BEGIN RSA PRIVATE KEY-----\n" +
+	_ = "-----BEGIN RSA PRIVATE KEY-----\n" +
 		"MIIJKgIBAAKCAgEA5bFquCdimb6H3WQNXj45LvBp9YBML4IQ8qJyk52PFDu5GNVz\n" +
 		"WvctnY7yfXic5RGG/0168jWbzb6hRyLJUp3s91DoC/HgvYAUhYVAuL5r6P/49abH\n" +
 		"lR6WTxSLKX1Ik5CLf1rObxQ6pKapJ+/DuJ5CwEsYhBZflnP2CFycXgqb/kizwQem\n" +
@@ -662,16 +754,8 @@ func TestIssueNumber27FailToDecrypt(t *testing.T) {
 		"WA6GzmLXEW+3piXdUgU5lplOdWUVvysuaKufgtEBbNqWJd32jztbWa2DJsyevA==\n" +
 		"-----END RSA PRIVATE KEY-----"
 
-	blob, cfg, err := Deserialize([]byte(EncryptedBytes))
-	if err != nil {
-		t.Fatalf("Failed to deserialize")
-	}
-	decryptKey := NewPeacemakrKeyFromPrivPem(*cfg, []byte(privKeyPem))
-	defer DestroyPeacemakrKey(decryptKey)
-
-	// Decrypt the binary ciphertext
-	_, _, err = Decrypt(decryptKey, blob)
+	_, _, err := Deserialize([]byte(EncryptedBytes))
 	if err == nil {
-		t.Fatalf("Didn't fail to decrypt")
+		t.Fatalf("Did not fail to deserialize")
 	}
 }
