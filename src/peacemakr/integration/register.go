@@ -21,6 +21,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	log.Printf("Getting Peacemakr SDK for encrypting client %d...\n", clientNum)
 	sdk, err := client.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
 	if err != nil {
+		wg.Done()
 		log.Fatalf("Encrypting client %d%s getting peacemakr sdk failed %s", clientNum, useDomainName, err)
 	}
 
@@ -33,6 +34,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 	err = sdk.PreLoad()
 	if err != nil {
+		wg.Done()
 		log.Fatalf("Encrypting clinet %d%s: failed to preload all keys", clientNum, useDomainName)
 	}
 
@@ -44,6 +46,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 		plaintext, err := utils.GenerateRandomString(randLen)
 		if err != nil {
+			wg.Done()
 			log.Fatalf("Encrypting client %d%s: failed to get random plaintext to encrypt %s", clientNum, useDomainName, err)
 		}
 
@@ -54,9 +57,11 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 			ciphertext, err = sdk.EncryptStrInDomain(plaintext, useDomainName)
 		}
 		if err != nil {
+			wg.Done()
 			log.Fatalf("Failed to encrypt string (clientDebugInfo = %s, clientNum = %d) %v", sdk.GetDebugInfo(), clientNum, err)
 		}
 		if ciphertext == plaintext {
+			wg.Done()
 			log.Fatalf("Encrypting client %d%s: encryption did nothing.", clientNum, useDomainName)
 		}
 
@@ -68,10 +73,12 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 		decrypted, err := sdk.DecryptStr(ciphertext)
 		if err != nil {
+			wg.Done()
 			log.Fatalf("Encrypting client %d%s: failed to decrypt string %s", clientNum, useDomainName, err)
 		}
 
 		if plaintext != decrypted {
+			wg.Done()
 			log.Fatalf("Encrypting client %d%s: failed to decrypt to original plaintext.", clientNum, useDomainName)
 		}
 
@@ -145,22 +152,30 @@ func main() {
 	apiKey := flag.String("apiKey", "", "apiKey")
 	host := flag.String("host", "api.peacemakr.io", "host of peacemakr services")
 	numCryptoTrips := flag.Int("numCryptoTrips", 100, "Total number of example encrypt and decrypt operations.")
-	numCryptoThreads := flag.Int("numCryptoThreads", 1, "Total number of encryption and decryption threads.")
+	numEncryptThreads := flag.Int("numEncryptClients", 1, "Total number of encryption clients. (1)")
+	numDecryptThreads := flag.Int("numDecryptClients", 10, "Total number of decryption clients. (10)")
 	useDomainName := flag.String("useDomainName", "", "The specific and enforced Use Domain's name for encryption")
 	flag.Parse()
 
 	log.Println("apiKey:", *apiKey)
 	log.Println("host:", *host)
 	log.Println("numCryptoTrips:", *numCryptoTrips)
-	log.Println("numCryptoThreads:", *numCryptoThreads)
+	log.Println("numEncryptThreads:", *numEncryptThreads)
+	log.Println("numDecryptThreads:", *numDecryptThreads)
 	log.Println("useDomainName:", *useDomainName)
 
 	// Channel of encrypted things.
 	encrypted := make(chan *TestMessage)
 	var encryptionWork sync.WaitGroup
 
+	// Just one decryptor
+
+	for i := 0; i < *numDecryptThreads; i++ {
+		go runDecryptingClient(i, *apiKey, *host, encrypted)
+	}
+
 	// Fire up the encryption clients.
-	for i := 0; i < *numCryptoThreads; i++ {
+	for i := 0; i < *numEncryptThreads; i++ {
 
 		// Do it once with indiscriminate useDomains.
 		encryptionWork.Add(1)
@@ -172,9 +187,6 @@ func main() {
 			go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &encryptionWork, *useDomainName)
 		}
 
-
-		go runDecryptingClient(i, *apiKey, *host, encrypted)
-
 		// Why Sleep? The number of clients can't just explode, need to give them a chance to spin up,
 		// work a little, and go away.
 		time.Sleep(10 * time.Microsecond)
@@ -183,7 +195,7 @@ func main() {
 
 	encryptionWork.Wait()
 	log.Printf("main thread signaling to decyrptors it's over...\n")
-	for i := 0; i < *numCryptoThreads; i++ {
+	for i := 0; i < *numDecryptThreads; i++ {
 		encrypted <- nil
 	}
 	close(encrypted)
