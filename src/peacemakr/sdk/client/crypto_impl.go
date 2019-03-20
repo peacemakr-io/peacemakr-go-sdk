@@ -62,9 +62,7 @@ func (sdk *standardPeacemakrSDK) GetDebugInfo() string {
 	return debugInfo
 }
 
-func (sdk *standardPeacemakrSDK) preloadAll(keyIds []string) error {
-
-	// Load all keys from key service.
+func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 	clientId, err := sdk.getClientId()
 	if err != nil {
 		sdk.phonehomeError(err)
@@ -73,16 +71,15 @@ func (sdk *standardPeacemakrSDK) preloadAll(keyIds []string) error {
 
 	params := key_service.NewGetAllEncryptedKeysParams()
 	params.EncryptingKeyID = clientId
-	if keyIds != nil {
-		params.SymmetricKeyIds = keyIds
-	}
+	params.SymmetricKeyIds = keyIds
 	ret, err := sdk.getClient().KeyService.GetAllEncryptedKeys(params, sdk.authInfo)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return err
 	}
 
-	privateKey, err := sdk.getPrivKey()
+	privateKey, err := sdk.persister.Load("priv")
+	pubKey, err := sdk.persister.Load("pub")
 	if err != nil {
 		sdk.phonehomeError(err)
 		return err
@@ -101,10 +98,64 @@ func (sdk *standardPeacemakrSDK) preloadAll(keyIds []string) error {
 			sdk.phonehomeError(err)
 			return err
 		}
-		decryptKey := coreCrypto.NewPeacemakrKeyFromPrivPem(*cfg, []byte(privateKey))
+
+		// This is the key to use to decrypt incoming delivered keys. When ECDH is used, this is a symmetric key. When
+		// RSA is used, this is the RSA private key.
+		var decryptionDeliveredKey coreCrypto.PeacemakrKey
+		if isRSA(pubKey) {
+
+			clientPrivKey := coreCrypto.NewPeacemakrKeyFromPrivPem(*cfg, []byte(privateKey))
+			decryptionDeliveredKey = clientPrivKey
+			// We're in a loop, so it's destroyed after last use.
+
+		} else if isEC(pubKey) {
+
+			// get key Id identifying the encrypting client (of the key deriver)
+			aad, err := sdk.getKeyIdFromCiphertext([]byte(*key.PackagedCiphertext))
+			if err != nil {
+				sdk.phonehomeError(err)
+				return err
+			}
+
+			// Fetch the public EC key used to derive the shared symmetric key.
+			kdPublicKey, err := sdk.getPublicKey(aad.SenderKeyID)
+			if err != nil {
+				sdk.phonehomeError(err)
+				return err
+			}
+
+			// Construct a config that describes the public EC key from the key deriver.
+			kdKeyConfig, err := GetConfigFromPubKey(kdPublicKey)
+			if err != nil {
+				sdk.phonehomeError(err)
+				return err
+			}
+
+			// Now that we know what config, lets construct a peacemakr key.
+			clientPrivKey := coreCrypto.NewPeacemakrKeyFromPrivPem(kdKeyConfig, []byte(privateKey))
+			// We're in a loop, so it's destroyed after last use.
+
+			// Construct a peacemakr key from the config and key.
+			kdPeacemakrKey := coreCrypto.NewPeacemakrKeyFromPubPem(kdKeyConfig, []byte(kdPublicKey))
+			// We're in a loop, so it's destroyed after last use.
+
+			// Derive the shared symmetric secret between this client at the key deriver. This was used to encrypt
+			// the bundle of delivered keys.
+			// TODO: make this lighting wicked fast, by caching and lookup up this instead of commputing it.
+			decryptionDeliveredKey = coreCrypto.ECDHPeacemakrKeyGen(&clientPrivKey, &kdPeacemakrKey)
+			coreCrypto.DestroyPeacemakrKey(clientPrivKey)
+			coreCrypto.DestroyPeacemakrKey(kdPeacemakrKey)
+
+		} else {
+			// TODO: should we de-register client and re-register a new key?
+			err = errors.New("unkonwn key type detected, can not decrypt incoming keys")
+			sdk.phonehomeError(err)
+			return err
+		}
 
 		// Decrypt the binary ciphertext
-		plaintext, needVerify, err := coreCrypto.Decrypt(decryptKey, blob)
+		plaintext, needVerify, err := coreCrypto.Decrypt(decryptionDeliveredKey, blob)
+		coreCrypto.DestroyPeacemakrKey(decryptionDeliveredKey)
 		if err != nil {
 			sdk.phonehomeError(err)
 			return err
@@ -144,6 +195,11 @@ func (sdk *standardPeacemakrSDK) preloadAll(keyIds []string) error {
 	}
 
 	return nil
+}
+
+func (sdk *standardPeacemakrSDK) preloadAll(keyIds []string) error {
+
+	return sdk.downloadAndSaveAllKeys(keyIds)
 }
 
 func (sdk *standardPeacemakrSDK) PreLoad() error {
@@ -287,6 +343,7 @@ func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *co
 	}
 
 	senderKey := coreCrypto.NewPeacemakrKeyFromPubPem(senderKeyCfg, []byte(senderKeyStr))
+	defer coreCrypto.DestroyPeacemakrKey(senderKey)
 
 	err = coreCrypto.Verify(senderKey, plaintext, ciphertext)
 	if err != nil {
@@ -316,130 +373,7 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 	}
 
 	// Else, we just load it from key service.
-	clientId, err := sdk.getClientId()
-	if err != nil {
-		sdk.phonehomeError(err)
-		return nil, err
-	}
-
-	params := key_service.NewGetAllEncryptedKeysParams()
-	params.EncryptingKeyID = clientId
-	params.SymmetricKeyIds = []string{keyId}
-	ret, err := sdk.getClient().KeyService.GetAllEncryptedKeys(params, sdk.authInfo)
-	if err != nil {
-		sdk.phonehomeError(err)
-		return nil, err
-	}
-
-	privateKey, err := sdk.persister.Load("priv")
-	pubKey, err := sdk.persister.Load("pub")
-	if err != nil {
-		sdk.phonehomeError(err)
-		return nil, err
-	}
-
-	for _, key := range ret.Payload {
-
-		if key == nil {
-			continue
-		}
-
-		numKeys := len(key.KeyIds)
-
-		blob, cfg, err := coreCrypto.Deserialize([]byte(*key.PackagedCiphertext))
-		if err != nil {
-			sdk.phonehomeError(err)
-			return nil, err
-		}
-
-		// This is the key to use to decrypt incoming delivered keys. When ECDH is used, this is a symmetric key. When
-		// RSA is used, this is the RSA private key.
-		var decryptionDeliveredKey coreCrypto.PeacemakrKey
-		if isRSA(pubKey) {
-
-			clientPrivKey := coreCrypto.NewPeacemakrKeyFromPrivPem(*cfg, []byte(privateKey))
-			decryptionDeliveredKey = clientPrivKey
-
-		} else if isEC(pubKey) {
-
-			// get key Id identifying the encrypting client (of the key deriver)
-			aad, err := sdk.getKeyIdFromCiphertext([]byte(*key.PackagedCiphertext))
-			if err != nil {
-				sdk.phonehomeError(err)
-				return nil, err
-			}
-
-			// Fetch the public EC key used to derive the shared symmetric key.
-			kdPublicKey, err := sdk.getPublicKey(aad.SenderKeyID)
-			if err != nil {
-				sdk.phonehomeError(err)
-				return nil, err
-			}
-
-			// Construct a config that describes the public EC key from the key deriver.
-			kdKeyConfig, err := GetConfigFromPubKey(kdPublicKey)
-			if err != nil {
-				sdk.phonehomeError(err)
-				return nil, err
-			}
-
-			// Now that we know what config, lets construct a peacemakr key.
-			clientPrivKey := coreCrypto.NewPeacemakrKeyFromPrivPem(kdKeyConfig, []byte(privateKey))
-
-			// Construct a peacemakr key from the config and key.
-			kdPeacemakrKey := coreCrypto.NewPeacemakrKeyFromPubPem(kdKeyConfig, []byte(kdPublicKey))
-
-			// Derive the shared symmetric secret between this client at the key deriver. This was used to encrypt
-			// the bundle of delivered keys.
-			// TODO: make this lighting wicked fast, by caching and lookup up this instead of commputing it.
-			decryptionDeliveredKey = coreCrypto.ECDHPeacemakrKeyGen(&clientPrivKey, &kdPeacemakrKey)
-
-		} else {
-			// TODO: should we de-register client and re-register a new key?
-			err = errors.New("unkonwn key type detected, can not decrypt incoming keys")
-			sdk.phonehomeError(err)
-			return nil, err
-		}
-
-		// Decrypt the binary ciphertext
-		plaintext, needVerify, err := coreCrypto.Decrypt(decryptionDeliveredKey, blob)
-		if err != nil {
-			sdk.phonehomeError(err)
-			return nil, err
-		}
-
-		if needVerify {
-			aad, err := sdk.getKeyIdFromCiphertext([]byte(*key.PackagedCiphertext))
-			if err != nil {
-				sdk.phonehomeError(err)
-				return nil, err
-			}
-
-			err = sdk.verifyMessage(aad, blob, plaintext)
-			if err != nil {
-				sdk.phonehomeError(err)
-				return nil, err
-			}
-		}
-
-		// Since these are keys, convert the decrypted base64 string into binary.
-		keyBytes, err := base64.StdEncoding.DecodeString(string(plaintext.Data))
-		if err != nil {
-			sdk.phonehomeError(err)
-			return nil, err
-		}
-
-		keyLen := int(*key.KeyLength)
-
-		// Iterate over the byte array, saving symmetric key we extract in the clear for future use.
-		for i := 0; i < numKeys; i++ {
-
-			keyBytes := keyBytes[i*keyLen : (i+1)*keyLen]
-			keyBytesId := key.KeyIds[i]
-
-			sdk.persister.Save(keyBytesId, string(keyBytes))
-		}
-	}
+	sdk.downloadAndSaveAllKeys([]string{keyId})
 
 	if !sdk.persister.Exists(keyId) {
 		err := errors.New("failed to find the key, keyId = " + keyId)
@@ -689,6 +623,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 	}
 
 	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(*cfg, key)
+	defer coreCrypto.DestroyPeacemakrKey(pmKey)
 	myKeyId, err := sdk.persister.Load("keyId")
 	if err != nil {
 		sdk.phonehomeError(err)
@@ -722,6 +657,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 	myPrivKeyStr, err := sdk.persister.Load("priv")
 	myKeyCfg, err := GetConfigFromPubKey(myPubKeyStr)
 	myKey := coreCrypto.NewPeacemakrKeyFromPrivPem(myKeyCfg, []byte(myPrivKeyStr))
+	defer coreCrypto.DestroyPeacemakrKey(myKey)
 
 	err = coreCrypto.Sign(myKey, pmPlaintext, ciphertext)
 	if err != nil {
@@ -854,6 +790,7 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 	}
 
 	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(*cfg, key)
+	defer coreCrypto.DestroyPeacemakrKey(pmKey)
 	plaintext, needsVerification, err := coreCrypto.Decrypt(pmKey, ciphertextblob)
 	if err != nil {
 		sdk.phonehomeError(err)

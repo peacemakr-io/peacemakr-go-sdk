@@ -7,6 +7,7 @@ import (
 	"peacemakr/sdk/utils"
 	"sync"
 	"flag"
+	"time"
 )
 
 type TestMessage struct {
@@ -24,9 +25,9 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	}
 
 	log.Printf("Encrypting client %d%s: registering to host %s", clientNum, useDomainName, hostname)
-	err = sdk.Register()
-	if err != nil {
-		log.Fatalf("Encrypting cleint %d%s: registration failed %s", clientNum, useDomainName, err)
+	for err = sdk.Register(); err != nil; {
+		log.Println("Encrypting client,", clientNum, "failed to register, trying again...")
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 	log.Printf("Encrypting client %d%s: starting %d registered.  Starting crypto round trips ...", clientNum, useDomainName, numRuns)
 
@@ -96,9 +97,9 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 		log.Fatalf("Decrypting client %d, fetching peacemakr sdk failed %s", clientNum, err)
 	}
 
-	err = sdk.Register()
-	if err != nil {
-		log.Fatalf("Decrypting client %d registration failed %s", clientNum, err)
+	for err = sdk.Register(); err != nil; {
+		log.Println("Decryption client,", clientNum, "failed to register, trying again...")
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 
 	testBadDecryption(err, clientNum, sdk)
@@ -171,11 +172,13 @@ func main() {
 			go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &encryptionWork, *useDomainName)
 		}
 
-	}
 
-	// Fire up the decryption-only clients.
-	for i := 0; i < *numCryptoThreads; i++ {
 		go runDecryptingClient(i, *apiKey, *host, encrypted)
+
+		// Why Sleep? The number of clients can't just explode, need to give them a chance to spin up,
+		// work a little, and go away.
+		time.Sleep(10 * time.Microsecond)
+
 	}
 
 	encryptionWork.Wait()
