@@ -107,7 +107,9 @@ const (
 	NONE     AsymmetricCipher = 0
 	RSA_2048 AsymmetricCipher = 1
 	RSA_4096 AsymmetricCipher = 2
-	//EC25519       AsymmetricCipher = 3
+	ECDH_P256 AsymmetricCipher = 3
+	ECDH_P384 AsymmetricCipher = 4
+	ECDH_P521 AsymmetricCipher = 5
 )
 
 type MessageDigestAlgorithm int
@@ -117,10 +119,6 @@ const (
 	SHA_256  MessageDigestAlgorithm = 1
 	SHA_384  MessageDigestAlgorithm = 2
 	SHA_512  MessageDigestAlgorithm = 3
-	SHA3_224 MessageDigestAlgorithm = 4
-	SHA3_256 MessageDigestAlgorithm = 5
-	SHA3_384 MessageDigestAlgorithm = 6
-	SHA3_512 MessageDigestAlgorithm = 7
 )
 
 type EncryptionMode int
@@ -240,12 +238,35 @@ func NewPeacemakrKeyFromPrivPem(config CryptoConfig, contents []byte) PeacemakrK
 	}
 }
 
+func ECDHPeacemakrKeyGen(myKey *PeacemakrKey, peerKey *PeacemakrKey) PeacemakrKey {
+	return PeacemakrKey{
+		key: C.PeacemakrKey_dh_generate(myKey.key, peerKey.key),
+	}
+}
+
 func GetKeyConfig(key *PeacemakrKey) (CryptoConfig, error) {
 	if !key.IsValid() {
 		return CryptoConfig{}, errors.New("invalid key passed to GetKeyConfig")
 	}
 	keyConfig := C.PeacemakrKey_get_config(key.key)
 	return configFromInternal(keyConfig), nil
+}
+
+func GetBytes(key *PeacemakrKey) ([]byte, error) {
+    if !key.IsValid() {
+        return []byte{}, errors.New("invalid key passed to GetKeyConfig")
+    }
+
+	var buf *byte
+    defer C.free(unsafe.Pointer(buf))
+	var bufSize C.size_t
+
+	success := C.PeacemakrKey_get_bytes(key.key, (**C.uint8_t)(unsafe.Pointer(&buf)), (*C.size_t)(&bufSize))
+	if !success {
+		return []byte{}, errors.New("failed to get bytes from peacemakr key")
+	}
+
+	return C.GoBytes(unsafe.Pointer(buf), C.int(bufSize)), nil
 }
 
 func DestroyPeacemakrKey(key PeacemakrKey) error {
