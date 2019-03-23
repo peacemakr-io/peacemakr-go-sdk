@@ -16,7 +16,12 @@ WORKDIR /go/.
 
 ENV GOPATH=/go
 
-ADD src /go/src/.
+ADD Gopkg.toml crypto.go crypto_impl.go utils.go /go/src/github.com/notasecret/peacemakr-go-sdk/
+ADD ./utils /go/src/github.com/notasecret/peacemakr-go-sdk/utils/
+ADD ./example /go/src/github.com/notasecret/peacemakr-go-sdk/example/
+ADD ./crypto /go/src/github.com/notasecret/peacemakr-go-sdk/crypto/
+ADD ./include /go/src/github.com/notasecret/peacemakr-go-sdk/include/
+ADD ./generated /go/src/github.com/notasecret/peacemakr-go-sdk/generated/
 
-RUN cd src/peacemakr; dep ensure
+RUN cd src/github.com/notasecret/peacemakr-go-sdk/.; dep ensure
 

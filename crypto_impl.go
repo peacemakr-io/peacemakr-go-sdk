@@ -1,4 +1,4 @@
-package client
+package peacemakr_go_sdk
 
 import (
 	"encoding/base64"
@@ -6,16 +6,16 @@ import (
 	"errors"
 	"github.com/go-openapi/runtime"
 	"math/rand"
-	coreCrypto "peacemakr/crypto"
-	"peacemakr/generated/peacemakr-client/client"
-	clientReq "peacemakr/generated/peacemakr-client/client/client"
-	"peacemakr/generated/peacemakr-client/client/crypto_config"
-	"peacemakr/generated/peacemakr-client/client/key_service"
-	"peacemakr/generated/peacemakr-client/client/org"
-	"peacemakr/generated/peacemakr-client/models"
-	"peacemakr/sdk/utils"
+	coreCrypto "github.com/notasecret/peacemakr-go-sdk/crypto"
+	"github.com/notasecret/peacemakr-go-sdk/generated/client"
+	clientReq "github.com/notasecret/peacemakr-go-sdk/generated/client/client"
+	"github.com/notasecret/peacemakr-go-sdk/generated/client/crypto_config"
+	"github.com/notasecret/peacemakr-go-sdk/generated/client/key_service"
+	"github.com/notasecret/peacemakr-go-sdk/generated/client/org"
+	"github.com/notasecret/peacemakr-go-sdk/generated/models"
+	"github.com/notasecret/peacemakr-go-sdk/utils"
 	"time"
-	"peacemakr/generated/peacemakr-client/client/phone_home"
+	"github.com/notasecret/peacemakr-go-sdk/generated/client/phone_home"
 	"fmt"
 )
 

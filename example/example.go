@@ -1,13 +1,13 @@
-package main
+package example
 
 import (
 	"log"
 	"math/rand"
-	"peacemakr/sdk/client"
-	"peacemakr/sdk/utils"
 	"sync"
 	"flag"
 	"time"
+	"github.com/notasecret/peacemakr-go-sdk/utils"
+	"github.com/notasecret/peacemakr-go-sdk"
 )
 
 type TestMessage struct {
@@ -19,7 +19,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 
 	log.Printf("Getting Peacemakr SDK for encrypting client %d...\n", clientNum)
-	sdk, err := client.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
+	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
 	if err != nil {
 		wg.Done()
 		log.Fatalf("Encrypting client %d%s getting peacemakr sdk failed %s", clientNum, useDomainName, err)
@@ -99,7 +99,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan *TestMessage) {
 	log.Printf("Getting Peacemakr SDK for decrypting client %d...\n", clientNum)
-	sdk, err := client.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
+	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
 	if err != nil {
 		log.Fatalf("Decrypting client %d, fetching peacemakr sdk failed %s", clientNum, err)
 	}
@@ -133,7 +133,7 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 
 	log.Println("decryption client number", clientNum, "done.")
 }
-func testBadDecryption(err error, clientNum int, sdk client.PeacemakrSDK) {
+func testBadDecryption(err error, clientNum int, sdk peacemakr_go_sdk.PeacemakrSDK) {
 	// Attempt a single "bad" decryption:
 	randLen := rand.Intn(1<<16) + 1
 	notPeaceMakrCiphertext, err := utils.GenerateRandomString(randLen)

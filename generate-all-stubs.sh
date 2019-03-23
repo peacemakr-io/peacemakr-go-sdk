@@ -1,4 +1,4 @@
 #!/bin/sh
 
-rm -rf src/peacemakr/generated/peacemakr-client/ || true
+rm -rf generated || true
 ./generate-stub-client.sh

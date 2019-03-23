@@ -1,7 +1,7 @@
-package client
+package peacemakr_go_sdk
 
 import (
-	"peacemakr/sdk/utils"
+	"github.com/notasecret/peacemakr-go-sdk/utils"
 	"errors"
 	"time"
 )

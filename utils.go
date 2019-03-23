@@ -1,4 +1,4 @@
-package client
+package peacemakr_go_sdk
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	coreCrypto "peacemakr/crypto"
+	coreCrypto "github.com/notasecret/peacemakr-go-sdk/crypto"
 )
 
 var RSAKEYLENGTH = 4096
