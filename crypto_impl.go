@@ -892,12 +892,14 @@ func (sdk *standardPeacemakrSDK) Register() error {
 	} else {
 		pubLoaded, err := sdk.getPubKey()
 		if err != nil {
+			sdk.phonehomeError(err)
 			return err
 		}
 		pub = pubLoaded
 
 		privLoaded, err := sdk.getPrivKey()
 		if err != nil {
+			sdk.phonehomeError(err)
 			return err
 		}
 		priv = privLoaded
