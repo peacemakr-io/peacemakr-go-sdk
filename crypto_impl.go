@@ -313,22 +313,6 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 	return nil
 }
 
-func getBitLenFromRsaPubPemStr(pubRSA string) (int, error) {
-	rsaKey, err := ParseRsaPublicKeyFromPemStr(pubRSA)
-	if err != nil {
-		return 0, err
-	}
-	return rsaKey.N.BitLen(), nil
-}
-
-func getBitLenFromRsaPrivPemStr(privRSA string) (int, error) {
-	rsaKey, err := ParseRsaPrivateKeyFromPemStr(privRSA)
-	if err != nil {
-		return 0, err
-	}
-	return rsaKey.N.BitLen(), nil
-}
-
 func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *coreCrypto.CiphertextBlob, plaintext *coreCrypto.Plaintext) error {
 	senderKeyStr, err := sdk.getPublicKey(aad.SenderKeyID)
 	if err != nil {

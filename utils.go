@@ -64,6 +64,24 @@ func GetECKeyTypeFromPubPemStr(pubPEM string) (coreCrypto.AsymmetricCipher, erro
 	return coreCrypto.NONE, errors.New("Key type is not EC")
 }
 
+
+func getBitLenFromRsaPubPemStr(pubRSA string) (int, error) {
+	rsaKey, err := ParseRsaPublicKeyFromPemStr(pubRSA)
+	if err != nil {
+		return 0, err
+	}
+	return rsaKey.N.BitLen(), nil
+}
+
+func getBitLenFromRsaPrivPemStr(privRSA string) (int, error) {
+	rsaKey, err := ParseRsaPrivateKeyFromPemStr(privRSA)
+	if err != nil {
+		return 0, err
+	}
+	return rsaKey.N.BitLen(), nil
+}
+
+
 func GetConfigFromPubKey(pubKey string) (coreCrypto.CryptoConfig, error) {
 	// First try to get it as an EC key
 	asymKeyLen, err := GetECKeyTypeFromPubPemStr(pubKey)
