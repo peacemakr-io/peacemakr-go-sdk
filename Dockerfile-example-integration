@@ -1,6 +1,6 @@
 FROM peacemakr-go-sdk-dependencies as builder
 
-ADD Gopkg.toml crypto.go crypto_impl.go utils.go /go/src/github.com/notasecret/peacemakr-go-sdk/
+ADD go.mod go.sum crypto.go crypto_impl.go utils.go /go/src/github.com/notasecret/peacemakr-go-sdk/
 ADD ./utils /go/src/github.com/notasecret/peacemakr-go-sdk/utils/
 ADD ./example /go/src/github.com/notasecret/peacemakr-go-sdk/example/
 ADD ./crypto /go/src/github.com/notasecret/peacemakr-go-sdk/crypto/
