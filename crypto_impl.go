@@ -884,7 +884,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 	// If either key is missing, bail.
 	if !sdk.persister.Exists("priv") || !sdk.persister.Exists("pub") {
 
-		priv, pub = getNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
+		priv, pub = GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
 
 		err := sdk.savePrivKey(priv)
 		if err != nil {
