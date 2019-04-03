@@ -103,7 +103,7 @@ func publicPemKey(key rsa.PublicKey) string {
 	return string(pubPem)
 }
 
-func getNewKey(keyType string, bitlength int) (string, string) {
+func GetNewKey(keyType string, bitlength int) (string, string) {
 
 	if keyType == "rsa" {
 		reader := rand.Reader
@@ -137,8 +137,8 @@ func getNewKey(keyType string, bitlength int) (string, string) {
 			return "", ""
 		}
 	} else {
-		// Then, just default to an RSA key type of 2048 bits.
-		return getNewKey("ec", 256)
+		// Then, just default to an EC key type of 256 bits.
+		return GetNewKey("ec", 256)
 	}
 
 }
