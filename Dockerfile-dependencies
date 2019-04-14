@@ -1,4 +1,4 @@
-FROM 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto-dependencies:0.0.1 as builder
+FROM 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto-dependencies0.0.2 as builder
 
 FROM golang:1.11-alpine
 
