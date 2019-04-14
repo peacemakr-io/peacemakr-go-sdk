@@ -28,8 +28,3 @@ How Do build this?
 ```
 ./build-binaries.sh
 ```
-
-### Run all backend services locally, and some integration tests
-```
-docker-compose up
-```
