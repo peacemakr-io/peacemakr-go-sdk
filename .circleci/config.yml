@@ -1,0 +1,12 @@
+version: 2
+jobs:
+  build:
+    machine: true
+    steps:
+      - checkout
+      - run: docker version
+      - run: $(aws ecr get-login --no-include-email --region us-east-2)
+      - run: ls
+      - run: ./generate-all-stubs.sh
+      - run: ./build-dependencies.sh
+      - run: ./build-binaries.sh
