@@ -12,7 +12,7 @@ ENV GOPATH=/go
 
 RUN go install github.com/notasecret/peacemakr-go-sdk/example
 
-FROM 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto0.0.2
+FROM 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto:0.0.2
 
 WORKDIR /go/bin/
 COPY --from=builder /go/bin /go/bin
