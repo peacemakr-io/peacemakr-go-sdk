@@ -7,8 +7,8 @@ set -ex
 
 # Pull latest dependencies
 
-docker pull 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto-dependencies:latest
-docker pull 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto:latest
+docker pull 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto-dependencies:0.0.1
+docker pull 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto:0.0.1
 
 docker build -f Dockerfile-dependencies -t peacemakr-go-sdk-dependencies .
 
