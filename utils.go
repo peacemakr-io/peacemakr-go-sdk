@@ -11,10 +11,7 @@ import (
 	"fmt"
 )
 
-var RSAKEYLENGTH = 4096
-var DEBUG = true
-
-type LocallizedKeyFetcherService struct {
+type LocalizedKeyFetcherService struct {
 	LocalPubKeys  map[string]string
 	LocalPrivKeys map[string]string
 }
