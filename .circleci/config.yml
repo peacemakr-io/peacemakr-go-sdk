@@ -10,3 +10,24 @@ jobs:
       - run: ./generate-all-stubs.sh
       - run: ./build-dependencies.sh
       - run: ./build-binaries.sh
+  integration-test:
+    machine: true
+    steps:
+      - run: git clone git@github.com:notasecret/peacemakr-api.git
+      - run: cd peacemakr-api/src
+      - run: sed 's:(github.com/notasecret/peacemakr-go-sdk +) *:\1 ${CIRCLE_SHA1}:g' go.mod
+      - run: docker version
+      - run: $(aws ecr get-login --no-include-email --region us-east-2)
+      - run: ls
+      - run: ./generate-all-stubs.sh
+      - run: ./build-dependencies.sh
+      - run: ./build-binaries.sh
+      - run: docker-compose up --exit-code-from integration-d-anconia-copper integration-d-anconia-copper
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+      - integration-test
