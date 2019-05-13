@@ -44,8 +44,7 @@ func (sdk *standardPeacemakrSDK) getDebugInfo() string {
 
 	orgId := "(failed to populate org)"
 	if err := sdk.populateOrg(); err != nil {
-		sdk.phonehomeError(err)
-		return "(failed to populate org)"
+		return fmt.Sprintf("(failed to populate org): %v", err)
 	}
 	if sdk.org != nil {
 		orgId = *sdk.org.ID
@@ -202,7 +201,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			keyBytesId := key.KeyIds[i]
 
 			if err := sdk.persister.Save(keyBytesId, string(keyBytes)); err != nil {
-				sdk.phonehomeError(err)
+				return err
 			}
 		}
 	}
@@ -889,12 +888,12 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		return err
 	}
 
-	var pub, priv string
+	var pub, priv, keyTy string
 
 	// If either key is missing, bail.
 	if !sdk.persister.Exists("priv") || !sdk.persister.Exists("pub") {
 
-		priv, pub = GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
+		priv, pub, keyTy = GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
 
 		err := sdk.savePrivKey(priv)
 		if err != nil {
@@ -923,6 +922,18 @@ func (sdk *standardPeacemakrSDK) Register() error {
 			return err
 		}
 		priv = privLoaded
+
+		cfg, err := coreCrypto.GetConfigFromPubKey(pub)
+		if err != nil {
+			sdk.phonehomeError(err)
+			return err
+		}
+
+		if cfg.AsymmetricCipher >= coreCrypto.RSA_2048 && cfg.AsymmetricCipher <= coreCrypto.RSA_4096 {
+			keyTy = "rsa"
+		} else if cfg.AsymmetricCipher >= coreCrypto.ECDH_P256 && cfg.AsymmetricCipher <= coreCrypto.ECDH_P521 {
+			keyTy = "ec"
+		}
 	}
 
 	sdkClient := sdk.getClient()
@@ -939,7 +950,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		params.Client.ID = &tempId
 		params.Client.Sdk = sdk.version
 		encoding := "pem"
-		keyType := sdk.cryptoConfig.ClientKeyType
+		keyType := keyTy
 		now := time.Now().Unix()
 		params.Client.PublicKey = &models.PublicKey{
 			CreationTime: &now,
