@@ -1,13 +1,13 @@
 package main
 
 import (
+	"flag"
+	"github.com/notasecret/peacemakr-go-sdk"
+	"github.com/notasecret/peacemakr-go-sdk/utils"
 	"log"
 	"math/rand"
 	"sync"
-	"flag"
 	"time"
-	"github.com/notasecret/peacemakr-go-sdk/utils"
-	"github.com/notasecret/peacemakr-go-sdk"
 )
 
 type TestMessage struct {
@@ -16,7 +16,6 @@ type TestMessage struct {
 }
 
 func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan *TestMessage, wg *sync.WaitGroup, useDomainName string) {
-
 
 	log.Printf("Getting Peacemakr SDK for encrypting client %d...\n", clientNum)
 	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
@@ -89,9 +88,6 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 			sdk.ReleaseMemory()
 		}
 	}
-
-
-
 
 	log.Printf("Encryption client %d%s: done.\n", clientNum, useDomainName)
 	wg.Done()

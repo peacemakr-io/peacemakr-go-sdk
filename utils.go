@@ -134,7 +134,8 @@ func GetNewKey(keyType string, bitlength int) (string, string, string) {
 			pub, priv := getNewECKey(elliptic.P521())
 			return pub, priv, "ec"
 		default:
-			return "", "", ""
+			pub, priv := getNewECKey(elliptic.P256())
+			return pub, priv, "ec"
 		}
 	} else {
 		// Then, just default to an EC key type of 256 bits.

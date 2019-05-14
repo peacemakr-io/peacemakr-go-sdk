@@ -44,7 +44,7 @@ func (sdk *standardPeacemakrSDK) getDebugInfo() string {
 
 	orgId := "(failed to populate org)"
 	if err := sdk.populateOrg(); err != nil {
-		return fmt.Sprintf("(failed to populate org): %v", err)
+		orgId = "(failed to populate org)"
 	}
 	if sdk.org != nil {
 		orgId = *sdk.org.ID
@@ -929,9 +929,11 @@ func (sdk *standardPeacemakrSDK) Register() error {
 			return err
 		}
 
-		if cfg.AsymmetricCipher >= coreCrypto.RSA_2048 && cfg.AsymmetricCipher <= coreCrypto.RSA_4096 {
+		if cfg.AsymmetricCipher == coreCrypto.RSA_2048 || cfg.AsymmetricCipher == coreCrypto.RSA_4096 {
 			keyTy = "rsa"
-		} else if cfg.AsymmetricCipher >= coreCrypto.ECDH_P256 && cfg.AsymmetricCipher <= coreCrypto.ECDH_P521 {
+		} else if cfg.AsymmetricCipher == coreCrypto.ECDH_P256 ||
+			cfg.AsymmetricCipher == coreCrypto.ECDH_P384 ||
+			cfg.AsymmetricCipher == coreCrypto.ECDH_P521 {
 			keyTy = "ec"
 		}
 	}
