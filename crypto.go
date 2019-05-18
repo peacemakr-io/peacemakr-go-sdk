@@ -1,8 +1,8 @@
 package peacemakr_go_sdk
 
 import (
-	"github.com/notasecret/peacemakr-go-sdk/utils"
 	"errors"
+	"github.com/notasecret/peacemakr-go-sdk/utils"
 	"time"
 )
 
@@ -48,7 +48,6 @@ type PeacemakrSDK interface {
 	EncryptStrInDomain(plaintext string, useDomainName string) (string, error)
 
 	EncryptInDomain(plaintext []byte, useDomainName string) ([]byte, error)
-
 
 	//
 	// Decrypt the ciphertexts. Returns original plaintext on success, else returns a non-nil error.

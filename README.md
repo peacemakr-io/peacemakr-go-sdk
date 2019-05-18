@@ -1,13 +1,13 @@
-# Peacemakr
-[![CircleCI](https://circleci.com/gh/notasecret/peacemakr-api/tree/master.svg?style=svg)](https://circleci.com/gh/notasecret/peacemakr-api/tree/master)
+# Peacemakr Go SDK
+[![CircleCI](https://circleci.com/gh/notasecret/peacemakr-go-sdk/tree/master.svg?style=svg)](https://circleci.com/gh/notasecret/peacemakr-go-sdk/tree/master)
 
 A cloud or on-prem backed service that which provides simple, backward compatible, and secure key lifecycle management.
 
 ## Getting started
 
-How Do build this?
+How do I build this?
 
-### (1) Get dependencies (alternatively, just build the dependecy to core-crypto locally)
+### (1) Get dependencies (alternatively, just build the dependency to core-crypto locally)
  * Docker
  * AWS CLI tools
  * AWS account with read permissions to peacemakr's AWS ECR
@@ -19,12 +19,12 @@ How Do build this?
 ./generate-all-stubs.sh
 ```
 
-### (3) Build base images, containing all dependencies for peacemakr-api artifacts
+### (3) Build base images, containing all dependencies for peacemakr-go-sdk artifacts
 ```
 ./build-dependencies.sh
 ```
 
-### (4) Build binaries for all peacmakr-api artifactors,
+### (4) Build binaries for all peacmakr-go-sdk artifacts,
 ```
 ./build-binaries.sh
 ```

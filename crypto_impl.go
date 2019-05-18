@@ -43,7 +43,9 @@ func (sdk *standardPeacemakrSDK) getDebugInfo() string {
 	}
 
 	orgId := "(failed to populate org)"
-	sdk.populateOrg()
+	if err := sdk.populateOrg(); err != nil {
+		orgId = "(failed to populate org)"
+	}
 	if sdk.org != nil {
 		orgId = *sdk.org.ID
 	}
@@ -198,7 +200,9 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			keyBytes := keyBytes[i*keyLen : (i+1)*keyLen]
 			keyBytesId := key.KeyIds[i]
 
-			sdk.persister.Save(keyBytesId, string(keyBytes))
+			if err := sdk.persister.Save(keyBytesId, string(keyBytes)); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -243,7 +247,12 @@ func (sdk *standardPeacemakrSDK) phonehomeString(s string) {
 	params.Log.ClientID = &clientId
 	params.Log.Event = &s
 
-	sdk.getClient().PhoneHome.PostLog(params, sdk.authInfo)
+	_, err = sdk.getClient().PhoneHome.PostLog(params, sdk.authInfo)
+	if err != nil {
+		// TODO: how to handle this error?
+		return
+	}
+
 }
 
 func (sdk *standardPeacemakrSDK) phonehomeError(err error) {
@@ -253,7 +262,7 @@ func (sdk *standardPeacemakrSDK) phonehomeError(err error) {
 }
 
 func (sdk *standardPeacemakrSDK) populateOrg() error {
-	client := sdk.getClient()
+	sdkClient := sdk.getClient()
 
 	// Early exist if we've done this already
 	if sdk.org != nil {
@@ -263,7 +272,7 @@ func (sdk *standardPeacemakrSDK) populateOrg() error {
 	params := org.NewGetOrganizationFromAPIKeyParams()
 	params.Apikey = sdk.apiKey
 
-	ret, err := client.Org.GetOrganizationFromAPIKey(params, sdk.authInfo)
+	ret, err := sdkClient.Org.GetOrganizationFromAPIKey(params, sdk.authInfo)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return err
@@ -507,7 +516,7 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 			numSelectedUseDomains := len(sdk.cryptoConfig.SymmetricKeyUseDomains)
 			selectedDomainIdx := rand.Intn(numSelectedUseDomains)
 			selectedDomain = sdk.cryptoConfig.SymmetricKeyUseDomains[selectedDomainIdx]
-			sdk.phonehomeString(fmt.Sprintf("no viable use domains encryption for use domain %s", useDomainName))
+			sdk.phonehomeString(fmt.Sprintf("no viable use domains encryption for use domain %s", *useDomainName))
 			return selectedDomain, nil
 		}
 		numSelectedUseDomains := len(viableUseDomain)
@@ -879,12 +888,12 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		return err
 	}
 
-	var pub, priv string
+	var pub, priv, keyTy string
 
 	// If either key is missing, bail.
 	if !sdk.persister.Exists("priv") || !sdk.persister.Exists("pub") {
 
-		priv, pub = GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
+		priv, pub, keyTy = GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
 
 		err := sdk.savePrivKey(priv)
 		if err != nil {
@@ -913,6 +922,20 @@ func (sdk *standardPeacemakrSDK) Register() error {
 			return err
 		}
 		priv = privLoaded
+
+		cfg, err := coreCrypto.GetConfigFromPubKey(pub)
+		if err != nil {
+			sdk.phonehomeError(err)
+			return err
+		}
+
+		if cfg.AsymmetricCipher == coreCrypto.RSA_2048 || cfg.AsymmetricCipher == coreCrypto.RSA_4096 {
+			keyTy = "rsa"
+		} else if cfg.AsymmetricCipher == coreCrypto.ECDH_P256 ||
+			cfg.AsymmetricCipher == coreCrypto.ECDH_P384 ||
+			cfg.AsymmetricCipher == coreCrypto.ECDH_P521 {
+			keyTy = "ec"
+		}
 	}
 
 	sdkClient := sdk.getClient()
@@ -929,7 +952,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		params.Client.ID = &tempId
 		params.Client.Sdk = sdk.version
 		encoding := "pem"
-		keyType := "rsa"
+		keyType := keyTy
 		now := time.Now().Unix()
 		params.Client.PublicKey = &models.PublicKey{
 			CreationTime: &now,
@@ -972,7 +995,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		return nil
 	}
 
-	return errors.New("Unreachable hit, new unhandled case detected.")
+	return errors.New("unreachable hit, new unhandled case detected")
 }
 
 func (sdk *standardPeacemakrSDK) init() error {

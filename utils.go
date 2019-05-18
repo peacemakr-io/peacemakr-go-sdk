@@ -11,10 +11,7 @@ import (
 	"fmt"
 )
 
-var RSAKEYLENGTH = 4096
-var DEBUG = true
-
-type LocallizedKeyFetcherService struct {
+type LocalizedKeyFetcherService struct {
 	LocalPubKeys  map[string]string
 	LocalPrivKeys map[string]string
 }
@@ -103,7 +100,7 @@ func publicPemKey(key rsa.PublicKey) string {
 	return string(pubPem)
 }
 
-func GetNewKey(keyType string, bitlength int) (string, string) {
+func GetNewKey(keyType string, bitlength int) (string, string, string) {
 
 	if keyType == "rsa" {
 		reader := rand.Reader
@@ -118,23 +115,27 @@ func GetNewKey(keyType string, bitlength int) (string, string) {
 
 		key, err := rsa.GenerateKey(reader, bitlength)
 		if err != nil {
-			return fmt.Sprintf("error %v", err), fmt.Sprintf("error %v", err)
+			return fmt.Sprintf("error %v", err), fmt.Sprintf("error %v", err), fmt.Sprintf("error %v", err)
 		}
 
 		pemPriv := pemString(key)
 		pemPub := publicPemKey(key.PublicKey)
 
-		return pemPriv, pemPub
+		return pemPriv, pemPub, "rsa"
 	} else if keyType == "ec" {
 		switch bitlength {
 		case 256:
-			return getNewECKey(elliptic.P256())
+			pub, priv := getNewECKey(elliptic.P256())
+			return pub, priv, "ec"
 		case 384:
-			return getNewECKey(elliptic.P384())
+			pub, priv := getNewECKey(elliptic.P384())
+			return pub, priv, "ec"
 		case 521:
-			return getNewECKey(elliptic.P521())
+			pub, priv := getNewECKey(elliptic.P521())
+			return pub, priv, "ec"
 		default:
-			return "", ""
+			pub, priv := getNewECKey(elliptic.P256())
+			return pub, priv, "ec"
 		}
 	} else {
 		// Then, just default to an EC key type of 256 bits.
