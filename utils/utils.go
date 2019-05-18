@@ -1,8 +1,8 @@
 package utils
 
 import (
-"crypto/rand"
-"encoding/base64"
+	"crypto/rand"
+	"encoding/base64"
 )
 
 // GenerateRandomBytes returns securely generated random bytes.
@@ -35,4 +35,3 @@ func GetRandomIdentifier() (string, error) {
 	token, err := GenerateRandomString(32)
 	return token, err
 }
-
