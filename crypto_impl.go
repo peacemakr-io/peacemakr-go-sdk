@@ -145,7 +145,8 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			// Now that we know what config, lets construct a peacemakr key.
 			// Since the pubkey is an EC key, so must the private key be EC
 			// and since it's EC, we don't need a symmetric algorithm.
-			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(coreCrypto.SYMMETRIC_UNSPECIFIED, privateKey)
+			// TODO: this should not be a default value, should be configurable
+			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(coreCrypto.CHACHA20_POLY1305, privateKey)
 			if err != nil {
 				sdk.phonehomeError(err)
 				return err
