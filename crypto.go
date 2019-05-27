@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// TODO: add logger interface
 type PeacemakrSDK interface {
 
 	//
