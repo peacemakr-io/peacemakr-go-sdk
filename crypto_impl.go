@@ -101,6 +101,11 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			return err
 		}
 
+		// Set the default
+		if cfg.SymmetricCipher == coreCrypto.SYMMETRIC_UNSPECIFIED {
+			cfg.SymmetricCipher = coreCrypto.CHACHA20_POLY1305
+		}
+
 		// This is the key to use to decrypt incoming delivered keys. When ECDH is used, this is a symmetric key. When
 		// RSA is used, this is the RSA private key.
 		var decryptionDeliveredKey *coreCrypto.PeacemakrKey
@@ -145,8 +150,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			// Now that we know what config, lets construct a peacemakr key.
 			// Since the pubkey is an EC key, so must the private key be EC
 			// and since it's EC, we don't need a symmetric algorithm.
-			// TODO: this should not be a default value, should be configurable
-			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(coreCrypto.CHACHA20_POLY1305, privateKey)
+			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(kdKeyConfig.SymmetricCipher, privateKey)
 			if err != nil {
 				sdk.phonehomeError(err)
 				return err
