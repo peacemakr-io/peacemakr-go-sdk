@@ -101,12 +101,17 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			return err
 		}
 
+		// Set the default
+		if cfg.SymmetricCipher == coreCrypto.SYMMETRIC_UNSPECIFIED {
+			cfg.SymmetricCipher = coreCrypto.CHACHA20_POLY1305
+		}
+
 		// This is the key to use to decrypt incoming delivered keys. When ECDH is used, this is a symmetric key. When
 		// RSA is used, this is the RSA private key.
 		var decryptionDeliveredKey *coreCrypto.PeacemakrKey
 		if isRSA(pubKey) {
 
-			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(privateKey, cfg)
+			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(cfg.SymmetricCipher, privateKey)
 			if err != nil {
 				sdk.phonehomeError(err)
 			}
@@ -130,7 +135,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			}
 
 			// Construct a peacemakr key from the config and key.
-			kdPeacemakrKey, err := coreCrypto.NewPublicKeyFromPEM(kdPublicKey, nil)
+			kdPeacemakrKey, err := coreCrypto.NewPublicKeyFromPEM(cfg.SymmetricCipher, kdPublicKey)
 			if err != nil {
 				sdk.phonehomeError(err)
 				return err
@@ -143,7 +148,9 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			}
 
 			// Now that we know what config, lets construct a peacemakr key.
-			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(privateKey, &kdKeyConfig)
+			// Since the pubkey is an EC key, so must the private key be EC
+			// and since it's EC, we don't need a symmetric algorithm.
+			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(kdKeyConfig.SymmetricCipher, privateKey)
 			if err != nil {
 				sdk.phonehomeError(err)
 				return err
@@ -152,7 +159,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			// Derive the shared symmetric secret between this client at the key deriver. This was used to encrypt
 			// the bundle of delivered keys.
 			// TODO: make this lighting wicked fast, by caching and lookup up this instead of commputing it.
-			decryptionDeliveredKey = clientPrivKey.ECDHKeygen(kdPeacemakrKey)
+			decryptionDeliveredKey = clientPrivKey.ECDHKeygen(kdKeyConfig.SymmetricCipher, kdPeacemakrKey)
 			clientPrivKey.Destroy()
 			kdPeacemakrKey.Destroy()
 
@@ -178,7 +185,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 				return err
 			}
 
-			err = sdk.verifyMessage(aad, blob, plaintext)
+			err = sdk.verifyMessage(aad, *cfg, blob, plaintext)
 			if err != nil {
 				sdk.phonehomeError(err)
 				return err
@@ -330,14 +337,14 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 	return nil
 }
 
-func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, ciphertext *coreCrypto.CiphertextBlob, plaintext *coreCrypto.Plaintext) error {
+func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, cfg coreCrypto.CryptoConfig, ciphertext *coreCrypto.CiphertextBlob, plaintext *coreCrypto.Plaintext) error {
 	senderKeyStr, err := sdk.getPublicKey(aad.SenderKeyID)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return err
 	}
 
-	senderKey, err := coreCrypto.NewPublicKeyFromPEM(senderKeyStr, nil)
+	senderKey, err := coreCrypto.NewPublicKeyFromPEM(cfg.SymmetricCipher, senderKeyStr)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return err
@@ -420,7 +427,7 @@ func isRSA(pubKeyPem string) bool {
 	if err != nil {
 		return false
 	}
-	if config.AsymmetricCipher == coreCrypto.RSA_2048 || config.AsymmetricCipher == coreCrypto.RSA_4096 {
+	if config == coreCrypto.RSA_2048 || config == coreCrypto.RSA_4096 {
 		return true
 	}
 	return false
@@ -431,9 +438,9 @@ func isEC(pubKeyPem string) bool {
 	if err != nil {
 		return false
 	}
-	if config.AsymmetricCipher == coreCrypto.ECDH_P256 ||
-		config.AsymmetricCipher == coreCrypto.ECDH_P384 ||
-		config.AsymmetricCipher == coreCrypto.ECDH_P521 {
+	if config == coreCrypto.ECDH_P256 ||
+		config == coreCrypto.ECDH_P384 ||
+		config == coreCrypto.ECDH_P521 {
 		return true
 	}
 	return false
@@ -542,7 +549,7 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 
 	// Setup the crypto config for the encryption.
 	mode := coreCrypto.SYMMETRIC
-	asymmetricCipher := coreCrypto.NONE
+	asymmetricCipher := coreCrypto.ASYMMETRIC_UNSPECIFIED
 	symmetricCipher := coreCrypto.AES_256_GCM
 	digestAlgorithm := coreCrypto.SHA_256
 
@@ -623,7 +630,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 		return nil, err
 	}
 
-	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(*cfg, key)
+	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(cfg.SymmetricCipher, key)
 	defer pmKey.Destroy()
 	myKeyId, err := sdk.persister.Load("keyId")
 	if err != nil {
@@ -654,20 +661,20 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 	}
 
 	myPrivKeyStr, err := sdk.persister.Load("priv")
-	myKey, err := coreCrypto.NewPrivateKeyFromPEM(myPrivKeyStr, nil)
+	myKey, err := coreCrypto.NewPrivateKeyFromPEM(cfg.SymmetricCipher, myPrivKeyStr)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return nil, err
 	}
 	defer myKey.Destroy()
 
-	err = coreCrypto.Sign(myKey, pmPlaintext, ciphertext)
+	err = coreCrypto.Sign(myKey, pmPlaintext, coreCrypto.SHA_512, ciphertext)
 	if err != nil {
 		sdk.phonehomeError(err)
 		return nil, err
 	}
 
-	return coreCrypto.Serialize(ciphertext)
+	return coreCrypto.Serialize(coreCrypto.SHA_512, ciphertext)
 }
 
 func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
@@ -792,7 +799,7 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(*cfg, key)
+	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(cfg.SymmetricCipher, key)
 	defer pmKey.Destroy()
 	plaintext, needsVerification, err := coreCrypto.Decrypt(pmKey, ciphertextblob)
 	if err != nil {
@@ -801,7 +808,7 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 	}
 
 	if needsVerification {
-		err = sdk.verifyMessage(aad, ciphertextblob, plaintext)
+		err = sdk.verifyMessage(aad, *cfg, ciphertextblob, plaintext)
 		if err != nil {
 			sdk.phonehomeError(err)
 			return nil, err
@@ -929,11 +936,11 @@ func (sdk *standardPeacemakrSDK) Register() error {
 			return err
 		}
 
-		if cfg.AsymmetricCipher == coreCrypto.RSA_2048 || cfg.AsymmetricCipher == coreCrypto.RSA_4096 {
+		if cfg == coreCrypto.RSA_2048 || cfg == coreCrypto.RSA_4096 {
 			keyTy = "rsa"
-		} else if cfg.AsymmetricCipher == coreCrypto.ECDH_P256 ||
-			cfg.AsymmetricCipher == coreCrypto.ECDH_P384 ||
-			cfg.AsymmetricCipher == coreCrypto.ECDH_P521 {
+		} else if cfg == coreCrypto.ECDH_P256 ||
+			cfg == coreCrypto.ECDH_P384 ||
+			cfg == coreCrypto.ECDH_P521 {
 			keyTy = "ec"
 		}
 	}

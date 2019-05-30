@@ -100,30 +100,32 @@ type RandomDevice struct {
 type SymmetricCipher int
 
 const (
-	AES_128_GCM       SymmetricCipher = 0
-	AES_192_GCM       SymmetricCipher = 1
-	AES_256_GCM       SymmetricCipher = 2
-	CHACHA20_POLY1305 SymmetricCipher = 3
+	SYMMETRIC_UNSPECIFIED SymmetricCipher = 0
+	AES_128_GCM           SymmetricCipher = 1
+	AES_192_GCM           SymmetricCipher = 2
+	AES_256_GCM           SymmetricCipher = 3
+	CHACHA20_POLY1305     SymmetricCipher = 4
 )
 
 type AsymmetricCipher int
 
 const (
-	NONE      AsymmetricCipher = 0
-	RSA_2048  AsymmetricCipher = 1
-	RSA_4096  AsymmetricCipher = 2
-	ECDH_P256 AsymmetricCipher = 3
-	ECDH_P384 AsymmetricCipher = 4
-	ECDH_P521 AsymmetricCipher = 5
+	ASYMMETRIC_UNSPECIFIED AsymmetricCipher = 0
+	RSA_2048               AsymmetricCipher = 1
+	RSA_4096               AsymmetricCipher = 2
+	ECDH_P256              AsymmetricCipher = 3
+	ECDH_P384              AsymmetricCipher = 4
+	ECDH_P521              AsymmetricCipher = 5
 )
 
 type MessageDigestAlgorithm int
 
 const (
-	SHA_224 MessageDigestAlgorithm = 0
-	SHA_256 MessageDigestAlgorithm = 1
-	SHA_384 MessageDigestAlgorithm = 2
-	SHA_512 MessageDigestAlgorithm = 3
+	DIGEST_UNSPECIFIED MessageDigestAlgorithm = 0
+	SHA_224            MessageDigestAlgorithm = 1
+	SHA_256            MessageDigestAlgorithm = 2
+	SHA_384            MessageDigestAlgorithm = 3
+	SHA_512            MessageDigestAlgorithm = 4
 )
 
 type EncryptionMode int
@@ -206,22 +208,28 @@ type PeacemakrKey struct {
 
 // ========================= Raw key creation =========================
 
-func NewPeacemakrKey(config CryptoConfig, rand RandomDevice) *PeacemakrKey {
+func NewPeacemakrKeySymmetric(config SymmetricCipher, rand RandomDevice) *PeacemakrKey {
 	return &PeacemakrKey{
-		key: C.PeacemakrKey_new(configToInternal(config), (*C.random_device_t)(unsafe.Pointer(&rand.randomDevice))),
+		key: C.peacemakr_key_new_symmetric((C.symmetric_cipher)(config), (*C.random_device_t)(unsafe.Pointer(&rand.randomDevice))),
 	}
 }
 
-func NewPeacemakrKeyFromBytes(config CryptoConfig, contents []byte) *PeacemakrKey {
+func NewPeacemakrKeyAsymmetric(asymm AsymmetricCipher, symm SymmetricCipher, rand RandomDevice) *PeacemakrKey {
+	return &PeacemakrKey{
+		key: C.peacemakr_key_new_asymmetric((C.asymmetric_cipher)(asymm), (C.symmetric_cipher)(symm), (*C.random_device_t)(unsafe.Pointer(&rand.randomDevice))),
+	}
+}
+
+func NewPeacemakrKeyFromBytes(cipher SymmetricCipher, contents []byte) *PeacemakrKey {
 	cBytes := (*C.uint8_t)(C.CBytes(contents))
 	defer C.free(unsafe.Pointer(cBytes))
 	cNumBytes := (C.size_t)(len(contents))
 	return &PeacemakrKey{
-		key: C.PeacemakrKey_new_bytes(configToInternal(config), cBytes, cNumBytes),
+		key: C.peacemakr_key_new_bytes((C.symmetric_cipher)(cipher), cBytes, cNumBytes),
 	}
 }
 
-func newPeacemakrKeyFromPassword(config CryptoConfig, passwordStr string, salt []byte, iterationCount int) *PeacemakrKey {
+func newPeacemakrKeyFromPassword(cipher SymmetricCipher, digest MessageDigestAlgorithm, passwordStr string, salt []byte, iterationCount int) *PeacemakrKey {
 	password := []byte(passwordStr)
 	cBytes := (*C.uint8_t)(C.CBytes(password))
 	defer C.free(unsafe.Pointer(cBytes))
@@ -232,23 +240,23 @@ func newPeacemakrKeyFromPassword(config CryptoConfig, passwordStr string, salt [
 	cNumSalt := (C.size_t)(len(salt))
 
 	return &PeacemakrKey{
-		key: C.PeacemakrKey_new_from_password(configToInternal(config), cBytes, cNumBytes, cSalt, cNumSalt, (C.size_t)(iterationCount)),
+		key: C.peacemakr_key_new_from_password((C.symmetric_cipher)(cipher), (C.message_digest_algorithm)(digest), cBytes, cNumBytes, cSalt, cNumSalt, (C.size_t)(iterationCount)),
 	}
 }
 
-func newPeacemakrKeyFromPubPem(config CryptoConfig, contents []byte) *PeacemakrKey {
+func newPeacemakrKeyFromPubPem(asymm AsymmetricCipher, symm SymmetricCipher, contents []byte) *PeacemakrKey {
 	cBytes := (*C.char)(C.CBytes(contents))
 	defer C.free(unsafe.Pointer(cBytes))
 	return &PeacemakrKey{
-		key: C.PeacemakrKey_new_pem_pub(configToInternal(config), cBytes, C.size_t(len(contents))),
+		key: C.peacemakr_key_new_pem_pub((C.asymmetric_cipher)(asymm), (C.symmetric_cipher)(symm), cBytes, C.size_t(len(contents))),
 	}
 }
 
-func newPeacemakrKeyFromPrivPem(config CryptoConfig, contents []byte) *PeacemakrKey {
+func newPeacemakrKeyFromPrivPem(asymm AsymmetricCipher, symm SymmetricCipher, contents []byte) *PeacemakrKey {
 	cBytes := (*C.char)(C.CBytes(contents))
 	defer C.free(unsafe.Pointer(cBytes))
 	return &PeacemakrKey{
-		key: C.PeacemakrKey_new_pem_priv(configToInternal(config), cBytes, C.size_t(len(contents))),
+		key: C.peacemakr_key_new_pem_priv((C.asymmetric_cipher)(asymm), (C.symmetric_cipher)(symm), cBytes, C.size_t(len(contents))),
 	}
 }
 
@@ -257,12 +265,12 @@ func newPeacemakrKeyFromPrivPem(config CryptoConfig, contents []byte) *Peacemakr
 func GetECKeyTypeFromPubPemStr(pubPEM string) (AsymmetricCipher, error) {
 	block, _ := pem.Decode([]byte(pubPEM))
 	if block == nil {
-		return NONE, errors.New("failed to parse PEM block containing the key")
+		return ASYMMETRIC_UNSPECIFIED, errors.New("failed to parse PEM block containing the key")
 	}
 
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return NONE, err
+		return ASYMMETRIC_UNSPECIFIED, err
 	}
 
 	switch pub := pub.(type) {
@@ -277,18 +285,18 @@ func GetECKeyTypeFromPubPemStr(pubPEM string) (AsymmetricCipher, error) {
 	default:
 		break // fall through
 	}
-	return NONE, errors.New("key type is not EC")
+	return ASYMMETRIC_UNSPECIFIED, errors.New("key type is not EC")
 }
 
 func GetECKeyTypeFromPrivPemStr(pubPEM string) (AsymmetricCipher, error) {
 	block, _ := pem.Decode([]byte(pubPEM))
 	if block == nil {
-		return NONE, errors.New("failed to parse PEM block containing the key")
+		return ASYMMETRIC_UNSPECIFIED, errors.New("failed to parse PEM block containing the key")
 	}
 
 	priv, err := x509.ParseECPrivateKey(block.Bytes)
 	if err != nil {
-		return NONE, err
+		return ASYMMETRIC_UNSPECIFIED, err
 	}
 
 	if priv.Curve == elliptic.P256() {
@@ -299,7 +307,7 @@ func GetECKeyTypeFromPrivPemStr(pubPEM string) (AsymmetricCipher, error) {
 		return ECDH_P521, nil
 	}
 
-	return NONE, errors.New("key type is not EC")
+	return ASYMMETRIC_UNSPECIFIED, errors.New("key type is not EC")
 }
 
 func ParseRsaPublicKeyFromPemStr(pubPEM string) (*rsa.PublicKey, error) {
@@ -352,99 +360,76 @@ func getBitLenFromRsaPrivPemStr(privRSA string) (int, error) {
 	return rsaKey.N.BitLen(), nil
 }
 
-func GetConfigFromPubKey(pubKey string) (CryptoConfig, error) {
+func GetConfigFromPubKey(pubKey string) (AsymmetricCipher, error) {
 	// First try to get it as an EC key
 	asymKeyLen, err := GetECKeyTypeFromPubPemStr(pubKey)
 	if err != nil { // It's not an EC key
 		bitLength, err := getBitLenFromRsaPubPemStr(string(pubKey))
 		if err != nil {
-			return CryptoConfig{}, errors.New("failed to get bit length from public rsa key")
+			return ASYMMETRIC_UNSPECIFIED, errors.New("failed to get bit length from public rsa key")
 		}
 		if bitLength == 4096 {
 			asymKeyLen = RSA_4096
 		} else if bitLength == 2048 {
 			asymKeyLen = RSA_2048
 		} else {
-			return CryptoConfig{}, errors.New("unknown bitlength for RSA key")
+			return ASYMMETRIC_UNSPECIFIED, errors.New("unknown bitlength for RSA key")
 		}
 	}
 
-	cfg := CryptoConfig{
-		Mode:             ASYMMETRIC,
-		AsymmetricCipher: asymKeyLen,
-		// TODO: is this OK to assume?
-		SymmetricCipher: AES_256_GCM,
-		DigestAlgorithm: SHA_512,
-	}
-
-	return cfg, nil
+	return asymKeyLen, nil
 }
 
-func GetConfigFromPrivKey(privKey string) (CryptoConfig, error) {
+func GetConfigFromPrivKey(privKey string) (AsymmetricCipher, error) {
 	// First try to get it as an EC key
 	asymKeyLen, err := GetECKeyTypeFromPrivPemStr(privKey)
 	if err != nil { // It's not an EC key
 		bitLength, err := getBitLenFromRsaPrivPemStr(privKey)
 		if err != nil {
-			return CryptoConfig{}, errors.New("failed to get bit length from public rsa key")
+			return ASYMMETRIC_UNSPECIFIED, errors.New("failed to get bit length from public rsa key")
 		}
 		if bitLength == 4096 {
 			asymKeyLen = RSA_4096
 		} else if bitLength == 2048 {
 			asymKeyLen = RSA_2048
 		} else {
-			return CryptoConfig{}, errors.New("unknown bitlength for RSA key")
+			return ASYMMETRIC_UNSPECIFIED, errors.New("unknown bitlength for RSA key")
 		}
 	}
 
-	cfg := CryptoConfig{
-		Mode:             ASYMMETRIC,
-		AsymmetricCipher: asymKeyLen,
-		// TODO: is this OK to assume?
-		SymmetricCipher: AES_256_GCM,
-		DigestAlgorithm: SHA_512,
-	}
-
-	return cfg, nil
+	return asymKeyLen, nil
 }
 
 // ========================= Wrapped key creation =========================
 
 func SymmetricKeyFromBytes(keyBytes []byte) (*PeacemakrKey, error) {
-	cfg := CryptoConfig{
-		Mode:             SYMMETRIC,
-		AsymmetricCipher: NONE,
-		DigestAlgorithm:  SHA_256,
-	}
+
+	var cipher SymmetricCipher
 
 	switch len(keyBytes) {
 	case 128 / 8:
-		cfg.SymmetricCipher = AES_128_GCM
+		cipher = AES_128_GCM
 	case 192 / 8:
-		cfg.SymmetricCipher = AES_192_GCM
+		cipher = AES_192_GCM
 	case 256 / 8:
-		cfg.SymmetricCipher = AES_256_GCM
+		cipher = AES_256_GCM
 	default:
 		return nil, errors.New("unknown length for keyBytes, need to use raw key creation APIs")
 	}
 
-	return NewPeacemakrKeyFromBytes(cfg, keyBytes), nil
+	return NewPeacemakrKeyFromBytes(cipher, keyBytes), nil
 }
 
 func NewSymmetricKeyFromPassword(keylenBits int, passwordStr string, iterationCount int) (*PeacemakrKey, []byte, error) {
-	cfg := CryptoConfig{
-		Mode:             SYMMETRIC,
-		AsymmetricCipher: NONE,
-		DigestAlgorithm:  SHA_256,
-	}
 
+	var cipher SymmetricCipher
 	switch keylenBits {
 	case 128:
-		cfg.SymmetricCipher = AES_128_GCM
+		cipher = AES_128_GCM
 	case 192:
-		cfg.SymmetricCipher = AES_192_GCM
+		cipher = AES_192_GCM
 	case 256:
-		cfg.SymmetricCipher = AES_256_GCM
+		cipher = AES_256_GCM
 	default:
 		return nil, nil, errors.New("unknown length for keylenBits, acceptable values are 128, 192, 256")
 	}
@@ -455,60 +440,44 @@ func NewSymmetricKeyFromPassword(keylenBits int, passwordStr string, iterationCo
 		return nil, nil, errors.New("unable to read salt from random string")
 	}
 
-	outKey := newPeacemakrKeyFromPassword(cfg, passwordStr, salt, iterationCount)
+	outKey := newPeacemakrKeyFromPassword(cipher, SHA_256, passwordStr, salt, iterationCount)
 	return outKey, salt, nil
 }
 
 func SymmetricKeyFromPasswordAndSalt(keylenBits int, passwordStr string, salt []byte, iterationCount int) (*PeacemakrKey, error) {
-	cfg := CryptoConfig{
-		Mode:             SYMMETRIC,
-		AsymmetricCipher: NONE,
-		DigestAlgorithm:  SHA_256,
-	}
 
+	var cipher SymmetricCipher
 	switch keylenBits {
 	case 128:
-		cfg.SymmetricCipher = AES_128_GCM
+		cipher = AES_128_GCM
 	case 192:
-		cfg.SymmetricCipher = AES_192_GCM
+		cipher = AES_192_GCM
 	case 256:
-		cfg.SymmetricCipher = AES_256_GCM
+		cipher = AES_256_GCM
 	default:
 		return nil, errors.New("unknown length for keylenBits, acceptable values are 128, 192, 256")
 	}
 
-	outKey := newPeacemakrKeyFromPassword(cfg, passwordStr, salt, iterationCount)
+	outKey := newPeacemakrKeyFromPassword(cipher, SHA_256, passwordStr, salt, iterationCount)
 	return outKey, nil
 }
 
-func NewPublicKeyFromPEM(contents string, cfg *CryptoConfig) (*PeacemakrKey, error) {
-	var keyCfg CryptoConfig
-	if cfg == nil {
-		var err error
-		keyCfg, err = GetConfigFromPubKey(contents)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		keyCfg = *cfg
+func NewPublicKeyFromPEM(symm SymmetricCipher, contents string) (*PeacemakrKey, error) {
+	cfg, err := GetConfigFromPubKey(contents)
+	if err != nil {
+		return nil, err
 	}
 
-	return newPeacemakrKeyFromPubPem(keyCfg, []byte(contents)), nil
+	return newPeacemakrKeyFromPubPem(cfg, symm, []byte(contents)), nil
 }
 
-func NewPrivateKeyFromPEM(contents string, cfg *CryptoConfig) (*PeacemakrKey, error) {
-	var keyCfg CryptoConfig
-	if cfg == nil {
-		var err error
-		keyCfg, err = GetConfigFromPrivKey(contents)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		keyCfg = *cfg
+func NewPrivateKeyFromPEM(symm SymmetricCipher, contents string) (*PeacemakrKey, error) {
+	cfg, err := GetConfigFromPrivKey(contents)
+	if err != nil {
+		return nil, err
 	}
 
-	return newPeacemakrKeyFromPrivPem(keyCfg, []byte(contents)), nil
+	return newPeacemakrKeyFromPrivPem(cfg, symm, []byte(contents)), nil
 }
 
 // ========================= Operations to do on keys =========================
@@ -517,13 +486,13 @@ func (k *PeacemakrKey) IsValid() bool {
 	return k.key != nil
 }
 
-func (k *PeacemakrKey) ECDHKeygen(peerKey *PeacemakrKey) *PeacemakrKey {
+func (k *PeacemakrKey) ECDHKeygen(cipher SymmetricCipher, peerKey *PeacemakrKey) *PeacemakrKey {
 	return &PeacemakrKey{
-		key: C.PeacemakrKey_dh_generate(k.key, peerKey.key),
+		key: C.peacemakr_key_dh_generate((C.symmetric_cipher)(cipher), k.key, peerKey.key),
 	}
 }
 
-func (k *PeacemakrKey) HKDFKeygen(config CryptoConfig, keyID []byte) (*PeacemakrKey, error) {
+func (k *PeacemakrKey) HKDFKeygen(cipher SymmetricCipher, digest MessageDigestAlgorithm, keyID []byte) (*PeacemakrKey, error) {
 	if !k.IsValid() {
 		return nil, errors.New("invalid master key")
 	}
@@ -532,7 +501,7 @@ func (k *PeacemakrKey) HKDFKeygen(config CryptoConfig, keyID []byte) (*Peacemakr
 	defer C.free(unsafe.Pointer(cBytes))
 	cNumBytes := (C.size_t)(len(keyID))
 	return &PeacemakrKey{
-		key: C.PeacemakrKey_new_from_master(configToInternal(config), k.key, cBytes, cNumBytes),
+		key: C.peacemakr_key_new_from_master((C.symmetric_cipher)(cipher), (C.message_digest_algorithm)(digest), k.key, cBytes, cNumBytes),
 	}, nil
 }
 
@@ -541,7 +510,7 @@ func (k *PeacemakrKey) Config() (CryptoConfig, error) {
 		return CryptoConfig{}, errors.New("invalid key passed to GetKeyConfig")
 	}
 
-	keyConfig := C.PeacemakrKey_get_config(k.key)
+	keyConfig := C.peacemakr_key_get_config(k.key)
 	return configFromInternal(keyConfig), nil
 }
 
@@ -554,7 +523,7 @@ func (k *PeacemakrKey) Bytes() ([]byte, error) {
 	defer C.free(unsafe.Pointer(buf))
 	var bufSize C.size_t
 
-	success := C.PeacemakrKey_get_bytes(k.key, (**C.uint8_t)(unsafe.Pointer(&buf)), (*C.size_t)(&bufSize))
+	success := C.peacemakr_key_get_bytes(k.key, (**C.uint8_t)(unsafe.Pointer(&buf)), (*C.size_t)(&bufSize))
 	if !success {
 		return []byte{}, errors.New("failed to get bytes from peacemakr key")
 	}
@@ -566,7 +535,7 @@ func (k *PeacemakrKey) Destroy() {
 	if !k.IsValid() {
 		return
 	}
-	C.PeacemakrKey_free((*C.peacemakr_key_t)(k.key))
+	C.peacemakr_key_free((*C.peacemakr_key_t)(k.key))
 }
 
 // ========================= Core APIs =========================
@@ -590,9 +559,9 @@ func Encrypt(key *PeacemakrKey, plaintext Plaintext, rand RandomDevice) (*Cipher
 	}, nil
 }
 
-func Serialize(blob *CiphertextBlob) ([]byte, error) {
+func Serialize(digest MessageDigestAlgorithm, blob *CiphertextBlob) ([]byte, error) {
 	var cSize C.size_t
-	serialized := C.peacemakr_serialize(blob.blob, (*C.size_t)(unsafe.Pointer(&cSize)))
+	serialized := C.peacemakr_serialize((C.message_digest_algorithm)(digest), blob.blob, (*C.size_t)(unsafe.Pointer(&cSize)))
 	if serialized == nil {
 		return nil, errors.New("serialization failed")
 	}
@@ -617,7 +586,7 @@ func Deserialize(serialized []byte) (*CiphertextBlob, *CryptoConfig, error) {
 	}, &outConfig, nil
 }
 
-func Sign(senderKey *PeacemakrKey, plaintext Plaintext, ciphertext *CiphertextBlob) error {
+func Sign(senderKey *PeacemakrKey, plaintext Plaintext, digest MessageDigestAlgorithm, ciphertext *CiphertextBlob) error {
 	if !senderKey.IsValid() {
 		return errors.New("invalid key passed to Encrypt")
 	}
@@ -625,7 +594,7 @@ func Sign(senderKey *PeacemakrKey, plaintext Plaintext, ciphertext *CiphertextBl
 	cPlaintext := plaintextToInternal(plaintext)
 	defer freeInternalPlaintext(&cPlaintext)
 
-	C.peacemakr_sign(senderKey.key, (*C.plaintext_t)(unsafe.Pointer(&cPlaintext)), ciphertext.blob)
+	C.peacemakr_sign(senderKey.key, (*C.plaintext_t)(unsafe.Pointer(&cPlaintext)), (C.message_digest_algorithm)(digest), ciphertext.blob)
 	return nil
 }
 
