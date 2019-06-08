@@ -64,7 +64,7 @@ func getNewECKey(curve elliptic.Curve) (string, string) {
 	pemPriv := ECPemString(key)
 	pemPub := PublicECPemKey(key.PublicKey)
 
-	return pemPriv, pemPub
+	return pemPub, pemPriv
 }
 
 func pemString(key *rsa.PrivateKey) string {
@@ -109,7 +109,7 @@ func GetNewKey(keyType string, bitlength int) (string, string, string) {
 		// Verify the bitlength is something that this library can handle.
 		// If it is not, the just fallback to a sane default.
 		//
-		if bitlength != 2048 || bitlength != 4096 {
+		if bitlength != 2048 && bitlength != 4096 {
 			bitlength = 2048
 		}
 
@@ -118,10 +118,10 @@ func GetNewKey(keyType string, bitlength int) (string, string, string) {
 			return fmt.Sprintf("error %v", err), fmt.Sprintf("error %v", err), fmt.Sprintf("error %v", err)
 		}
 
-		pemPriv := pemString(key)
 		pemPub := publicPemKey(key.PublicKey)
+		pemPriv := pemString(key)
 
-		return pemPriv, pemPub, "rsa"
+		return pemPub, pemPriv, "rsa"
 	} else if keyType == "ec" {
 		switch bitlength {
 		case 256:

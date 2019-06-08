@@ -3,10 +3,15 @@ package peacemakr_go_sdk
 import (
 	"errors"
 	"github.com/notasecret/peacemakr-go-sdk/utils"
+	"log"
+	"os"
 	"time"
 )
 
-// TODO: add logger interface
+type SDKLogger interface {
+	Printf(format string, args ...interface{})
+}
+
 type PeacemakrSDK interface {
 
 	//
@@ -21,13 +26,13 @@ type PeacemakrSDK interface {
 	Register() error
 
 	//
-	// Pre-Load all available keys for this client. This invocation will help performance of subsequent encryption
+	// Sync this client's state with the server.This invocation will help performance of subsequent encryption
 	// and decryption calls
 	//
-	// Pre-Loading may fail, if registration was not invoked, if there's network connectivity issues, or
+	// Sync may fail, if registration was not invoked, if there's network connectivity issues, or
 	// unexpected authorization issues.
 	//
-	PreLoad() error
+	Sync() error
 
 	//
 	// Encrypt the plaintext. Returns a b64 encoded ciphertext blob on success, else returns a non-nil error.
@@ -89,10 +94,19 @@ type PeacemakrSDK interface {
 //
 // The provided persister, will be used to save local cryptographic material, used for key deliver, encryption,
 // decyrption, signing, and verification.
-func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister) (PeacemakrSDK, error) {
+//
+// The logger may be left nil, in which case it defaults to the go standard library log.Logger with no prefix
+// and standard flags. If that is not desired, you may pass in a logger that conforms to the appropriate interface,
+// or even a log.Logger with your chosen configuration. See the example for 2 different options.
+func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister, logger SDKLogger) (PeacemakrSDK, error) {
 
 	if persister == nil {
 		return nil, errors.New("persister is required")
+	}
+
+	loggerToUse := logger
+	if logger == nil {
+		loggerToUse = log.New(os.Stderr, "", log.LstdFlags)
 	}
 
 	sdk := &standardPeacemakrSDK{
@@ -109,7 +123,9 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 		int64(time.Duration(time.Hour * 24)),
 		nil,
 		nil,
+		0,
 		map[string][]byte{},
+		loggerToUse,
 	}
 	return PeacemakrSDK(sdk), nil
 }

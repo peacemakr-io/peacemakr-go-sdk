@@ -28,3 +28,8 @@ func GetDiskPersister(path string) Persister {
 	}
 	return Persister(fileP)
 }
+
+// Recommended that this not be used except for local testing
+func GetInMemPersister() Persister {
+	return Persister(&inMemPersister{make(map[string]string)})
+}

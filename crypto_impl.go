@@ -12,10 +12,10 @@ import (
 	"github.com/notasecret/peacemakr-go-sdk/generated/client/crypto_config"
 	"github.com/notasecret/peacemakr-go-sdk/generated/client/key_service"
 	"github.com/notasecret/peacemakr-go-sdk/generated/client/org"
-	"github.com/notasecret/peacemakr-go-sdk/generated/client/phone_home"
 	"github.com/notasecret/peacemakr-go-sdk/generated/models"
 	"github.com/notasecret/peacemakr-go-sdk/utils"
 	"math/rand"
+	goRt "runtime"
 	"time"
 )
 
@@ -33,7 +33,9 @@ type standardPeacemakrSDK struct {
 	secondsTillRefresh int64
 	privKey            *string
 	pubKey             *string
+	keyCreationTime    int64
 	symKeyCache        map[string][]byte
+	sysLog             SDKLogger
 }
 
 func (sdk *standardPeacemakrSDK) getDebugInfo() string {
@@ -50,7 +52,7 @@ func (sdk *standardPeacemakrSDK) getDebugInfo() string {
 		orgId = *sdk.org.ID
 	}
 
-	return "ClinetDebugInfo *** clientId = " + id + ", org id = " + orgId + ", version = " + sdk.version
+	return "ClientDebugInfo *** clientId = " + id + ", org id = " + orgId + ", version = " + sdk.version
 }
 
 func (sdk *standardPeacemakrSDK) GetDebugInfo() string {
@@ -60,14 +62,14 @@ func (sdk *standardPeacemakrSDK) GetDebugInfo() string {
 	}
 
 	debugInfo := sdk.getDebugInfo()
-	sdk.phonehomeString(debugInfo)
+	sdk.logString(debugInfo)
 	return debugInfo
 }
 
 func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 	clientId, err := sdk.getClientId()
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
@@ -76,14 +78,14 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 	params.SymmetricKeyIds = keyIds
 	ret, err := sdk.getClient().KeyService.GetAllEncryptedKeys(params, sdk.authInfo)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
 	privateKey, err := sdk.persister.Load("priv")
 	pubKey, err := sdk.persister.Load("pub")
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
@@ -97,7 +99,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 
 		blob, cfg, err := coreCrypto.Deserialize([]byte(*key.PackagedCiphertext))
 		if err != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return err
 		}
 
@@ -113,7 +115,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 
 			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(cfg.SymmetricCipher, privateKey)
 			if err != nil {
-				sdk.phonehomeError(err)
+				sdk.logError(err)
 			}
 			decryptionDeliveredKey = clientPrivKey
 			// We're in a loop, so it's destroyed after last use.
@@ -123,27 +125,27 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			// get key Id identifying the encrypting client (of the key deriver)
 			aad, err := sdk.getKeyIdFromCiphertext([]byte(*key.PackagedCiphertext))
 			if err != nil {
-				sdk.phonehomeError(err)
+				sdk.logError(err)
 				return err
 			}
 
 			// Fetch the public EC key used to derive the shared symmetric key.
 			kdPublicKey, err := sdk.getPublicKey(aad.SenderKeyID)
 			if err != nil {
-				sdk.phonehomeError(err)
+				sdk.logError(err)
 				return err
 			}
 
 			// Construct a peacemakr key from the config and key.
 			kdPeacemakrKey, err := coreCrypto.NewPublicKeyFromPEM(cfg.SymmetricCipher, kdPublicKey)
 			if err != nil {
-				sdk.phonehomeError(err)
+				sdk.logError(err)
 				return err
 			}
 
 			kdKeyConfig, err := kdPeacemakrKey.Config()
 			if err != nil {
-				sdk.phonehomeError(err)
+				sdk.logError(err)
 				return err
 			}
 
@@ -157,7 +159,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			// and since it's EC, we don't need a symmetric algorithm.
 			clientPrivKey, err := coreCrypto.NewPrivateKeyFromPEM(kdKeyConfig.SymmetricCipher, privateKey)
 			if err != nil {
-				sdk.phonehomeError(err)
+				sdk.logError(err)
 				return err
 			}
 
@@ -171,7 +173,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		} else {
 			// TODO: should we de-register client and re-register a new key?
 			err = errors.New("unkonwn key type detected, can not decrypt incoming keys")
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return err
 		}
 
@@ -179,20 +181,20 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		plaintext, needVerify, err := coreCrypto.Decrypt(decryptionDeliveredKey, blob)
 		decryptionDeliveredKey.Destroy()
 		if err != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return err
 		}
 
 		if needVerify {
 			aad, err := sdk.getKeyIdFromCiphertext([]byte(*key.PackagedCiphertext))
 			if err != nil {
-				sdk.phonehomeError(err)
+				sdk.logError(err)
 				return err
 			}
 
 			err = sdk.verifyMessage(aad, *cfg, blob, plaintext)
 			if err != nil {
-				sdk.phonehomeError(err)
+				sdk.logError(err)
 				return err
 			}
 		}
@@ -200,7 +202,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		// Since these are keys, convert the decrypted base64 string into binary.
 		keyBytes, err := base64.StdEncoding.DecodeString(string(plaintext.Data))
 		if err != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return err
 		}
 
@@ -226,7 +228,7 @@ func (sdk *standardPeacemakrSDK) preloadAll(keyIds []string) error {
 	return sdk.downloadAndSaveAllKeys(keyIds)
 }
 
-func (sdk *standardPeacemakrSDK) PreLoad() error {
+func (sdk *standardPeacemakrSDK) Sync() error {
 	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return err
@@ -243,41 +245,23 @@ func (sdk *standardPeacemakrSDK) EncryptStr(plaintext string) (string, error) {
 	return string(encryptedBytes), nil
 }
 
-func (sdk *standardPeacemakrSDK) phonehomeString(s string) {
-
-	params := phone_home.NewPostLogParams()
-	params.Log = &models.Log{
-		ClientID: nil,
-		Event:    nil,
-	}
-
-	clientId, err := sdk.getClientId()
-	if err != nil {
-		clientId = "failed to fetch"
-	}
-
-	params.Log.ClientID = &clientId
-	params.Log.Event = &s
-
-	_, err = sdk.getClient().PhoneHome.PostLog(params, sdk.authInfo)
-	if err != nil {
-		// TODO: how to handle this error?
-		return
-	}
-
+func (sdk *standardPeacemakrSDK) logString(s string) {
+	_, file, line, _ := goRt.Caller(1)
+	debugInfo := sdk.getDebugInfo()
+	sdk.sysLog.Printf("[%s: %d] %s : %s", file, line, debugInfo, s)
 }
 
-func (sdk *standardPeacemakrSDK) phonehomeError(err error) {
+func (sdk *standardPeacemakrSDK) logError(err error) {
+	_, file, line, _ := goRt.Caller(1)
 	debugInfo := sdk.getDebugInfo()
-	errStr := debugInfo + " : " + fmt.Sprintf("%e --- %v", err, err)
-	sdk.phonehomeString(errStr)
+	sdk.sysLog.Printf("[%s: %d] %s : %e --- %v", file, line, debugInfo, err, err)
 }
 
 func (sdk *standardPeacemakrSDK) populateOrg() error {
 	sdkClient := sdk.getClient()
 
-	// Early exist if we've done this already
-	if sdk.org != nil {
+	// Early exit if we've done this already and it's not time to refresh
+	if sdk.org != nil && time.Now().Unix()-sdk.lastUpdatedAt < sdk.secondsTillRefresh {
 		return nil
 	}
 
@@ -286,13 +270,13 @@ func (sdk *standardPeacemakrSDK) populateOrg() error {
 
 	ret, err := sdkClient.Org.GetOrganizationFromAPIKey(params, sdk.authInfo)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
 	if ret == nil {
 		s := fmt.Sprintf("Failed to populate Org %v", ret.Payload)
-		sdk.phonehomeString(s)
+		sdk.logString(s)
 		return errors.New(s)
 	}
 
@@ -305,7 +289,7 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigIdFromAPIToken() (string, error)
 
 	err := sdk.populateOrg()
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return "", err
 	}
 
@@ -314,8 +298,8 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigIdFromAPIToken() (string, error)
 
 func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 
-	// Early exist if we've already done this.
-	if sdk.cryptoConfig != nil {
+	// Early exist if we've already done this and it's not time to refresh
+	if sdk.cryptoConfig != nil && time.Now().Unix()-sdk.lastUpdatedAt < sdk.secondsTillRefresh {
 		return nil
 	}
 
@@ -326,18 +310,27 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 	params := crypto_config.NewGetCryptoConfigParams()
 	params.CryptoConfigID, err = sdk.getCryptoConfigIdFromAPIToken()
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
 	ret, err := pmClient.CryptoConfig.GetCryptoConfig(params, sdk.authInfo)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
 	sdk.cryptoConfig = ret.Payload
 	sdk.lastUpdatedAt = time.Now().Unix()
+
+	if sdk.cryptoConfig.ClientKeyTTL == 0 {
+		oneYear, err := time.ParseDuration("8760h")
+		if err != nil {
+			return err
+		}
+
+		sdk.cryptoConfig.ClientKeyTTL = time.Now().Add(oneYear).Unix()
+	}
 
 	return nil
 }
@@ -345,13 +338,13 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, cfg coreCrypto.CryptoConfig, ciphertext *coreCrypto.CiphertextBlob, plaintext *coreCrypto.Plaintext) error {
 	senderKeyStr, err := sdk.getPublicKey(aad.SenderKeyID)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
 	senderKey, err := coreCrypto.NewPublicKeyFromPEM(cfg.SymmetricCipher, senderKeyStr)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
@@ -359,7 +352,7 @@ func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, cfg coreCrypto
 
 	err = coreCrypto.Verify(senderKey, plaintext, ciphertext)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 	return nil
@@ -376,7 +369,7 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 		key, err := sdk.persister.Load(keyId)
 		if err != nil {
 			// We failed to load the key, so just load it again from the server.
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 		} else {
 			// Hot cache.
 			sdk.symKeyCache[keyId] = []byte(key)
@@ -386,13 +379,13 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 
 	// Else, we just load it from key service.
 	if err := sdk.downloadAndSaveAllKeys([]string{keyId}); err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
 	if !sdk.persister.Exists(keyId) {
 		err := errors.New("failed to find the key, keyId = " + keyId)
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
@@ -400,7 +393,7 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 	foundKey, err := sdk.persister.Load(keyId)
 	if err != nil {
 		err := errors.New("failed to load a found key, keyId = " + keyId)
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
@@ -410,12 +403,7 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 }
 
 func isUseDomainEncryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
-	currentTime := time.Now().Unix()
-	if (*useDomain.SymmetricKeyInceptionTTL <= 0 || currentTime > *useDomain.CreationTime+*useDomain.SymmetricKeyInceptionTTL) ||
-		(*useDomain.SymmetricKeyEncryptionUseTTL <= 0 || currentTime < *useDomain.CreationTime+*useDomain.SymmetricKeyEncryptionUseTTL) {
-		return true
-	}
-	return false
+	return *useDomain.SymmetricKeyEncryptionAllowed
 }
 
 func contains(s []string, e string) bool {
@@ -462,12 +450,7 @@ func (sdk *standardPeacemakrSDK) isKeyIdDecryptionViable(keyId string) bool {
 }
 
 func isUseDomainDecryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
-	currentTime := time.Now().Unix()
-	if (*useDomain.SymmetricKeyInceptionTTL <= 0 || currentTime > *useDomain.CreationTime+*useDomain.SymmetricKeyInceptionTTL) ||
-		(*useDomain.SymmetricKeyDecryptionUseTTL <= 0 || currentTime < *useDomain.CreationTime+*useDomain.SymmetricKeyDecryptionUseTTL) {
-		return true
-	}
-	return false
+	return *useDomain.SymmetricKeyDecryptionAllowed
 }
 
 func (sdk *standardPeacemakrSDK) findViableDecryptionUseDomains() []*models.SymmetricKeyUseDomain {
@@ -495,7 +478,7 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 
 	if len(sdk.cryptoConfig.SymmetricKeyUseDomains) <= 0 {
 		err := errors.New("no available useDomains to select")
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
@@ -508,7 +491,7 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 			numSelectedUseDomains := len(sdk.cryptoConfig.SymmetricKeyUseDomains)
 			selectedDomainIdx := rand.Intn(numSelectedUseDomains)
 			selectedDomain = sdk.cryptoConfig.SymmetricKeyUseDomains[selectedDomainIdx]
-			sdk.phonehomeString("no viable use domains for encryption")
+			sdk.logString("no viable use domains for encryption")
 			return selectedDomain, nil
 		}
 		numSelectedUseDomains := len(viableUseDomain)
@@ -528,7 +511,7 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 			numSelectedUseDomains := len(sdk.cryptoConfig.SymmetricKeyUseDomains)
 			selectedDomainIdx := rand.Intn(numSelectedUseDomains)
 			selectedDomain = sdk.cryptoConfig.SymmetricKeyUseDomains[selectedDomainIdx]
-			sdk.phonehomeString(fmt.Sprintf("no viable use domains encryption for use domain %s", *useDomainName))
+			sdk.logString(fmt.Sprintf("no viable use domains encryption for use domain %s", *useDomainName))
 			return selectedDomain, nil
 		}
 		numSelectedUseDomains := len(viableUseDomain)
@@ -555,11 +538,18 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 	// Setup the crypto config for the encryption.
 	mode := coreCrypto.SYMMETRIC
 	asymmetricCipher := coreCrypto.ASYMMETRIC_UNSPECIFIED
-	symmetricCipher := coreCrypto.AES_256_GCM
 	digestAlgorithm := coreCrypto.SHA_256
 
-	if *selectedDomain.SymmetricKeyEncryptionAlg == "AES_256_GCM" {
+	var symmetricCipher coreCrypto.SymmetricCipher
+	switch *selectedDomain.SymmetricKeyEncryptionAlg {
+	case "AES_128_GCM":
+		symmetricCipher = coreCrypto.AES_128_GCM
+	case "AES_192_GCM":
+		symmetricCipher = coreCrypto.AES_192_GCM
+	case "AES_256_GCM":
 		symmetricCipher = coreCrypto.AES_256_GCM
+	default:
+		symmetricCipher = coreCrypto.CHACHA20_POLY1305
 	}
 
 	cfg := coreCrypto.CryptoConfig{
@@ -625,13 +615,13 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 
 	keyId, cfg, err := sdk.selectEncryptionKey(useDomainName)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
 	key, err := sdk.loadOneKeySymmetricKey(keyId)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
@@ -639,7 +629,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 	defer pmKey.Destroy()
 	myKeyId, err := sdk.persister.Load("keyId")
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
@@ -649,7 +639,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 	}
 	aadStr, err := json.Marshal(aad)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
@@ -661,25 +651,25 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 	randomDevice := coreCrypto.NewRandomDevice()
 	ciphertext, err := coreCrypto.Encrypt(pmKey, pmPlaintext, randomDevice)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
 	myPrivKeyStr, err := sdk.persister.Load("priv")
 	myKey, err := coreCrypto.NewPrivateKeyFromPEM(cfg.SymmetricCipher, myPrivKeyStr)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 	defer myKey.Destroy()
 
-	err = coreCrypto.Sign(myKey, pmPlaintext, coreCrypto.SHA_512, ciphertext)
+	err = coreCrypto.Sign(myKey, pmPlaintext, cfg.DigestAlgorithm, ciphertext)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
-	return coreCrypto.Serialize(coreCrypto.SHA_512, ciphertext)
+	return coreCrypto.Serialize(cfg.DigestAlgorithm, ciphertext)
 }
 
 func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
@@ -737,7 +727,7 @@ func (sdk *standardPeacemakrSDK) getKeyIdFromCiphertext(ciphertext []byte) (*Pea
 
 	aad, err := coreCrypto.ExtractUnverifiedAAD(ciphertext)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 	ret := &PeacemakrAAD{}
@@ -751,7 +741,7 @@ func (sdk *standardPeacemakrSDK) getPublicKey(keyID string) (string, error) {
 	if sdk.persister.Exists(keyID) {
 		key, err := sdk.persister.Load(keyID)
 		if err != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return "", err
 		}
 		return key, nil
@@ -762,12 +752,12 @@ func (sdk *standardPeacemakrSDK) getPublicKey(keyID string) (string, error) {
 
 	result, err := sdk.getClient().KeyService.GetPublicKey(getPubKeyParams, sdk.authInfo)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return "", err
 	}
 
 	if err := sdk.persister.Save(keyID, *result.Payload.Key); err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return "", err
 	}
 
@@ -789,18 +779,18 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 
 	aad, err := sdk.getKeyIdFromCiphertext(ciphertext)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
 	if !sdk.isKeyIdDecryptionViable(aad.CryptoKeyID) {
-		sdk.phonehomeString("key is no longer viable for decryption")
+		sdk.logString("key is no longer viable for decryption")
 		return nil, errors.New("ciphertext is no longer viable for decryption")
 	}
 
 	key, err := sdk.loadOneKeySymmetricKey(aad.CryptoKeyID)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
@@ -808,14 +798,14 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 	defer pmKey.Destroy()
 	plaintext, needsVerification, err := coreCrypto.Decrypt(pmKey, ciphertextblob)
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return nil, err
 	}
 
 	if needsVerification {
 		err = sdk.verifyMessage(aad, *cfg, ciphertextblob, plaintext)
 		if err != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return nil, err
 		}
 	}
@@ -832,7 +822,7 @@ func (sdk *standardPeacemakrSDK) getClient() *client.PeacemakrClient {
 	}
 
 	var hostname string
-	if sdk.peacemakrHostname == nil {
+	if sdk.peacemakrHostname == nil || *sdk.peacemakrHostname == "" {
 		hostname = client.DefaultHost
 	} else {
 		hostname = *sdk.peacemakrHostname
@@ -850,8 +840,6 @@ func (sdk *standardPeacemakrSDK) getClient() *client.PeacemakrClient {
 
 func (sdk *standardPeacemakrSDK) getClientId() (string, error) {
 
-	// Do not phone home these errors, inf loop.
-
 	if !sdk.persister.Exists("clientId") {
 		err := errors.New("client is not registered")
 		return "", err
@@ -863,6 +851,21 @@ func (sdk *standardPeacemakrSDK) getClientId() (string, error) {
 	}
 
 	return clientId, nil
+}
+
+func (sdk *standardPeacemakrSDK) getPubKeyId() (string, error) {
+
+	if !sdk.persister.Exists("keyId") {
+		err := errors.New("client is not registered")
+		return "", err
+	}
+
+	keyId, err := sdk.persister.Load("keyId")
+	if err != nil {
+		return "", err
+	}
+
+	return keyId, nil
 }
 
 func (sdk *standardPeacemakrSDK) errOnNotRegistered() error {
@@ -883,6 +886,27 @@ func (sdk *standardPeacemakrSDK) errOnNotRegistered() error {
 	return nil
 }
 
+func (sdk *standardPeacemakrSDK) generateKeys() (string, string, string, error) {
+	pub, priv, keyTy := GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
+
+	err := sdk.savePrivKey(priv)
+	if err != nil {
+		err := errors.New("unable to save private key")
+		sdk.logError(err)
+		return "", "", "", err
+	}
+
+	err = sdk.savePubKey(pub)
+	if err != nil {
+		err := errors.New("unable to save public key")
+		sdk.logError(err)
+		return "", "", "", err
+	}
+
+	sdk.keyCreationTime = time.Now().Unix()
+	return pub, priv, keyTy, nil
+}
+
 //
 // SDK impl
 //
@@ -890,54 +914,35 @@ func (sdk *standardPeacemakrSDK) Register() error {
 
 	if !coreCrypto.PeacemakrInit() {
 		err := errors.New("unable to initialize core crypto lib")
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
 	err := sdk.init()
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
-	var pub, priv, keyTy string
+	var pub, keyTy string
 
 	// If either key is missing, bail.
 	if !sdk.persister.Exists("priv") || !sdk.persister.Exists("pub") {
-
-		priv, pub, keyTy = GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
-
-		err := sdk.savePrivKey(priv)
+		pub, _, keyTy, err = sdk.generateKeys()
 		if err != nil {
-			err := errors.New("unable to save private key")
-			sdk.phonehomeError(err)
-			return err
-		}
-
-		err = sdk.savePubKey(pub)
-		if err != nil {
-			err := errors.New("unable to save public key")
-			sdk.phonehomeError(err)
 			return err
 		}
 	} else {
 		pubLoaded, err := sdk.getPubKey()
 		if err != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return err
 		}
 		pub = pubLoaded
 
-		privLoaded, err := sdk.getPrivKey()
-		if err != nil {
-			sdk.phonehomeError(err)
-			return err
-		}
-		priv = privLoaded
-
 		cfg, err := coreCrypto.GetConfigFromPubKey(pub)
 		if err != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return err
 		}
 
@@ -964,30 +969,28 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		params.Client.ID = &tempId
 		params.Client.Sdk = sdk.version
 		encoding := "pem"
-		keyType := keyTy
-		now := time.Now().Unix()
 		params.Client.PublicKey = &models.PublicKey{
-			CreationTime: &now,
+			CreationTime: &sdk.keyCreationTime,
 			Encoding:     &encoding,
 			ID:           &tempId,
 			Key:          &pub,
-			KeyType:      &keyType,
+			KeyType:      &keyTy,
 		}
 
 		ok, err := sdkClient.Client.AddClient(params, sdk.authInfo)
 		if err != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return err
 		}
 
 		saveErr := sdk.persister.Save("keyId", *ok.Payload.PublicKey.ID)
 		if saveErr != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return saveErr
 		}
 		saveErr = sdk.persister.Save("clientId", *ok.Payload.ID)
 		if saveErr != nil {
-			sdk.phonehomeError(err)
+			sdk.logError(err)
 			return saveErr
 		}
 
@@ -1014,19 +1017,83 @@ func (sdk *standardPeacemakrSDK) init() error {
 
 	err := sdk.populateOrg()
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
 	if sdk.org == nil {
 		err := errors.New("failed to populate org from api key")
-		sdk.phonehomeError(err)
+		sdk.logError(err)
 		return err
 	}
 
 	err = sdk.populateCryptoConfig()
 	if err != nil {
-		sdk.phonehomeError(err)
+		sdk.logError(err)
+		return err
+	}
+
+	return nil
+}
+
+func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
+	if time.Now().Unix()-sdk.keyCreationTime <= sdk.cryptoConfig.ClientKeyTTL {
+		return nil
+	}
+
+	// Save the previous stuff in case we have to roll back the change
+	prevPub, err := sdk.getPubKey()
+	if err != nil {
+		return err
+	}
+	prevPriv, err := sdk.getPrivKey()
+	if err != nil {
+		return err
+	}
+	prevCreatedAt := sdk.keyCreationTime
+
+	pub, _, keyTy, generateErr := sdk.generateKeys()
+	if generateErr != nil {
+		// Roll back the changes
+		if err := sdk.savePubKey(prevPub); err != nil {
+			return errors.New(fmt.Sprintf("In recovering from %v, error %v ocurred", generateErr, err))
+		}
+		if err := sdk.savePrivKey(prevPriv); err != nil {
+			return errors.New(fmt.Sprintf("In recovering from %v, error %v ocurred", generateErr, err))
+		}
+
+		sdk.keyCreationTime = prevCreatedAt
+
+		return generateErr
+	}
+
+	networkClient := sdk.getClient()
+	clientID, err := sdk.getClientId()
+	if err != nil {
+		return err
+	}
+
+	pemStr := "pem"
+
+	keyID, err := sdk.getPubKeyId()
+	if err != nil {
+		return err
+	}
+
+	updateKeyParams := &clientReq.UpdateClientPublicKeyParams{
+		ClientID: clientID,
+		NewPublicKey: &models.PublicKey{
+			CreationTime: &sdk.keyCreationTime,
+			Encoding:     &pemStr,
+			ID:           &keyID,
+			Key:          &pub,
+			KeyType:      &keyTy,
+		},
+	}
+
+	_, err = networkClient.Client.UpdateClientPublicKey(updateKeyParams, sdk.authInfo)
+	if err != nil {
+		sdk.logError(err)
 		return err
 	}
 
@@ -1035,10 +1102,13 @@ func (sdk *standardPeacemakrSDK) init() error {
 
 func (sdk *standardPeacemakrSDK) verifyRegistrationAndInit() error {
 
-	err := sdk.errOnNotRegistered()
-	if err != nil {
+	if err := sdk.errOnNotRegistered(); err != nil {
 		return err
 	}
+
+	//if err := sdk.rotateClientKeyIfNeeded(); err != nil {
+	//	return err
+	//}
 
 	// This info only lasts for so long.
 	if time.Now().Unix()-sdk.lastUpdatedAt > sdk.secondsTillRefresh {
@@ -1061,7 +1131,7 @@ func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomainName strin
 	err := sdk.populateCryptoConfig()
 	if err != nil {
 		e := errors.New("failed to populate use doamins from crypto config id")
-		sdk.phonehomeError(e)
+		sdk.logError(e)
 		return e
 	}
 
@@ -1072,7 +1142,7 @@ func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomainName strin
 	}
 
 	err = errors.New(fmt.Sprintf("unknown use doamin: %s", useDomainName))
-	sdk.phonehomeError(err)
+	sdk.logError(err)
 	return err
 }
 

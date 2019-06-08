@@ -7,10 +7,13 @@ package crypto_config
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/go-openapi/runtime"
 
 	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/generated/models"
 )
 
 // RemoveUseDomainReader is a Reader for the RemoveUseDomain structure.
@@ -36,6 +39,27 @@ func (o *RemoveUseDomainReader) ReadResponse(response runtime.ClientResponse, co
 		}
 		return nil, result
 
+	case 401:
+		result := NewRemoveUseDomainUnauthorized()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
+	case 403:
+		result := NewRemoveUseDomainForbidden()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
+	case 500:
+		result := NewRemoveUseDomainInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
 	default:
 		return nil, runtime.NewAPIError("unknown error", response, response.Code())
 	}
@@ -48,7 +72,7 @@ func NewRemoveUseDomainOK() *RemoveUseDomainOK {
 
 /*RemoveUseDomainOK handles this case with default header values.
 
-Successfully expired the use domain from service
+Successfully expired use doamin.
 */
 type RemoveUseDomainOK struct {
 }
@@ -72,13 +96,92 @@ func NewRemoveUseDomainBadRequest() *RemoveUseDomainBadRequest {
 Unable to process request
 */
 type RemoveUseDomainBadRequest struct {
+	Payload *models.ErrorResponse
 }
 
 func (o *RemoveUseDomainBadRequest) Error() string {
-	return fmt.Sprintf("[DELETE /crypto/useDomain/{useDomainId}][%d] removeUseDomainBadRequest ", 400)
+	return fmt.Sprintf("[DELETE /crypto/useDomain/{useDomainId}][%d] removeUseDomainBadRequest  %+v", 400, o.Payload)
 }
 
 func (o *RemoveUseDomainBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+		return err
+	}
+
+	return nil
+}
+
+// NewRemoveUseDomainUnauthorized creates a RemoveUseDomainUnauthorized with default headers values
+func NewRemoveUseDomainUnauthorized() *RemoveUseDomainUnauthorized {
+	return &RemoveUseDomainUnauthorized{}
+}
+
+/*RemoveUseDomainUnauthorized handles this case with default header values.
+
+Not authenticated to perform request
+*/
+type RemoveUseDomainUnauthorized struct {
+}
+
+func (o *RemoveUseDomainUnauthorized) Error() string {
+	return fmt.Sprintf("[DELETE /crypto/useDomain/{useDomainId}][%d] removeUseDomainUnauthorized ", 401)
+}
+
+func (o *RemoveUseDomainUnauthorized) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewRemoveUseDomainForbidden creates a RemoveUseDomainForbidden with default headers values
+func NewRemoveUseDomainForbidden() *RemoveUseDomainForbidden {
+	return &RemoveUseDomainForbidden{}
+}
+
+/*RemoveUseDomainForbidden handles this case with default header values.
+
+Not authorized to perform request
+*/
+type RemoveUseDomainForbidden struct {
+}
+
+func (o *RemoveUseDomainForbidden) Error() string {
+	return fmt.Sprintf("[DELETE /crypto/useDomain/{useDomainId}][%d] removeUseDomainForbidden ", 403)
+}
+
+func (o *RemoveUseDomainForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewRemoveUseDomainInternalServerError creates a RemoveUseDomainInternalServerError with default headers values
+func NewRemoveUseDomainInternalServerError() *RemoveUseDomainInternalServerError {
+	return &RemoveUseDomainInternalServerError{}
+}
+
+/*RemoveUseDomainInternalServerError handles this case with default header values.
+
+Unrecoverable internal error
+*/
+type RemoveUseDomainInternalServerError struct {
+	Payload *models.ErrorResponse
+}
+
+func (o *RemoveUseDomainInternalServerError) Error() string {
+	return fmt.Sprintf("[DELETE /crypto/useDomain/{useDomainId}][%d] removeUseDomainInternalServerError  %+v", 500, o.Payload)
+}
+
+func (o *RemoveUseDomainInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+		return err
+	}
 
 	return nil
 }

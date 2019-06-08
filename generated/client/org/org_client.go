@@ -54,6 +54,35 @@ func (a *Client) AddAPIKeyToOrg(params *AddAPIKeyToOrgParams, authInfo runtime.C
 }
 
 /*
+AddAdminToOrg adds a new admin to this org
+*/
+func (a *Client) AddAdminToOrg(params *AddAdminToOrgParams, authInfo runtime.ClientAuthInfoWriter) (*AddAdminToOrgOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewAddAdminToOrgParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "addAdminToOrg",
+		Method:             "POST",
+		PathPattern:        "/org/admin",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &AddAdminToOrgReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*AddAdminToOrgOK), nil
+
+}
+
+/*
 AddOrganization creates a new organization must be an authenticated request with a valid id token from a trusted Id p
 */
 func (a *Client) AddOrganization(params *AddOrganizationParams, authInfo runtime.ClientAuthInfoWriter) (*AddOrganizationOK, error) {
@@ -108,6 +137,35 @@ func (a *Client) DeleteAPIKeyFromOrg(params *DeleteAPIKeyFromOrgParams, authInfo
 		return nil, err
 	}
 	return result.(*DeleteAPIKeyFromOrgOK), nil
+
+}
+
+/*
+DeleteAdminFromOrg removes an existing admin from the org you can not remove the last admin it will faile with a bad request response
+*/
+func (a *Client) DeleteAdminFromOrg(params *DeleteAdminFromOrgParams, authInfo runtime.ClientAuthInfoWriter) (*DeleteAdminFromOrgOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewDeleteAdminFromOrgParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "deleteAdminFromOrg",
+		Method:             "DELETE",
+		PathPattern:        "/org/admin/{email}",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &DeleteAdminFromOrgReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*DeleteAdminFromOrgOK), nil
 
 }
 
