@@ -329,7 +329,7 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 			return err
 		}
 
-		sdk.cryptoConfig.ClientKeyTTL = time.Now().Add(oneYear).Unix()
+		sdk.cryptoConfig.ClientKeyTTL = oneYear.Nanoseconds() / 1e9
 	}
 
 	return nil
