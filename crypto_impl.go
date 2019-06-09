@@ -16,8 +16,15 @@ import (
 	"github.com/notasecret/peacemakr-go-sdk/utils"
 	"math/rand"
 	goRt "runtime"
+	goRtDebug "runtime/debug"
 	"time"
 )
+
+type keyStruct struct {
+	privKey         string
+	pubKey          string
+	keyCreationTime int64
+}
 
 type standardPeacemakrSDK struct {
 	clientName         string
@@ -31,11 +38,10 @@ type standardPeacemakrSDK struct {
 	isRegisteredCache  bool
 	lastUpdatedAt      int64
 	secondsTillRefresh int64
-	privKey            *string
-	pubKey             *string
-	keyCreationTime    int64
+	asymKeys           *keyStruct
 	symKeyCache        map[string][]byte
 	sysLog             SDKLogger
+	debugMode          bool
 }
 
 func (sdk *standardPeacemakrSDK) getDebugInfo() string {
@@ -249,19 +255,29 @@ func (sdk *standardPeacemakrSDK) logString(s string) {
 	_, file, line, _ := goRt.Caller(1)
 	debugInfo := sdk.getDebugInfo()
 	sdk.sysLog.Printf("[%s: %d] %s : %s", file, line, debugInfo, s)
+	if sdk.debugMode {
+		goRtDebug.PrintStack()
+	}
 }
 
 func (sdk *standardPeacemakrSDK) logError(err error) {
 	_, file, line, _ := goRt.Caller(1)
 	debugInfo := sdk.getDebugInfo()
 	sdk.sysLog.Printf("[%s: %d] %s : %e --- %v", file, line, debugInfo, err, err)
+	if sdk.debugMode {
+		goRtDebug.PrintStack()
+	}
+}
+
+func (sdk *standardPeacemakrSDK) isLocalStateValid() bool {
+	return time.Now().Unix()-sdk.lastUpdatedAt < sdk.secondsTillRefresh
 }
 
 func (sdk *standardPeacemakrSDK) populateOrg() error {
 	sdkClient := sdk.getClient()
 
 	// Early exit if we've done this already and it's not time to refresh
-	if sdk.org != nil && time.Now().Unix()-sdk.lastUpdatedAt < sdk.secondsTillRefresh {
+	if sdk.org != nil && sdk.isLocalStateValid() {
 		return nil
 	}
 
@@ -299,7 +315,7 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigIdFromAPIToken() (string, error)
 func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 
 	// Early exist if we've already done this and it's not time to refresh
-	if sdk.cryptoConfig != nil && time.Now().Unix()-sdk.lastUpdatedAt < sdk.secondsTillRefresh {
+	if sdk.cryptoConfig != nil && sdk.isLocalStateValid() {
 		return nil
 	}
 
@@ -330,6 +346,12 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 		}
 
 		sdk.cryptoConfig.ClientKeyTTL = oneYear.Nanoseconds() / 1e9
+	}
+
+	// If they haven't specified anything for the client asymmetric keys, use ECDH_256
+	if sdk.getCryptoConfigCipher() == coreCrypto.ASYMMETRIC_UNSPECIFIED {
+		sdk.cryptoConfig.ClientKeyType = "ec"
+		sdk.cryptoConfig.ClientKeyBitlength = 256
 	}
 
 	return nil
@@ -568,7 +590,7 @@ type PeacemakrAAD struct {
 }
 
 func (sdk *standardPeacemakrSDK) savePubKey(pub string) error {
-	sdk.pubKey = &pub
+	sdk.asymKeys.pubKey = pub
 	err := sdk.persister.Save("pub", pub)
 	if err != nil {
 		return err
@@ -577,20 +599,20 @@ func (sdk *standardPeacemakrSDK) savePubKey(pub string) error {
 }
 
 func (sdk *standardPeacemakrSDK) getPubKey() (string, error) {
-	if sdk.pubKey != nil {
-		return *sdk.pubKey, nil
+	if sdk.asymKeys != nil {
+		return sdk.asymKeys.pubKey, nil
 	}
 	pub, err := sdk.persister.Load("pub")
 	if err != nil {
 		return "", err
 	}
 
-	sdk.pubKey = &pub
+	sdk.asymKeys.pubKey = pub
 	return pub, nil
 }
 
 func (sdk *standardPeacemakrSDK) savePrivKey(priv string) error {
-	sdk.privKey = &priv
+	sdk.asymKeys.privKey = priv
 	err := sdk.persister.Save("priv", priv)
 	if err != nil {
 		return err
@@ -599,15 +621,15 @@ func (sdk *standardPeacemakrSDK) savePrivKey(priv string) error {
 }
 
 func (sdk *standardPeacemakrSDK) getPrivKey() (string, error) {
-	if sdk.privKey != nil {
-		return *sdk.privKey, nil
+	if sdk.asymKeys != nil {
+		return sdk.asymKeys.privKey, nil
 	}
 	priv, err := sdk.persister.Load("priv")
 	if err != nil {
 		return "", err
 	}
 
-	sdk.privKey = &priv
+	sdk.asymKeys.privKey = priv
 	return priv, nil
 }
 
@@ -841,7 +863,7 @@ func (sdk *standardPeacemakrSDK) getClient() *client.PeacemakrClient {
 func (sdk *standardPeacemakrSDK) getClientId() (string, error) {
 
 	if !sdk.persister.Exists("clientId") {
-		err := errors.New("client is not registered")
+		err := errors.New("keyID does not exist in the SDK persister, client may not be registered")
 		return "", err
 	}
 
@@ -887,6 +909,10 @@ func (sdk *standardPeacemakrSDK) errOnNotRegistered() error {
 }
 
 func (sdk *standardPeacemakrSDK) generateKeys() (string, string, string, error) {
+	if sdk.asymKeys == nil {
+		sdk.asymKeys = &keyStruct{}
+	}
+
 	pub, priv, keyTy := GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
 
 	err := sdk.savePrivKey(priv)
@@ -903,7 +929,7 @@ func (sdk *standardPeacemakrSDK) generateKeys() (string, string, string, error) 
 		return "", "", "", err
 	}
 
-	sdk.keyCreationTime = time.Now().Unix()
+	sdk.asymKeys.keyCreationTime = time.Now().Unix()
 	return pub, priv, keyTy, nil
 }
 
@@ -924,7 +950,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		return err
 	}
 
-	var pub, keyTy string
+	var pub, _, keyTy string
 
 	// If either key is missing, bail.
 	if !sdk.persister.Exists("priv") || !sdk.persister.Exists("pub") {
@@ -939,6 +965,12 @@ func (sdk *standardPeacemakrSDK) Register() error {
 			return err
 		}
 		pub = pubLoaded
+
+		_, err = sdk.getPrivKey()
+		if err != nil {
+			sdk.logError(err)
+			return err
+		}
 
 		cfg, err := coreCrypto.GetConfigFromPubKey(pub)
 		if err != nil {
@@ -970,7 +1002,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		params.Client.Sdk = sdk.version
 		encoding := "pem"
 		params.Client.PublicKey = &models.PublicKey{
-			CreationTime: &sdk.keyCreationTime,
+			CreationTime: &sdk.asymKeys.keyCreationTime,
 			Encoding:     &encoding,
 			ID:           &tempId,
 			Key:          &pub,
@@ -1036,9 +1068,66 @@ func (sdk *standardPeacemakrSDK) init() error {
 	return nil
 }
 
+func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCipher {
+	var cryptoConfigCipher coreCrypto.AsymmetricCipher
+	switch sdk.cryptoConfig.ClientKeyType {
+	case "ec":
+		switch sdk.cryptoConfig.ClientKeyBitlength {
+		case 256:
+			cryptoConfigCipher = coreCrypto.ECDH_P256
+		case 384:
+			cryptoConfigCipher = coreCrypto.ECDH_P384
+		case 521:
+			cryptoConfigCipher = coreCrypto.ECDH_P521
+		default:
+			cryptoConfigCipher = coreCrypto.ASYMMETRIC_UNSPECIFIED
+		}
+	case "rsa":
+		switch sdk.cryptoConfig.ClientKeyBitlength {
+		case 2048:
+			cryptoConfigCipher = coreCrypto.RSA_2048
+		case 4096:
+			cryptoConfigCipher = coreCrypto.RSA_4096
+		default:
+			cryptoConfigCipher = coreCrypto.ASYMMETRIC_UNSPECIFIED
+		}
+	default:
+		cryptoConfigCipher = coreCrypto.ASYMMETRIC_UNSPECIFIED
+	}
+
+	return cryptoConfigCipher
+}
+
+func (sdk *standardPeacemakrSDK) asymKeysAreStale() bool {
+	return time.Now().Unix()-sdk.asymKeys.keyCreationTime > sdk.cryptoConfig.ClientKeyTTL
+}
+
 func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
-	if time.Now().Unix()-sdk.keyCreationTime <= sdk.cryptoConfig.ClientKeyTTL {
+	pubKey, err := sdk.getPubKey()
+	if err != nil {
+		return err
+	}
+
+	currentCipher, err := coreCrypto.GetConfigFromPubKey(pubKey)
+	if err != nil {
+		return err
+	}
+
+	cryptoConfigCipher := sdk.getCryptoConfigCipher()
+
+	// Rotate if the key has expired OR if the cipher changed
+	shouldRotate := sdk.asymKeysAreStale() || (cryptoConfigCipher != currentCipher)
+
+	if !shouldRotate {
 		return nil
+	}
+
+	if sdk.asymKeysAreStale() {
+		sdk.logString("Rotating expired key")
+	}
+
+	if cryptoConfigCipher != currentCipher {
+		sdk.logString(fmt.Sprintf("Rotating key because asymmetric key config changed from %v to %v", currentCipher, cryptoConfigCipher))
 	}
 
 	// Save the previous stuff in case we have to roll back the change
@@ -1050,7 +1139,7 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 	if err != nil {
 		return err
 	}
-	prevCreatedAt := sdk.keyCreationTime
+	prevCreatedAt := sdk.asymKeys.keyCreationTime
 
 	pub, _, keyTy, generateErr := sdk.generateKeys()
 	if generateErr != nil {
@@ -1062,7 +1151,7 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 			return errors.New(fmt.Sprintf("In recovering from %v, error %v ocurred", generateErr, err))
 		}
 
-		sdk.keyCreationTime = prevCreatedAt
+		sdk.asymKeys.keyCreationTime = prevCreatedAt
 
 		return generateErr
 	}
@@ -1083,7 +1172,7 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 	updateKeyParams := &clientReq.UpdateClientPublicKeyParams{
 		ClientID: clientID,
 		NewPublicKey: &models.PublicKey{
-			CreationTime: &sdk.keyCreationTime,
+			CreationTime: &sdk.asymKeys.keyCreationTime,
 			Encoding:     &pemStr,
 			ID:           &keyID,
 			Key:          &pub,
@@ -1106,12 +1195,12 @@ func (sdk *standardPeacemakrSDK) verifyRegistrationAndInit() error {
 		return err
 	}
 
-	//if err := sdk.rotateClientKeyIfNeeded(); err != nil {
-	//	return err
-	//}
+	if err := sdk.rotateClientKeyIfNeeded(); err != nil {
+		return err
+	}
 
 	// This info only lasts for so long.
-	if time.Now().Unix()-sdk.lastUpdatedAt > sdk.secondsTillRefresh {
+	if !sdk.isLocalStateValid() {
 		clearAllMetadata(sdk)
 	}
 

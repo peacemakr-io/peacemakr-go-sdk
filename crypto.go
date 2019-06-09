@@ -98,14 +98,14 @@ type PeacemakrSDK interface {
 // The logger may be left nil, in which case it defaults to the go standard library log.Logger with no prefix
 // and standard flags. If that is not desired, you may pass in a logger that conforms to the appropriate interface,
 // or even a log.Logger with your chosen configuration. See the example for 2 different options.
-func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister, logger SDKLogger) (PeacemakrSDK, error) {
+func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister, optionalLogger SDKLogger, debugMode bool) (PeacemakrSDK, error) {
 
 	if persister == nil {
 		return nil, errors.New("persister is required")
 	}
 
-	loggerToUse := logger
-	if logger == nil {
+	loggerToUse := optionalLogger
+	if optionalLogger == nil {
 		loggerToUse = log.New(os.Stderr, "", log.LstdFlags)
 	}
 
@@ -122,10 +122,9 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 		0,
 		int64(time.Duration(time.Hour * 24)),
 		nil,
-		nil,
-		0,
 		map[string][]byte{},
 		loggerToUse,
+		debugMode,
 	}
 	return PeacemakrSDK(sdk), nil
 }

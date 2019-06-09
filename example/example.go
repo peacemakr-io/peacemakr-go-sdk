@@ -26,7 +26,7 @@ func (l *CustomLogger) Printf(format string, args ...interface{}) {
 func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan *TestMessage, wg *sync.WaitGroup, useDomainName string) {
 
 	log.Printf("Getting Peacemakr SDK for encrypting client %d...\n", clientNum)
-	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), &CustomLogger{})
+	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), &CustomLogger{}, true)
 	if err != nil {
 		wg.Done()
 		log.Fatalf("Encrypting client %d%s getting peacemakr sdk failed %s", clientNum, useDomainName, err)
@@ -103,7 +103,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan *TestMessage) {
 	log.Printf("Getting Peacemakr SDK for decrypting client %d...\n", clientNum)
-	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), log.New(os.Stdout, "DecryptingClient", log.LstdFlags))
+	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), log.New(os.Stdout, "DecryptingClient", log.LstdFlags), true)
 	if err != nil {
 		log.Fatalf("Decrypting client %d, fetching peacemakr sdk failed %s", clientNum, err)
 	}
