@@ -933,6 +933,64 @@ func (sdk *standardPeacemakrSDK) generateKeys() (string, string, string, error) 
 	return pub, priv, keyTy, nil
 }
 
+func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error {
+	sdkClient := sdk.getClient()
+
+	t := time.Now().Unix()
+
+	keyIds := []string{}
+	for i := 0; i < numKeys; i++ {
+		keyId, err := utils.GenerateRandomString(32)
+		if err != nil {
+			return err
+		}
+		keyIds = append(keyIds, keyId)
+	}
+	fallbackToCloud := true
+	ciphertextVersion := int64(0)
+	emptyString := ""
+	twentyYears := int64(60 * 60 * 24 * 365 * 20)
+	zero := int64(0)
+	alg := "CHACHA"
+	keyLen := int64(32)
+	falseValue := false
+
+	useDomain := models.SymmetricKeyUseDomain{
+		CreationTime:                        &t,
+		EncryptingPackagedCiphertextVersion: &ciphertextVersion,
+		EncryptionKeyIds:                    keyIds,
+		EndableKDSFallbackToCloud:           &fallbackToCloud,
+		ID:                                  &emptyString,
+		Name:                                name,
+		OwnerOrgID:                          sdk.org.ID,
+		SymmetricKeyDecryptionUseTTL:        &twentyYears,
+		SymmetricKeyDecryptionAllowed:       &falseValue,
+		SymmetricKeyDerivationServiceID:     &emptyString, // Empty string, means the server randomly picks.
+		SymmetricKeyEncryptionAlg:           &alg,
+		SymmetricKeyEncryptionUseTTL:        &twentyYears,
+		SymmetricKeyEncryptionAllowed:       &falseValue,
+		SymmetricKeyInceptionTTL:            &zero,
+		SymmetricKeyLength:                  &keyLen,
+		SymmetricKeyRetentionUseTTL:         &twentyYears,
+		RequireSignedKeyDelivery:            &falseValue,
+	}
+
+	params := crypto_config.NewAddUseDomainParams()
+	params.CryptoConfigID = *sdk.cryptoConfig.ID
+	params.NewUseDomain = &useDomain
+
+	_, err := sdkClient.CryptoConfig.AddUseDomain(params, sdk.authInfo)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (sdk *standardPeacemakrSDK) hasUseDomain() bool {
+	return sdk.cryptoConfig.SymmetricKeyUseDomains != nil && len(sdk.cryptoConfig.SymmetricKeyUseDomains) != 0
+}
+
 //
 // SDK impl
 //

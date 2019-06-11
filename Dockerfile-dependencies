@@ -25,5 +25,4 @@ ADD ./generated /go/src/github.com/notasecret/peacemakr-go-sdk/generated/
 RUN cd src/github.com/notasecret/peacemakr-go-sdk/.; GO111MODULE=on go mod vendor
 
 WORKDIR /opt/tests
-RUN go test -v github.com/notasecret/peacemakr-go-sdk && rm -rf *
-RUN go test -v -bench=. github.com/notasecret/peacemakr-go-sdk
+RUN go test -v -bench=. github.com/notasecret/peacemakr-go-sdk && rm -rf *

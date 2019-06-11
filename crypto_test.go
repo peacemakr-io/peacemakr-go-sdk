@@ -72,12 +72,8 @@ func TestRegisterAndSync(t *testing.T) {
 	}
 }
 
+// TODO: figure out why this test is failing
 func TestEncrypt(t *testing.T) {
-	if apiKey == "peacemaker-key-123-123-123" {
-		t.Log("Not running Encrypt/Decrypt tests because we don't have a valid API Key")
-		return
-	}
-
 	persister := utils.GetDiskPersister(".")
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, nil, true)
 	if err != nil {
@@ -90,6 +86,17 @@ func TestEncrypt(t *testing.T) {
 
 	if err := peacemakrSDK.Sync(); err != nil {
 		t.Fatal(err)
+	}
+
+	if !peacemakrSDK.(*standardPeacemakrSDK).hasUseDomain() {
+		t.Log("no use domain")
+		if err := peacemakrSDK.(*standardPeacemakrSDK).createUseDomain(1, t.Name()); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := peacemakrSDK.Sync(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	bytes := make([]byte, messageSize)
@@ -157,12 +164,8 @@ func BenchmarkSync(b *testing.B) {
 	}
 }
 
+// TODO: figure out why these tests are failing
 func BenchmarkEncrypt(b *testing.B) {
-	if apiKey == "peacemaker-key-123-123-123" {
-		b.Log("Not running Encrypt/Decrypt tests because we don't have a valid API Key")
-		return
-	}
-
 	persister := utils.GetInMemPersister()
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &hostname, persister, nil, true)
 	if err != nil {
@@ -175,6 +178,16 @@ func BenchmarkEncrypt(b *testing.B) {
 
 	if err := peacemakrSDK.Sync(); err != nil {
 		b.Fatal(err)
+	}
+
+	if !peacemakrSDK.(*standardPeacemakrSDK).hasUseDomain() {
+		if err := peacemakrSDK.(*standardPeacemakrSDK).createUseDomain(1, b.Name()); err != nil {
+			b.Fatal(err)
+		}
+
+		if err := peacemakrSDK.Sync(); err != nil {
+			b.Fatal(err)
+		}
 	}
 
 	bytes := make([]byte, messageSize)
@@ -192,11 +205,6 @@ func BenchmarkEncrypt(b *testing.B) {
 }
 
 func BenchmarkDecrypt(b *testing.B) {
-	if apiKey == "peacemaker-key-123-123-123" {
-		b.Log("Not running Encrypt/Decrypt tests because we don't have a valid API Key")
-		return
-	}
-
 	persister := utils.GetInMemPersister()
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &hostname, persister, nil, true)
 	if err != nil {
@@ -209,6 +217,16 @@ func BenchmarkDecrypt(b *testing.B) {
 
 	if err := peacemakrSDK.Sync(); err != nil {
 		b.Fatal(err)
+	}
+
+	if !peacemakrSDK.(*standardPeacemakrSDK).hasUseDomain() {
+		if err := peacemakrSDK.(*standardPeacemakrSDK).createUseDomain(1, b.Name()); err != nil {
+			b.Fatal(err)
+		}
+
+		if err := peacemakrSDK.Sync(); err != nil {
+			b.Fatal(err)
+		}
 	}
 
 	bytes := make([]byte, messageSize)
