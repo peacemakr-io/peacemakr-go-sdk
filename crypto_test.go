@@ -89,7 +89,6 @@ func TestEncrypt(t *testing.T) {
 	}
 
 	if !peacemakrSDK.(*standardPeacemakrSDK).hasUseDomain() {
-		t.Log("no use domain")
 		if err := peacemakrSDK.(*standardPeacemakrSDK).createUseDomain(1, t.Name()); err != nil {
 			t.Fatal(err)
 		}

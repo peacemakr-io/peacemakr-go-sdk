@@ -263,7 +263,7 @@ func (sdk *standardPeacemakrSDK) logString(s string) {
 func (sdk *standardPeacemakrSDK) logError(err error) {
 	_, file, line, _ := goRt.Caller(1)
 	debugInfo := sdk.getDebugInfo()
-	sdk.sysLog.Printf("[%s: %d] %s : %e --- %v", file, line, debugInfo, err, err)
+	sdk.sysLog.Printf("[%s: %d] %s : %v", file, line, debugInfo, err)
 	if sdk.debugMode {
 		goRtDebug.PrintStack()
 	}
@@ -560,7 +560,18 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 	// Setup the crypto config for the encryption.
 	mode := coreCrypto.SYMMETRIC
 	asymmetricCipher := coreCrypto.ASYMMETRIC_UNSPECIFIED
-	digestAlgorithm := coreCrypto.SHA_256
+
+	var digestAlgorithm coreCrypto.MessageDigestAlgorithm
+	switch *selectedDomain.DigestAlgorithm {
+	case "SHA_224":
+		digestAlgorithm = coreCrypto.SHA_224
+	case "SHA_256":
+		digestAlgorithm = coreCrypto.SHA_256
+	case "SHA_384":
+		digestAlgorithm = coreCrypto.SHA_384
+	case "SHA_512":
+		digestAlgorithm = coreCrypto.SHA_512
+	}
 
 	var symmetricCipher coreCrypto.SymmetricCipher
 	switch *selectedDomain.SymmetricKeyEncryptionAlg {
@@ -649,7 +660,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 
 	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(cfg.SymmetricCipher, key)
 	defer pmKey.Destroy()
-	myKeyId, err := sdk.persister.Load("keyId")
+	myKeyId, err := sdk.getPubKeyId()
 	if err != nil {
 		sdk.logError(err)
 		return nil, err
@@ -677,7 +688,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 		return nil, err
 	}
 
-	myPrivKeyStr, err := sdk.persister.Load("priv")
+	myPrivKeyStr, err := sdk.getPrivKey()
 	myKey, err := coreCrypto.NewPrivateKeyFromPEM(cfg.SymmetricCipher, myPrivKeyStr)
 	if err != nil {
 		sdk.logError(err)
@@ -890,6 +901,21 @@ func (sdk *standardPeacemakrSDK) getPubKeyId() (string, error) {
 	return keyId, nil
 }
 
+func (sdk *standardPeacemakrSDK) updatePubKeyId(newKeyID string) error {
+
+	if !sdk.persister.Exists("keyId") {
+		err := errors.New("client is not registered")
+		return err
+	}
+
+	err := sdk.persister.Save("keyId", newKeyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (sdk *standardPeacemakrSDK) errOnNotRegistered() error {
 
 	if sdk.isRegisteredCache == true {
@@ -947,11 +973,12 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 		keyIds = append(keyIds, keyId)
 	}
 	fallbackToCloud := true
-	ciphertextVersion := int64(0)
+	ciphertextVersion := int64(1)
 	emptyString := ""
 	twentyYears := int64(60 * 60 * 24 * 365 * 20)
 	zero := int64(0)
-	alg := "CHACHA"
+	alg := "CHACHA20_POLY1305"
+	digestAlg := "SHA_256"
 	keyLen := int64(32)
 	falseValue := false
 
@@ -973,6 +1000,7 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 		SymmetricKeyLength:                  &keyLen,
 		SymmetricKeyRetentionUseTTL:         &twentyYears,
 		RequireSignedKeyDelivery:            &falseValue,
+		DigestAlgorithm:                     &digestAlg,
 	}
 
 	params := crypto_config.NewAddUseDomainParams()
@@ -1238,8 +1266,26 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 		},
 	}
 
-	_, err = networkClient.Client.UpdateClientPublicKey(updateKeyParams, sdk.authInfo)
-	if err != nil {
+	updatedKey, networkErr := networkClient.Client.UpdateClientPublicKey(updateKeyParams, sdk.authInfo)
+	if networkErr != nil {
+		sdk.logString("Error on the network, rolling back public key changes")
+
+		// Roll back the changes
+		if err := sdk.savePubKey(prevPub); err != nil {
+			return errors.New(fmt.Sprintf("In recovering from %v, error %v ocurred", networkErr, err))
+		}
+		if err := sdk.savePrivKey(prevPriv); err != nil {
+			return errors.New(fmt.Sprintf("In recovering from %v, error %v ocurred", networkErr, err))
+		}
+
+		sdk.asymKeys.keyCreationTime = prevCreatedAt
+
+		sdk.logError(networkErr)
+		return networkErr
+	}
+
+	// Only update the public key ID if everything was successful
+	if err := sdk.updatePubKeyId(*updatedKey.Payload.ID); err != nil {
 		sdk.logError(err)
 		return err
 	}

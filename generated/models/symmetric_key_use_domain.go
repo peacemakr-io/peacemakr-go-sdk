@@ -21,6 +21,10 @@ type SymmetricKeyUseDomain struct {
 	// Required: true
 	CreationTime *int64 `json:"creationTime"`
 
+	// The digest algorithm to use for signing messages in this use domain
+	// Required: true
+	DigestAlgorithm *string `json:"digestAlgorithm"`
+
 	// after encrypting new plaintexts, package the ciphertext with this version of the packaged ciphertext
 	// Required: true
 	EncryptingPackagedCiphertextVersion *int64 `json:"encryptingPackagedCiphertextVersion"`
@@ -93,6 +97,10 @@ func (m *SymmetricKeyUseDomain) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateDigestAlgorithm(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateEncryptingPackagedCiphertextVersion(formats); err != nil {
 		res = append(res, err)
 	}
@@ -162,6 +170,15 @@ func (m *SymmetricKeyUseDomain) Validate(formats strfmt.Registry) error {
 func (m *SymmetricKeyUseDomain) validateCreationTime(formats strfmt.Registry) error {
 
 	if err := validate.Required("creationTime", "body", m.CreationTime); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *SymmetricKeyUseDomain) validateDigestAlgorithm(formats strfmt.Registry) error {
+
+	if err := validate.Required("digestAlgorithm", "body", m.DigestAlgorithm); err != nil {
 		return err
 	}
 
