@@ -163,7 +163,6 @@ func BenchmarkSync(b *testing.B) {
 	}
 }
 
-// TODO: figure out why these tests are failing
 func BenchmarkEncrypt(b *testing.B) {
 	persister := utils.GetInMemPersister()
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &hostname, persister, nil, false)

@@ -954,7 +954,7 @@ func (sdk *standardPeacemakrSDK) getPubKeyId() (string, error) {
 func (sdk *standardPeacemakrSDK) updatePubKeyId(newKeyID string) error {
 
 	if !sdk.persister.Exists("keyId") {
-		err := errors.New("client is not registered")
+		err := errors.New("public key ID doesn't exist, client may not be registered")
 		return err
 	}
 
@@ -1288,34 +1288,38 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 		return err
 	}
 
-	pub, _, keyTy, generateErr := sdk.generateKeys()
-	if generateErr != nil {
-		// Roll back the changes
+	// Use this function to roll back in case of error
+	rollback := func(outerErr error) error {
 		if err := sdk.savePubKey(prevPub); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, while saving pub key, error %v ocurred", generateErr, err))
+			return errors.New(fmt.Sprintf("In recovering from %v, while saving pub key, error %v ocurred", outerErr, err))
 		}
 		if err := sdk.savePrivKey(prevPriv); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, while saving priv key, error %v ocurred", generateErr, err))
+			return errors.New(fmt.Sprintf("In recovering from %v, while saving priv key, error %v ocurred", outerErr, err))
 		}
 
 		if err := sdk.saveKeyCreationTime(prevCreatedAt); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, while saving key creation time, error %v ocurred", generateErr, err))
+			return errors.New(fmt.Sprintf("In recovering from %v, while saving key creation time, error %v ocurred", outerErr, err))
 		}
+		return nil
+	}
 
-		return generateErr
+	pub, _, keyTy, err := sdk.generateKeys()
+	if err != nil {
+		// Roll back the changes
+		return rollback(err)
 	}
 
 	networkClient := sdk.getClient()
 	clientID, err := sdk.getClientId()
 	if err != nil {
-		return err
+		return rollback(err)
 	}
 
 	pemStr := "pem"
 
 	keyID, err := sdk.getPubKeyId()
 	if err != nil {
-		return err
+		return rollback(err)
 	}
 
 	updateKeyParams := &clientReq.UpdateClientPublicKeyParams{
@@ -1329,30 +1333,17 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 		},
 	}
 
-	updatedKey, networkErr := networkClient.Client.UpdateClientPublicKey(updateKeyParams, sdk.authInfo)
-	if networkErr != nil {
+	updatedKey, err := networkClient.Client.UpdateClientPublicKey(updateKeyParams, sdk.authInfo)
+	if err != nil {
 		sdk.logString("Error on the network, rolling back public key changes")
-
-		// Roll back the changes
-		if err := sdk.savePubKey(prevPub); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, while saving pub key, error %v ocurred", networkErr, err))
-		}
-		if err := sdk.savePrivKey(prevPriv); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, while saving priv key, error %v ocurred", networkErr, err))
-		}
-
-		if err := sdk.saveKeyCreationTime(prevCreatedAt); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, while saving key creation time, error %v ocurred", generateErr, err))
-		}
-
-		sdk.logError(networkErr)
-		return networkErr
+		sdk.logError(err)
+		return rollback(err)
 	}
 
 	// Only update the public key ID if everything was successful
 	if err := sdk.updatePubKeyId(*updatedKey.Payload.ID); err != nil {
 		sdk.logError(err)
-		return err
+		return rollback(err)
 	}
 
 	return nil
