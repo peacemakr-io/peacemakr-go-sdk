@@ -17,6 +17,7 @@ import (
 	"math/rand"
 	goRt "runtime"
 	goRtDebug "runtime/debug"
+	"strconv"
 	"time"
 )
 
@@ -41,7 +42,7 @@ type standardPeacemakrSDK struct {
 	asymKeys           *keyStruct
 	symKeyCache        map[string][]byte
 	sysLog             SDKLogger
-	debugMode          bool
+	printStackTrace    bool
 }
 
 func (sdk *standardPeacemakrSDK) getDebugInfo() string {
@@ -255,7 +256,7 @@ func (sdk *standardPeacemakrSDK) logString(s string) {
 	_, file, line, _ := goRt.Caller(1)
 	debugInfo := sdk.getDebugInfo()
 	sdk.sysLog.Printf("[%s: %d] %s : %s", file, line, debugInfo, s)
-	if sdk.debugMode {
+	if sdk.printStackTrace {
 		goRtDebug.PrintStack()
 	}
 }
@@ -264,7 +265,7 @@ func (sdk *standardPeacemakrSDK) logError(err error) {
 	_, file, line, _ := goRt.Caller(1)
 	debugInfo := sdk.getDebugInfo()
 	sdk.sysLog.Printf("[%s: %d] %s : %v", file, line, debugInfo, err)
-	if sdk.debugMode {
+	if sdk.printStackTrace {
 		goRtDebug.PrintStack()
 	}
 }
@@ -346,12 +347,6 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 		}
 
 		sdk.cryptoConfig.ClientKeyTTL = oneYear.Nanoseconds() / 1e9
-	}
-
-	// If they haven't specified anything for the client asymmetric keys, use ECDH_256
-	if sdk.getCryptoConfigCipher() == coreCrypto.ASYMMETRIC_UNSPECIFIED {
-		sdk.cryptoConfig.ClientKeyType = "ec"
-		sdk.cryptoConfig.ClientKeyBitlength = 256
 	}
 
 	return nil
@@ -632,6 +627,10 @@ func (sdk *standardPeacemakrSDK) getPubKey() (string, error) {
 		return "", err
 	}
 
+	if sdk.asymKeys == nil {
+		sdk.asymKeys = &keyStruct{}
+	}
+
 	sdk.asymKeys.pubKey = pub
 	return pub, nil
 }
@@ -649,13 +648,50 @@ func (sdk *standardPeacemakrSDK) getPrivKey() (string, error) {
 	if sdk.asymKeys != nil {
 		return sdk.asymKeys.privKey, nil
 	}
+
 	priv, err := sdk.persister.Load("priv")
 	if err != nil {
 		return "", err
 	}
 
+	if sdk.asymKeys == nil {
+		sdk.asymKeys = &keyStruct{}
+	}
+
 	sdk.asymKeys.privKey = priv
 	return priv, nil
+}
+
+func (sdk *standardPeacemakrSDK) saveKeyCreationTime(time int64) error {
+	sdk.asymKeys.keyCreationTime = time
+	err := sdk.persister.Save("key_creation_time", strconv.FormatInt(time, 16))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sdk *standardPeacemakrSDK) getKeyCreationTime() (int64, error) {
+	if sdk.asymKeys != nil {
+		return sdk.asymKeys.keyCreationTime, nil
+	}
+
+	timeStr, err := sdk.persister.Load("key_creation_time")
+	if err != nil {
+		return 0, err
+	}
+
+	if sdk.asymKeys == nil {
+		sdk.asymKeys = &keyStruct{}
+	}
+
+	sdk.asymKeys.keyCreationTime, err = strconv.ParseInt(timeStr, 16, 64)
+	if err != nil {
+		sdk.asymKeys.keyCreationTime = 0
+		return 0, err
+	}
+
+	return sdk.asymKeys.keyCreationTime, nil
 }
 
 func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string) ([]byte, error) {
@@ -969,7 +1005,10 @@ func (sdk *standardPeacemakrSDK) generateKeys() (string, string, string, error) 
 		return "", "", "", err
 	}
 
-	sdk.asymKeys.keyCreationTime = time.Now().Unix()
+	if err := sdk.saveKeyCreationTime(time.Now().Unix()); err != nil {
+		return "", "", "", err
+	}
+
 	return pub, priv, keyTy, nil
 }
 
@@ -987,7 +1026,7 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 		keyIds = append(keyIds, keyId)
 	}
 	fallbackToCloud := true
-	ciphertextVersion := int64(1)
+	ciphertextVersion := int64(0)
 	emptyString := ""
 	twentyYears := int64(60 * 60 * 24 * 365 * 20)
 	zero := int64(0)
@@ -1192,7 +1231,11 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 			cryptoConfigCipher = coreCrypto.ASYMMETRIC_UNSPECIFIED
 		}
 	default:
-		cryptoConfigCipher = coreCrypto.ASYMMETRIC_UNSPECIFIED
+		// If they haven't specified anything for the client asymmetric keys, use ECDH_256
+		sdk.cryptoConfig.ClientKeyType = "ec"
+		sdk.cryptoConfig.ClientKeyBitlength = 256
+
+		cryptoConfigCipher = coreCrypto.ECDH_P256
 	}
 
 	return cryptoConfigCipher
@@ -1239,19 +1282,25 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 	if err != nil {
 		return err
 	}
-	prevCreatedAt := sdk.asymKeys.keyCreationTime
+
+	prevCreatedAt, err := sdk.getKeyCreationTime()
+	if err != nil {
+		return err
+	}
 
 	pub, _, keyTy, generateErr := sdk.generateKeys()
 	if generateErr != nil {
 		// Roll back the changes
 		if err := sdk.savePubKey(prevPub); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, error %v ocurred", generateErr, err))
+			return errors.New(fmt.Sprintf("In recovering from %v, while saving pub key, error %v ocurred", generateErr, err))
 		}
 		if err := sdk.savePrivKey(prevPriv); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, error %v ocurred", generateErr, err))
+			return errors.New(fmt.Sprintf("In recovering from %v, while saving priv key, error %v ocurred", generateErr, err))
 		}
 
-		sdk.asymKeys.keyCreationTime = prevCreatedAt
+		if err := sdk.saveKeyCreationTime(prevCreatedAt); err != nil {
+			return errors.New(fmt.Sprintf("In recovering from %v, while saving key creation time, error %v ocurred", generateErr, err))
+		}
 
 		return generateErr
 	}
@@ -1286,13 +1335,15 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 
 		// Roll back the changes
 		if err := sdk.savePubKey(prevPub); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, error %v ocurred", networkErr, err))
+			return errors.New(fmt.Sprintf("In recovering from %v, while saving pub key, error %v ocurred", networkErr, err))
 		}
 		if err := sdk.savePrivKey(prevPriv); err != nil {
-			return errors.New(fmt.Sprintf("In recovering from %v, error %v ocurred", networkErr, err))
+			return errors.New(fmt.Sprintf("In recovering from %v, while saving priv key, error %v ocurred", networkErr, err))
 		}
 
-		sdk.asymKeys.keyCreationTime = prevCreatedAt
+		if err := sdk.saveKeyCreationTime(prevCreatedAt); err != nil {
+			return errors.New(fmt.Sprintf("In recovering from %v, while saving key creation time, error %v ocurred", generateErr, err))
+		}
 
 		sdk.logError(networkErr)
 		return networkErr

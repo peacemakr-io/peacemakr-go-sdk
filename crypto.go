@@ -26,8 +26,9 @@ type PeacemakrSDK interface {
 	Register() error
 
 	//
-	// Sync this client's state with the server.This invocation will help performance of subsequent encryption
-	// and decryption calls
+	// Sync this client's state with the server. This invocation will help performance of subsequent encryption
+	// and decryption calls - it is completely optional but calling it will ensure that your SDK is up to date
+	// at a convenient time.
 	//
 	// Sync may fail, if registration was not invoked, if there's network connectivity issues, or
 	// unexpected authorization issues.
@@ -98,7 +99,10 @@ type PeacemakrSDK interface {
 // The logger may be left nil, in which case it defaults to the go standard library log.Logger with no prefix
 // and standard flags. If that is not desired, you may pass in a logger that conforms to the appropriate interface,
 // or even a log.Logger with your chosen configuration. See the example for 2 different options.
-func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister, optionalLogger SDKLogger, debugMode bool) (PeacemakrSDK, error) {
+//
+// printStackTrace changes the behavior of the SDK's logging; if true then each log message will print a stack trace. Good for debugging
+// when something goes sideways, but can usually be left off.
+func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister, optionalLogger SDKLogger, printStackTrace bool) (PeacemakrSDK, error) {
 
 	if persister == nil {
 		return nil, errors.New("persister is required")
@@ -124,7 +128,7 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 		nil,
 		map[string][]byte{},
 		loggerToUse,
-		debugMode,
+		printStackTrace,
 	}
 	return PeacemakrSDK(sdk), nil
 }
