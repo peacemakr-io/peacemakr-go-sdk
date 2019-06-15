@@ -1101,7 +1101,6 @@ definitions:
       - encryptionKeyIds
       - endableKDSFallbackToCloud
       - requireSignedKeyDelivery
-      - digestAlgorithm
     properties:
       id:
         type: string
@@ -1156,6 +1155,7 @@ definitions:
       digestAlgorithm:
         description: The digest algorithm to use for signing messages in this use domain
         type: string
+        default: "SHA_256"
 
   EncryptedSymmetricKey:
     type: object

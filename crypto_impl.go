@@ -561,6 +561,11 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 	mode := coreCrypto.SYMMETRIC
 	asymmetricCipher := coreCrypto.ASYMMETRIC_UNSPECIFIED
 
+	if selectedDomain.DigestAlgorithm == nil {
+		defaultDigest := "SHA_256"
+		selectedDomain.DigestAlgorithm = &defaultDigest
+	}
+
 	var digestAlgorithm coreCrypto.MessageDigestAlgorithm
 	switch *selectedDomain.DigestAlgorithm {
 	case "SHA_224":
@@ -571,6 +576,13 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 		digestAlgorithm = coreCrypto.SHA_384
 	case "SHA_512":
 		digestAlgorithm = coreCrypto.SHA_512
+	default:
+		digestAlgorithm = coreCrypto.SHA_256
+	}
+
+	if selectedDomain.SymmetricKeyEncryptionAlg == nil {
+		defaultAlg := "CHACHA20_POLY1305"
+		selectedDomain.SymmetricKeyEncryptionAlg = &defaultAlg
 	}
 
 	var symmetricCipher coreCrypto.SymmetricCipher
@@ -581,6 +593,8 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 		symmetricCipher = coreCrypto.AES_192_GCM
 	case "AES_256_GCM":
 		symmetricCipher = coreCrypto.AES_256_GCM
+	case "CHACHA20_POLY1305":
+		symmetricCipher = coreCrypto.CHACHA20_POLY1305
 	default:
 		symmetricCipher = coreCrypto.CHACHA20_POLY1305
 	}
