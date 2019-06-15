@@ -72,7 +72,6 @@ func TestRegisterAndSync(t *testing.T) {
 	}
 }
 
-// TODO: figure out why this test is failing
 func TestEncrypt(t *testing.T) {
 	persister := utils.GetDiskPersister(".")
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, nil, false)
