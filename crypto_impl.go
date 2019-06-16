@@ -948,6 +948,21 @@ func (sdk *standardPeacemakrSDK) getClientId() (string, error) {
 	return clientId, nil
 }
 
+func (sdk *standardPeacemakrSDK) saveClientId(clientID string) error {
+
+	if sdk.persister.Exists("clientId") {
+		err := errors.New("client ID already exists, client is already registered")
+		return err
+	}
+
+	err := sdk.persister.Save("clientId", clientID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (sdk *standardPeacemakrSDK) getPubKeyId() (string, error) {
 
 	if !sdk.persister.Exists("keyId") {
@@ -1167,12 +1182,12 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		}
 
 		// We only sent up one public key, but just in case the server has some other state we use the last one
-		saveErr := sdk.persister.Save("keyId", *ok.Payload.PublicKeys[len(ok.Payload.PublicKeys)-1].ID)
+		saveErr := sdk.updatePubKeyId(*ok.Payload.PublicKeys[len(ok.Payload.PublicKeys)-1].ID)
 		if saveErr != nil {
 			sdk.logError(err)
 			return saveErr
 		}
-		saveErr = sdk.persister.Save("clientId", *ok.Payload.ID)
+		saveErr = sdk.saveClientId(*ok.Payload.ID)
 		if saveErr != nil {
 			sdk.logError(err)
 			return saveErr
