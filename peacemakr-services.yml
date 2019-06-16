@@ -1040,14 +1040,16 @@ definitions:
     type: object
     required:
       - id
-      - publicKey
+      - publicKeys
     properties:
       id:
         type: string
       sdk:
         type: string
-      publicKey:
-        $ref: '#/definitions/PublicKey'
+      publicKeys:
+        type: array
+        items:
+          $ref: '#/definitions/PublicKey'
 
   CryptoConfig:
     type: object
@@ -1135,6 +1137,7 @@ definitions:
       symmetricKeyEncryptionAlg:
         description: the specific encryption alg to encrypt new plaintexts for application layer encryption operations
         type: string
+        default: "CHACHA20_POLY1305"
       encryptingPackagedCiphertextVersion:
         description: after encrypting new plaintexts, package the ciphertext with this version of the packaged ciphertext
         type: integer

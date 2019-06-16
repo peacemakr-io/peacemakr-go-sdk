@@ -1152,13 +1152,13 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		params.Client.ID = &tempId
 		params.Client.Sdk = sdk.version
 		encoding := "pem"
-		params.Client.PublicKey = &models.PublicKey{
+		params.Client.PublicKeys = []*models.PublicKey{{
 			CreationTime: &sdk.asymKeys.keyCreationTime,
 			Encoding:     &encoding,
 			ID:           &tempId,
 			Key:          &pub,
 			KeyType:      &keyTy,
-		}
+		}}
 
 		ok, err := sdkClient.Client.AddClient(params, sdk.authInfo)
 		if err != nil {
@@ -1166,7 +1166,8 @@ func (sdk *standardPeacemakrSDK) Register() error {
 			return err
 		}
 
-		saveErr := sdk.persister.Save("keyId", *ok.Payload.PublicKey.ID)
+		// We only sent up one public key, but just in case the server has some other state we use the last one
+		saveErr := sdk.persister.Save("keyId", *ok.Payload.PublicKeys[len(ok.Payload.PublicKeys)-1].ID)
 		if saveErr != nil {
 			sdk.logError(err)
 			return saveErr

@@ -6,6 +6,8 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"strconv"
+
 	strfmt "github.com/go-openapi/strfmt"
 
 	"github.com/go-openapi/errors"
@@ -21,9 +23,9 @@ type Client struct {
 	// Required: true
 	ID *string `json:"id"`
 
-	// public key
+	// public keys
 	// Required: true
-	PublicKey *PublicKey `json:"publicKey"`
+	PublicKeys []*PublicKey `json:"publicKeys"`
 
 	// sdk
 	Sdk string `json:"sdk,omitempty"`
@@ -37,7 +39,7 @@ func (m *Client) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validatePublicKey(formats); err != nil {
+	if err := m.validatePublicKeys(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -56,19 +58,26 @@ func (m *Client) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Client) validatePublicKey(formats strfmt.Registry) error {
+func (m *Client) validatePublicKeys(formats strfmt.Registry) error {
 
-	if err := validate.Required("publicKey", "body", m.PublicKey); err != nil {
+	if err := validate.Required("publicKeys", "body", m.PublicKeys); err != nil {
 		return err
 	}
 
-	if m.PublicKey != nil {
-		if err := m.PublicKey.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("publicKey")
-			}
-			return err
+	for i := 0; i < len(m.PublicKeys); i++ {
+		if swag.IsZero(m.PublicKeys[i]) { // not required
+			continue
 		}
+
+		if m.PublicKeys[i] != nil {
+			if err := m.PublicKeys[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("publicKeys" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
 	}
 
 	return nil
