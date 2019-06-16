@@ -112,7 +112,36 @@ func (a *Client) GetCryptoConfig(params *GetCryptoConfigParams, authInfo runtime
 }
 
 /*
-RemoveUseDomain expires a use domain
+RapidRotationUseDomain rapids expiration of existing use doamin and immediately replacment with an identical use domain containing fresh keys
+*/
+func (a *Client) RapidRotationUseDomain(params *RapidRotationUseDomainParams, authInfo runtime.ClientAuthInfoWriter) (*RapidRotationUseDomainOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewRapidRotationUseDomainParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "rapidRotationUseDomain",
+		Method:             "POST",
+		PathPattern:        "/crypto/useDomain/{useDomainId}/rapidRotation",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &RapidRotationUseDomainReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*RapidRotationUseDomainOK), nil
+
+}
+
+/*
+RemoveUseDomain deletes a fully expired use domain
 */
 func (a *Client) RemoveUseDomain(params *RemoveUseDomainParams, authInfo runtime.ClientAuthInfoWriter) (*RemoveUseDomainOK, error) {
 	// TODO: Validate the params before sending
@@ -195,6 +224,35 @@ func (a *Client) UpdateCryptoConfigSelectorScheme(params *UpdateCryptoConfigSele
 		return nil, err
 	}
 	return result.(*UpdateCryptoConfigSelectorSchemeOK), nil
+
+}
+
+/*
+UpdateExpireUseDomain chnages expiration of a use domain
+*/
+func (a *Client) UpdateExpireUseDomain(params *UpdateExpireUseDomainParams, authInfo runtime.ClientAuthInfoWriter) (*UpdateExpireUseDomainOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewUpdateExpireUseDomainParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "updateExpireUseDomain",
+		Method:             "POST",
+		PathPattern:        "/crypto/useDomain/{useDomainId}/updateExpire",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &UpdateExpireUseDomainReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*UpdateExpireUseDomainOK), nil
 
 }
 

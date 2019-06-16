@@ -7,10 +7,13 @@ package client
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/go-openapi/runtime"
 
 	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/generated/models"
 )
 
 // UpdateClientPublicKeyReader is a Reader for the UpdateClientPublicKey structure.
@@ -51,13 +54,21 @@ func NewUpdateClientPublicKeyOK() *UpdateClientPublicKeyOK {
 Public key for the client successfully updated
 */
 type UpdateClientPublicKeyOK struct {
+	Payload *models.PublicKey
 }
 
 func (o *UpdateClientPublicKeyOK) Error() string {
-	return fmt.Sprintf("[POST /client/{clientId}/updatePublicKey][%d] updateClientPublicKeyOK ", 200)
+	return fmt.Sprintf("[POST /client/{clientId}/updatePublicKey][%d] updateClientPublicKeyOK  %+v", 200, o.Payload)
 }
 
 func (o *UpdateClientPublicKeyOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.PublicKey)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+		return err
+	}
 
 	return nil
 }

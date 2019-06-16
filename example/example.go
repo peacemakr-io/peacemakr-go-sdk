@@ -6,6 +6,7 @@ import (
 	"github.com/notasecret/peacemakr-go-sdk/utils"
 	"log"
 	"math/rand"
+	"os"
 	"sync"
 	"time"
 )
@@ -15,10 +16,17 @@ type TestMessage struct {
 	plaintext string
 }
 
+// Simple custom logger
+type CustomLogger struct{}
+
+func (l *CustomLogger) Printf(format string, args ...interface{}) {
+	log.Printf(format, args...)
+}
+
 func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan *TestMessage, wg *sync.WaitGroup, useDomainName string) {
 
 	log.Printf("Getting Peacemakr SDK for encrypting client %d...\n", clientNum)
-	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
+	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), &CustomLogger{}, true)
 	if err != nil {
 		wg.Done()
 		log.Fatalf("Encrypting client %d%s getting peacemakr sdk failed %s", clientNum, useDomainName, err)
@@ -31,7 +39,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	}
 	log.Printf("Encrypting client %d%s: starting %d registered.  Starting crypto round trips ...", clientNum, useDomainName, numRuns)
 
-	err = sdk.PreLoad()
+	err = sdk.Sync()
 	if err != nil {
 		wg.Done()
 		log.Fatalf("Encrypting clinet %d%s: failed to preload all keys", clientNum, useDomainName)
@@ -95,7 +103,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan *TestMessage) {
 	log.Printf("Getting Peacemakr SDK for decrypting client %d...\n", clientNum)
-	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"))
+	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), log.New(os.Stdout, "DecryptingClient", log.LstdFlags), true)
 	if err != nil {
 		log.Fatalf("Decrypting client %d, fetching peacemakr sdk failed %s", clientNum, err)
 	}

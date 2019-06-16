@@ -63,3 +63,21 @@ func (p *filePersister) Load(key string) (string, error) {
 	}
 	return string(b), err
 }
+
+type inMemPersister struct {
+	m map[string]string
+}
+
+func (p *inMemPersister) Exists(key string) bool {
+	_, exists := p.m[key]
+	return exists
+}
+
+func (p *inMemPersister) Save(key, value string) error {
+	p.m[key] = value
+	return nil
+}
+
+func (p *inMemPersister) Load(key string) (string, error) {
+	return p.m[key], nil
+}

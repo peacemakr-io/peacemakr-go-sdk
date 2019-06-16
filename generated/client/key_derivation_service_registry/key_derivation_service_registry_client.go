@@ -83,6 +83,64 @@ func (a *Client) DeleteKeyDerivationServiceInstance(params *DeleteKeyDerivationS
 }
 
 /*
+GetAllKeyDerivationServiceInstances gets the all key derivers registerd to org
+*/
+func (a *Client) GetAllKeyDerivationServiceInstances(params *GetAllKeyDerivationServiceInstancesParams, authInfo runtime.ClientAuthInfoWriter) (*GetAllKeyDerivationServiceInstancesOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewGetAllKeyDerivationServiceInstancesParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "getAllKeyDerivationServiceInstances",
+		Method:             "GET",
+		PathPattern:        "/crypto/deriver/all-instances",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetAllKeyDerivationServiceInstancesReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*GetAllKeyDerivationServiceInstancesOK), nil
+
+}
+
+/*
+GetKeyDerivationServiceInstance gets the keyderiver details by id
+*/
+func (a *Client) GetKeyDerivationServiceInstance(params *GetKeyDerivationServiceInstanceParams, authInfo runtime.ClientAuthInfoWriter) (*GetKeyDerivationServiceInstanceOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewGetKeyDerivationServiceInstanceParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "getKeyDerivationServiceInstance",
+		Method:             "GET",
+		PathPattern:        "/crypto/deriver/instance/{keyDerivationInstanceId}",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetKeyDerivationServiceInstanceReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*GetKeyDerivationServiceInstanceOK), nil
+
+}
+
+/*
 HeartbeatKeyDerivationServiceInstance heatbeats from the given key derivation service instance
 */
 func (a *Client) HeartbeatKeyDerivationServiceInstance(params *HeartbeatKeyDerivationServiceInstanceParams, authInfo runtime.ClientAuthInfoWriter) (*HeartbeatKeyDerivationServiceInstanceOK, error) {

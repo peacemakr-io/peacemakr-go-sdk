@@ -17,6 +17,12 @@ import (
 // swagger:model APIKey
 type APIKey struct {
 
+	// list of useDomains that APIKey has access to
+	AuthorizedUseDomains []string `json:"authorizedUseDomains"`
+
+	// creation time
+	CreationTime int64 `json:"creationTime,omitempty"`
+
 	// creator
 	Creator *Contact `json:"creator,omitempty"`
 

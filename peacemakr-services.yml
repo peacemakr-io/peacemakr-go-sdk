@@ -292,6 +292,69 @@ paths:
           description: Unable to process request
         '401':
           description: Not authenticated to perform request
+  /org/admin/{email}:
+    delete:
+      security:
+      - header: []
+      tags:
+      - Org
+      summary: Remove an existing admin from the org (You can not remove the last admin. It will faile with a Bad Request response.)
+      operationId: deleteAdminFromOrg
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: path
+        name: email
+        required: true
+        type: string
+      responses:
+        '200':
+          description: Successful deletion of an existing admin from org.
+        '400':
+          description: Unable to process request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        '401':
+          description: Not authenticated to perform request
+        '500':
+          description: Unrecoverable error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+  /org/admin:
+    post:
+      security:
+      - header: []
+      tags:
+      - Org
+      summary: Add a new admin to this org
+      operationId: addAdminToOrg
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+        - in: body
+          name: contact
+          required: true
+          schema:
+            $ref: '#/definitions/Contact'
+      responses:
+        '200':
+          description: Successful addition of a new admin to this org
+          schema:
+            $ref: '#/definitions/Contact'
+        '400':
+          description: Unable to process request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        '401':
+          description: Not authenticated to perform request
+        '500':
+          description: Unrecoverable error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
   /org/stripeId:
     post:
       security:
@@ -418,6 +481,8 @@ paths:
       responses:
         '200':
           description: Public key for the client successfully updated
+          schema:
+            $ref: '#/definitions/PublicKey'
         '400':
           description: Unable to process request
 
@@ -532,7 +597,7 @@ paths:
         - header: []
       tags:
         - CryptoConfig
-      summary: Expire a use domain
+      summary: Delete a fully expired use domain
       operationId: removeUseDomain
       consumes:
         - application/json
@@ -545,9 +610,103 @@ paths:
           type: string
       responses:
         '200':
-          description: Successfully expired the use domain from service
+          description: Successfully expired use doamin.
         '400':
           description: Unable to process request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        '401':
+          description: Not authenticated to perform request
+        '403':
+          description: Not authorized to perform request
+        '500':
+          description: Unrecoverable internal error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+  '/crypto/useDomain/{useDomainId}/rapidRotation':
+    post:
+      security:
+        - header: []
+      tags:
+        - CryptoConfig
+      summary: Rapid expiration of existing use doamin and immediately replacment with an identical use domain containing fresh keys
+      operationId: rapidRotationUseDomain
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: useDomainId
+          required: true
+          type: string
+        - in: query
+          name: optionalNextKeyDerivationServiceId
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Successfully rotated this use doamin
+        '400':
+          description: Unable to process request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        '401':
+          description: Not authenticated to perform request
+        '403':
+          description: Not authorized to perform request
+        '500':
+          description: Unrecoverable internal error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+  '/crypto/useDomain/{useDomainId}/updateExpire':
+    post:
+      security:
+        - header: []
+      tags:
+        - CryptoConfig
+      summary: Chnage expiration of a use domain
+      operationId: updateExpireUseDomain
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: useDomainId
+          required: true
+          type: string
+        - in: query
+          name: inceptionTTL
+          required: true
+          type: integer
+        - in: query
+          name: encryptionTTL
+          required: true
+          type: integer
+        - in: query
+          name: decryptionTTL
+          required: true
+          type: integer
+        - in: query
+          name: retentionTTL
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: Successfully expired use doamin.
+        '400':
+          description: Unable to process request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        '401':
+          description: Not authenticated to perform request
+        '403':
+          description: Not authorized to perform request
+        '500':
+          description: Unrecoverable internal error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
   '/crypto/useDomain/{useDomainId}/enableKDSFallbackToCloud':
     put:
       security:
@@ -712,6 +871,29 @@ paths:
           description: Update successful
         '400':
           description: Unable to process request
+    get:
+      security:
+        - header: []
+      tags:
+        - KeyDerivationServiceRegistry
+      summary: Get the keyderiver details by id
+      operationId: getKeyDerivationServiceInstance
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: keyDerivationInstanceId
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Requested key deriver found, details returned.
+          schema:
+            $ref: '#/definitions/KeyDerivationInstance'
+        '400':
+          description: Unable to process request.
   '/crypto/deriver/instance/{keyDerivationInstanceId}/heartbeat':
     get:
       security:
@@ -736,6 +918,27 @@ paths:
             $ref: '#/definitions/HeatbeatResponse'
         '400':
           description: Unable to process request
+  '/crypto/deriver/all-instances':
+    get:
+      security:
+        - header: []
+      tags:
+        - KeyDerivationServiceRegistry
+      summary: Get the all key derivers registerd to org
+      operationId: getAllKeyDerivationServiceInstances
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Get all registred key derivers associated with org
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/KeyDerivationInstance'
+        '400':
+          description: Unable to process request.
 
 
 
@@ -799,6 +1002,13 @@ definitions:
         type: string
       orgId:
         type: string
+      creationTime:
+        type: integer
+      authorizedUseDomains:
+        type: array
+        description: list of useDomains that APIKey has access to
+        items:
+          type: string
       creator:
         $ref: '#/definitions/Contact'
 
@@ -880,7 +1090,9 @@ definitions:
       - creationTime
       - symmetricKeyInceptionTTL
       - symmetricKeyEncryptionUseTTL
+      - symmetricKeyEncryptionAllowed
       - symmetricKeyDecryptionUseTTL
+      - symmetricKeyDecryptionAllowed
       - symmetricKeyRetentionUseTTL
       - symmetricKeyLength
       - symmetricKeyEncryptionAlg
@@ -905,9 +1117,15 @@ definitions:
       symmetricKeyEncryptionUseTTL:
         description: number of seconds since key creation that the key will be available for encryption
         type: integer
+      symmetricKeyEncryptionAllowed:
+        description: whether this use domain is available for encryption; if false, these keys should not be used for encrypting new messages
+        type: boolean
       symmetricKeyDecryptionUseTTL:
         description: number of seconds since key creation that the key will be available for decryption
         type: integer
+      symmetricKeyDecryptionAllowed:
+        description: whether this use domain is available for decryption; if false, these keys should not be used for decrypting messages
+        type: boolean
       symmetricKeyRetentionUseTTL:
         description: number of seconds since key creation that the key will be available for retention purposes
         type: integer
@@ -934,6 +1152,10 @@ definitions:
       requireSignedKeyDelivery:
         description: if required, all clients must receive these keys in a signed symmetric key delivery from the key deriver
         type: boolean
+      digestAlgorithm:
+        description: The digest algorithm to use for signing messages in this use domain
+        type: string
+        default: "SHA_256"
 
   EncryptedSymmetricKey:
     type: object
@@ -972,7 +1194,7 @@ definitions:
       creationTime:
         type: integer
       keyType:
-        example: "rsa"
+        example: "ec"
         type: string
       encoding:
         example: "pem"
@@ -1056,3 +1278,11 @@ definitions:
       mustSignDeliveredSymmetricKeys:
         type: boolean
         description: If true the key deriver must sign delivered symmetric keys ciphertext blobs
+
+  ErrorResponse:
+    type: object
+    required:
+      - msg
+    properties:
+      msg:
+        type: string
