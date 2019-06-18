@@ -86,14 +86,14 @@ func (sdk *standardPeacemakrSDK) GetDebugInfo() string {
 }
 
 func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
-	clientId, err := sdk.getClientId()
+	preferredPublicKeyId, err := sdk.getPreferredPubKeyId()
 	if err != nil {
 		sdk.logError(err)
 		return err
 	}
 
 	params := key_service.NewGetAllEncryptedKeysParams()
-	params.EncryptingKeyID = clientId
+	params.EncryptingKeyID = preferredPublicKeyId
 	params.SymmetricKeyIds = keyIds
 	ret, err := sdk.getClient().KeyService.GetAllEncryptedKeys(params, sdk.authInfo)
 	if err != nil {
@@ -979,17 +979,10 @@ func (sdk *standardPeacemakrSDK) getPreferredPubKeyId() (string, error) {
 }
 
 func (sdk *standardPeacemakrSDK) updatePreferredPubKeyId(newKeyID string) error {
-
-	if !sdk.persister.Exists("keyId") {
-		err := errors.New("public key ID doesn't exist, client may not be registered")
-		return err
-	}
-
 	err := sdk.persister.Save("keyId", newKeyID)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -1096,7 +1089,7 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 }
 
 func (sdk *standardPeacemakrSDK) hasUseDomain() bool {
-	return sdk.cryptoConfig.SymmetricKeyUseDomains != nil && len(sdk.cryptoConfig.SymmetricKeyUseDomains) != 0
+	return sdk.cryptoConfig.SymmetricKeyUseDomains != nil || len(sdk.cryptoConfig.SymmetricKeyUseDomains) != 0
 }
 
 //
@@ -1182,14 +1175,14 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		}
 
 		idxOfPreferredPublicKey := 0;
-		for idx, pubKey := range *ok.Payload.PublicKeys {
-			if pubKey.ID == *ok.Payload.PreferredPublicKeyId {
+		for idx, pubKey := range ok.Payload.PublicKeys {
+			if *pubKey.ID == ok.Payload.PreferredPublicKeyID {
 				idxOfPreferredPublicKey = idx
 			}
 		}
 
 		// We only sent up one public key, but just in case the server has some other state we use the last one
-		saveErr := sdk.updatePreferredPubKeyId(*ok.Payload.PreferredPublicKeyId[idxOfPreferredPublicKey].ID)
+		saveErr := sdk.updatePreferredPubKeyId(*ok.Payload.PublicKeys[idxOfPreferredPublicKey].ID)
 		if saveErr != nil {
 			sdk.logError(err)
 			return saveErr
