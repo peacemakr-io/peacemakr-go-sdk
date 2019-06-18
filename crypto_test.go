@@ -11,7 +11,7 @@ import (
 func getHostname() string {
 	envHostname, isSet := os.LookupEnv("PEACEMAKR_TEST_HOSTNAME")
 	if !isSet {
-		return ""
+		return "localhost:8080"
 	}
 	return envHostname
 }

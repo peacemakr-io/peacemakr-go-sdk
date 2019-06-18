@@ -46,6 +46,20 @@ func (o *DeleteClientReader) ReadResponse(response runtime.ClientResponse, consu
 		}
 		return nil, result
 
+	case 403:
+		result := NewDeleteClientForbidden()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
+	case 500:
+		result := NewDeleteClientInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
 	default:
 		return nil, runtime.NewAPIError("unknown error", response, response.Code())
 	}
@@ -108,7 +122,7 @@ func NewDeleteClientUnauthorized() *DeleteClientUnauthorized {
 
 /*DeleteClientUnauthorized handles this case with default header values.
 
-Not authenticated to perform request
+Not authenticated
 */
 type DeleteClientUnauthorized struct {
 }
@@ -118,6 +132,48 @@ func (o *DeleteClientUnauthorized) Error() string {
 }
 
 func (o *DeleteClientUnauthorized) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewDeleteClientForbidden creates a DeleteClientForbidden with default headers values
+func NewDeleteClientForbidden() *DeleteClientForbidden {
+	return &DeleteClientForbidden{}
+}
+
+/*DeleteClientForbidden handles this case with default header values.
+
+Not authorized
+*/
+type DeleteClientForbidden struct {
+}
+
+func (o *DeleteClientForbidden) Error() string {
+	return fmt.Sprintf("[DELETE /client/{clientId}][%d] deleteClientForbidden ", 403)
+}
+
+func (o *DeleteClientForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewDeleteClientInternalServerError creates a DeleteClientInternalServerError with default headers values
+func NewDeleteClientInternalServerError() *DeleteClientInternalServerError {
+	return &DeleteClientInternalServerError{}
+}
+
+/*DeleteClientInternalServerError handles this case with default header values.
+
+Internal server error
+*/
+type DeleteClientInternalServerError struct {
+}
+
+func (o *DeleteClientInternalServerError) Error() string {
+	return fmt.Sprintf("[DELETE /client/{clientId}][%d] deleteClientInternalServerError ", 500)
+}
+
+func (o *DeleteClientInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	return nil
 }

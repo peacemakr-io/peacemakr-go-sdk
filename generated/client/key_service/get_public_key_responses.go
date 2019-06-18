@@ -39,6 +39,27 @@ func (o *GetPublicKeyReader) ReadResponse(response runtime.ClientResponse, consu
 		}
 		return nil, result
 
+	case 401:
+		result := NewGetPublicKeyUnauthorized()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
+	case 403:
+		result := NewGetPublicKeyForbidden()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
+	case 500:
+		result := NewGetPublicKeyInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
 	default:
 		return nil, runtime.NewAPIError("unknown error", response, response.Code())
 	}
@@ -90,6 +111,69 @@ func (o *GetPublicKeyBadRequest) Error() string {
 }
 
 func (o *GetPublicKeyBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewGetPublicKeyUnauthorized creates a GetPublicKeyUnauthorized with default headers values
+func NewGetPublicKeyUnauthorized() *GetPublicKeyUnauthorized {
+	return &GetPublicKeyUnauthorized{}
+}
+
+/*GetPublicKeyUnauthorized handles this case with default header values.
+
+Not authenticated
+*/
+type GetPublicKeyUnauthorized struct {
+}
+
+func (o *GetPublicKeyUnauthorized) Error() string {
+	return fmt.Sprintf("[GET /crypto/asymmetric/{keyID}][%d] getPublicKeyUnauthorized ", 401)
+}
+
+func (o *GetPublicKeyUnauthorized) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewGetPublicKeyForbidden creates a GetPublicKeyForbidden with default headers values
+func NewGetPublicKeyForbidden() *GetPublicKeyForbidden {
+	return &GetPublicKeyForbidden{}
+}
+
+/*GetPublicKeyForbidden handles this case with default header values.
+
+Not authorized
+*/
+type GetPublicKeyForbidden struct {
+}
+
+func (o *GetPublicKeyForbidden) Error() string {
+	return fmt.Sprintf("[GET /crypto/asymmetric/{keyID}][%d] getPublicKeyForbidden ", 403)
+}
+
+func (o *GetPublicKeyForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewGetPublicKeyInternalServerError creates a GetPublicKeyInternalServerError with default headers values
+func NewGetPublicKeyInternalServerError() *GetPublicKeyInternalServerError {
+	return &GetPublicKeyInternalServerError{}
+}
+
+/*GetPublicKeyInternalServerError handles this case with default header values.
+
+Internal server error
+*/
+type GetPublicKeyInternalServerError struct {
+}
+
+func (o *GetPublicKeyInternalServerError) Error() string {
+	return fmt.Sprintf("[GET /crypto/asymmetric/{keyID}][%d] getPublicKeyInternalServerError ", 500)
+}
+
+func (o *GetPublicKeyInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	return nil
 }

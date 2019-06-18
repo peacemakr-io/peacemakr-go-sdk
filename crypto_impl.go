@@ -722,7 +722,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 
 	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(cfg.SymmetricCipher, key)
 	defer pmKey.Destroy()
-	myKeyId, err := sdk.getPubKeyId()
+	myKeyId, err := sdk.getPreferredPubKeyId()
 	if err != nil {
 		sdk.logError(err)
 		return nil, err
@@ -963,7 +963,7 @@ func (sdk *standardPeacemakrSDK) saveClientId(clientID string) error {
 	return nil
 }
 
-func (sdk *standardPeacemakrSDK) getPubKeyId() (string, error) {
+func (sdk *standardPeacemakrSDK) getPreferredPubKeyId() (string, error) {
 
 	if !sdk.persister.Exists("keyId") {
 		err := errors.New("client is not registered")
@@ -978,7 +978,7 @@ func (sdk *standardPeacemakrSDK) getPubKeyId() (string, error) {
 	return keyId, nil
 }
 
-func (sdk *standardPeacemakrSDK) updatePubKeyId(newKeyID string) error {
+func (sdk *standardPeacemakrSDK) updatePreferredPubKeyId(newKeyID string) error {
 
 	if !sdk.persister.Exists("keyId") {
 		err := errors.New("public key ID doesn't exist, client may not be registered")
@@ -1181,8 +1181,15 @@ func (sdk *standardPeacemakrSDK) Register() error {
 			return err
 		}
 
+		idxOfPreferredPublicKey := 0;
+		for idx, pubKey := range *ok.Payload.PublicKeys {
+			if pubKey.ID == *ok.Payload.PreferredPublicKeyId {
+				idxOfPreferredPublicKey = idx
+			}
+		}
+
 		// We only sent up one public key, but just in case the server has some other state we use the last one
-		saveErr := sdk.updatePubKeyId(*ok.Payload.PublicKeys[len(ok.Payload.PublicKeys)-1].ID)
+		saveErr := sdk.updatePreferredPubKeyId(*ok.Payload.PreferredPublicKeyId[idxOfPreferredPublicKey].ID)
 		if saveErr != nil {
 			sdk.logError(err)
 			return saveErr
@@ -1345,12 +1352,12 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 
 	pemStr := "pem"
 
-	keyID, err := sdk.getPubKeyId()
+	keyID, err := sdk.getPreferredPubKeyId()
 	if err != nil {
 		return rollback(err)
 	}
 
-	updateKeyParams := &clientReq.UpdateClientPublicKeyParams{
+	updateKeyParams := &clientReq.AddClientPublicKeyParams{
 		ClientID: clientID,
 		NewPublicKey: &models.PublicKey{
 			CreationTime: &sdk.asymKeys.keyCreationTime,
@@ -1361,7 +1368,7 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 		},
 	}
 
-	updatedKey, err := networkClient.Client.UpdateClientPublicKey(updateKeyParams, sdk.authInfo)
+	updatedKey, err := networkClient.Client.AddClientPublicKey(updateKeyParams, sdk.authInfo)
 	if err != nil {
 		sdk.logString("Error on the network, rolling back public key changes")
 		sdk.logError(err)
@@ -1369,7 +1376,7 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 	}
 
 	// Only update the public key ID if everything was successful
-	if err := sdk.updatePubKeyId(*updatedKey.Payload.ID); err != nil {
+	if err := sdk.updatePreferredPubKeyId(*updatedKey.Payload.ID); err != nil {
 		sdk.logError(err)
 		return rollback(err)
 	}
