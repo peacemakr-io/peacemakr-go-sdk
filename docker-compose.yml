@@ -19,5 +19,7 @@ services:
     image: peacemakr-go-sdk-test
     depends_on:
       - peacemakr-services
+      - keyderiver-cloud
     links:
       - peacemakr-services
+      - keyderiver-cloud
