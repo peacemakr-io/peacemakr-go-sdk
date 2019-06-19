@@ -1089,7 +1089,7 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 }
 
 func (sdk *standardPeacemakrSDK) hasUseDomain() bool {
-	return sdk.cryptoConfig.SymmetricKeyUseDomains != nil || len(sdk.cryptoConfig.SymmetricKeyUseDomains) != 0
+	return sdk.cryptoConfig.SymmetricKeyUseDomains != nil && len(sdk.cryptoConfig.SymmetricKeyUseDomains) != 0
 }
 
 //
