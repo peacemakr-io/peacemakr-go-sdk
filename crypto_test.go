@@ -12,7 +12,7 @@ func getHostname() string {
 	envHostname, isSet := os.LookupEnv("PEACEMAKR_TEST_HOSTNAME")
 	if !isSet {
 		// Until the prod server has a proper testing org, only use localhost by default.
-		return "localhost:8080"
+		return "peacemakr-services:80"
 	}
 	return envHostname
 }

@@ -8,9 +8,7 @@ jobs:
       - run: $(aws ecr get-login --no-include-email --region us-east-2)
       - run: ls
       - run: ./generate-all-stubs.sh
-      - run: docker-compose -f docker-compose-prod.yml pull
-      - run: docker-compose -f docker-compose-prod.yml down || true
-      - run: docker-compose -f docker-compose-prod.yml up -d
-      - run: ./build-dependencies.sh 
-      - run: docker-compose -f docker-compose-prod.yml down || true
+      - run: ./build-dependencies.sh
       - run: ./build-binaries.sh
+      - run: docker-compose pull || true
+      - run: docker-compose run test
