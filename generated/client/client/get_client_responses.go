@@ -39,6 +39,27 @@ func (o *GetClientReader) ReadResponse(response runtime.ClientResponse, consumer
 		}
 		return nil, result
 
+	case 401:
+		result := NewGetClientUnauthorized()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
+	case 403:
+		result := NewGetClientForbidden()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
+	case 500:
+		result := NewGetClientInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
 	default:
 		return nil, runtime.NewAPIError("unknown error", response, response.Code())
 	}
@@ -90,6 +111,69 @@ func (o *GetClientBadRequest) Error() string {
 }
 
 func (o *GetClientBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewGetClientUnauthorized creates a GetClientUnauthorized with default headers values
+func NewGetClientUnauthorized() *GetClientUnauthorized {
+	return &GetClientUnauthorized{}
+}
+
+/*GetClientUnauthorized handles this case with default header values.
+
+Not authenticated
+*/
+type GetClientUnauthorized struct {
+}
+
+func (o *GetClientUnauthorized) Error() string {
+	return fmt.Sprintf("[GET /client/{clientId}][%d] getClientUnauthorized ", 401)
+}
+
+func (o *GetClientUnauthorized) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewGetClientForbidden creates a GetClientForbidden with default headers values
+func NewGetClientForbidden() *GetClientForbidden {
+	return &GetClientForbidden{}
+}
+
+/*GetClientForbidden handles this case with default header values.
+
+Not authorized
+*/
+type GetClientForbidden struct {
+}
+
+func (o *GetClientForbidden) Error() string {
+	return fmt.Sprintf("[GET /client/{clientId}][%d] getClientForbidden ", 403)
+}
+
+func (o *GetClientForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewGetClientInternalServerError creates a GetClientInternalServerError with default headers values
+func NewGetClientInternalServerError() *GetClientInternalServerError {
+	return &GetClientInternalServerError{}
+}
+
+/*GetClientInternalServerError handles this case with default header values.
+
+Internal server error
+*/
+type GetClientInternalServerError struct {
+}
+
+func (o *GetClientInternalServerError) Error() string {
+	return fmt.Sprintf("[GET /client/{clientId}][%d] getClientInternalServerError ", 500)
+}
+
+func (o *GetClientInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	return nil
 }

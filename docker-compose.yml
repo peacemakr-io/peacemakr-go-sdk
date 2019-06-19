@@ -1,0 +1,25 @@
+version: '3'
+services:
+  peacemakr-services:
+    image: 716293438869.dkr.ecr.us-east-2.amazonaws.com/peacemakr-services:testing-stable
+    depends_on:
+      - redis
+  keyderiver-cloud:
+    image: 716293438869.dkr.ecr.us-east-2.amazonaws.com/key-derivation-service:testing-stable
+    environment:
+        - PEACEMAKR_KEYDERIVER_PEACEMAKR_APIKEY=peacemaker-key-123-123-123
+        - PEACEMAKR_KEYDERIVER_PEACEMAKR_HOST=peacemakr-services
+    depends_on:
+      - peacemakr-services
+    links:
+      - peacemakr-services
+  redis:
+    image: "redis:alpine"
+  test:
+    image: peacemakr-go-sdk-test
+    depends_on:
+      - peacemakr-services
+      - keyderiver-cloud
+    links:
+      - peacemakr-services
+      - keyderiver-cloud

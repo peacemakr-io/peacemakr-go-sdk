@@ -23,6 +23,9 @@ type Client struct {
 	// Required: true
 	ID *string `json:"id"`
 
+	// of all the public keys KeyDeriver's should deliver to this public key - it is also the most recently added public key
+	PreferredPublicKeyID string `json:"preferredPublicKeyId,omitempty"`
+
 	// public keys
 	// Required: true
 	PublicKeys []*PublicKey `json:"publicKeys"`

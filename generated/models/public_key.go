@@ -36,6 +36,12 @@ type PublicKey struct {
 	// key type
 	// Required: true
 	KeyType *string `json:"keyType"`
+
+	// the id of the client that owns this specific public key
+	OwningClientID string `json:"owningClientId,omitempty"`
+
+	// the id of the org that owns the client that owns this specific public key
+	OwningOrgID string `json:"owningOrgId,omitempty"`
 }
 
 // Validate validates this public key
