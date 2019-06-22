@@ -407,6 +407,12 @@ paths:
             $ref: '#/definitions/Client'
         '400':
           description: Unable to process request
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal server error
   '/client/{clientId}':
     get:
       security:
@@ -431,6 +437,12 @@ paths:
             $ref: '#/definitions/Client'
         '400':
           description: Unable to process request
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal server error
     delete:
       security:
         - header: []
@@ -455,15 +467,19 @@ paths:
         '400':
           description: Unable to process request
         '401':
-          description: Not authenticated to perform request
-  '/client/{clientId}/updatePublicKey':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal server error
+  '/client/{clientId}/addPublicKey':
     post:
       security:
         - header: []
       tags:
         - Client
-      summary: Register a new public key for the client, replacing existing key
-      operationId: updateClientPublicKey
+      summary: Register a new public key for the client
+      operationId: addClientPublicKey
       consumes:
         - application/json
       produces:
@@ -480,11 +496,20 @@ paths:
             $ref: '#/definitions/PublicKey'
       responses:
         '200':
-          description: Public key for the client successfully updated
+          description: Public key for the client successfully added
           schema:
             $ref: '#/definitions/PublicKey'
         '400':
           description: Unable to process request
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal server error
+# See:
+# get /crypto/asymmetric/{keyID}
+# for public key retrieval
 
   '/crypto/config/{cryptoConfigId}':
     get:
@@ -818,6 +843,12 @@ paths:
             $ref: '#/definitions/PublicKey'
         '400':
           description: Unable to process request
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal server error
 
 
   '/crypto/deriver/instance':
@@ -1040,14 +1071,19 @@ definitions:
     type: object
     required:
       - id
-      - publicKey
+      - publicKeys
     properties:
       id:
         type: string
       sdk:
         type: string
-      publicKey:
-        $ref: '#/definitions/PublicKey'
+      preferredPublicKeyId:
+        type: string
+        description: of all the public keys KeyDeriver's should deliver to this public key - it is also the most recently added public key
+      publicKeys:
+        type: array
+        items:
+          $ref: '#/definitions/PublicKey'
 
   CryptoConfig:
     type: object
@@ -1135,6 +1171,7 @@ definitions:
       symmetricKeyEncryptionAlg:
         description: the specific encryption alg to encrypt new plaintexts for application layer encryption operations
         type: string
+        default: "CHACHA20_POLY1305"
       encryptingPackagedCiphertextVersion:
         description: after encrypting new plaintexts, package the ciphertext with this version of the packaged ciphertext
         type: integer
@@ -1201,6 +1238,12 @@ definitions:
         type: string
       key:
         type: string
+      owningClientId:
+        type: string
+        description: the id of the client that owns this specific public key
+      owningOrgId:
+        type: string
+        description: the id of the org that owns the client that owns this specific public key
 
   KeyDerivationInstance:
     type: object

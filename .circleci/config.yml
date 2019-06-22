@@ -10,3 +10,6 @@ jobs:
       - run: ./generate-all-stubs.sh
       - run: ./build-dependencies.sh
       - run: ./build-binaries.sh
+      - run: docker-compose pull || true
+      - run: docker-compose down || true
+      - run: docker-compose run test

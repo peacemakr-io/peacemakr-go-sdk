@@ -54,6 +54,35 @@ func (a *Client) AddClient(params *AddClientParams, authInfo runtime.ClientAuthI
 }
 
 /*
+AddClientPublicKey registers a new public key for the client
+*/
+func (a *Client) AddClientPublicKey(params *AddClientPublicKeyParams, authInfo runtime.ClientAuthInfoWriter) (*AddClientPublicKeyOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewAddClientPublicKeyParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "addClientPublicKey",
+		Method:             "POST",
+		PathPattern:        "/client/{clientId}/addPublicKey",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &AddClientPublicKeyReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*AddClientPublicKeyOK), nil
+
+}
+
+/*
 DeleteClient removes an existing organization
 */
 func (a *Client) DeleteClient(params *DeleteClientParams, authInfo runtime.ClientAuthInfoWriter) (*DeleteClientOK, error) {
@@ -108,35 +137,6 @@ func (a *Client) GetClient(params *GetClientParams, authInfo runtime.ClientAuthI
 		return nil, err
 	}
 	return result.(*GetClientOK), nil
-
-}
-
-/*
-UpdateClientPublicKey registers a new public key for the client replacing existing key
-*/
-func (a *Client) UpdateClientPublicKey(params *UpdateClientPublicKeyParams, authInfo runtime.ClientAuthInfoWriter) (*UpdateClientPublicKeyOK, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewUpdateClientPublicKeyParams()
-	}
-
-	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "updateClientPublicKey",
-		Method:             "POST",
-		PathPattern:        "/client/{clientId}/updatePublicKey",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http"},
-		Params:             params,
-		Reader:             &UpdateClientPublicKeyReader{formats: a.formats},
-		AuthInfo:           authInfo,
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result.(*UpdateClientPublicKeyOK), nil
 
 }
 
