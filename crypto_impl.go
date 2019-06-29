@@ -47,15 +47,17 @@ type standardPeacemakrSDK struct {
 
 // Named constants, so we can change them everywhere at the same time
 
-var chacha20Poly1305 = "Peacemakr.CoreCrypto.Symmetric.CHACHA20_POLY1305"
-var aes128gcm = "Peacemakr.CoreCrypto.Symmetric.AES_128_GCM"
-var aes192gcm = "Peacemakr.CoreCrypto.Symmetric.AES_192_GCM"
-var aes256gcm = "Peacemakr.CoreCrypto.Symmetric.AES_256_GCM"
+const (
+	Chacha20Poly1305 = models.SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricCHACHA20POLY1305
+	Aes128gcm        = models.SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES128GCM
+	Aes192gcm        = models.SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES192GCM
+	Aes256gcm        = models.SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES256GCM
 
-var sha224 = "Peacemakr.CoreCrypto.Digest.SHA_224"
-var sha256 = "Peacemakr.CoreCrypto.Digest.SHA_256"
-var sha384 = "Peacemakr.CoreCrypto.Digest.SHA_384"
-var sha512 = "Peacemakr.CoreCrypto.Digest.SHA_512"
+	Sha224 = models.SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA224
+	Sha256 = models.SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA256
+	Sha384 = models.SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA384
+	Sha512 = models.SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA512
+)
 
 func (sdk *standardPeacemakrSDK) getDebugInfo() string {
 	id, err := sdk.getClientId()
@@ -569,38 +571,38 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 	asymmetricCipher := coreCrypto.ASYMMETRIC_UNSPECIFIED
 
 	if selectedDomain.DigestAlgorithm == nil {
-		defaultDigest := sha256
+		defaultDigest := Sha256
 		selectedDomain.DigestAlgorithm = &defaultDigest
 	}
 
 	var digestAlgorithm coreCrypto.MessageDigestAlgorithm
 	switch *selectedDomain.DigestAlgorithm {
-	case sha224:
+	case Sha224:
 		digestAlgorithm = coreCrypto.SHA_224
-	case sha256:
+	case Sha256:
 		digestAlgorithm = coreCrypto.SHA_256
-	case sha384:
+	case Sha384:
 		digestAlgorithm = coreCrypto.SHA_384
-	case sha512:
+	case Sha512:
 		digestAlgorithm = coreCrypto.SHA_512
 	default:
 		digestAlgorithm = coreCrypto.SHA_256
 	}
 
 	if selectedDomain.SymmetricKeyEncryptionAlg == nil {
-		defaultAlg := chacha20Poly1305
+		defaultAlg := Chacha20Poly1305
 		selectedDomain.SymmetricKeyEncryptionAlg = &defaultAlg
 	}
 
 	var symmetricCipher coreCrypto.SymmetricCipher
 	switch *selectedDomain.SymmetricKeyEncryptionAlg {
-	case aes128gcm:
+	case Aes128gcm:
 		symmetricCipher = coreCrypto.AES_128_GCM
-	case aes192gcm:
+	case Aes192gcm:
 		symmetricCipher = coreCrypto.AES_192_GCM
-	case aes256gcm:
+	case Aes256gcm:
 		symmetricCipher = coreCrypto.AES_256_GCM
-	case chacha20Poly1305:
+	case Chacha20Poly1305:
 		symmetricCipher = coreCrypto.CHACHA20_POLY1305
 	default:
 		symmetricCipher = coreCrypto.CHACHA20_POLY1305
@@ -1050,8 +1052,8 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 	emptyString := ""
 	twentyYears := int64(60 * 60 * 24 * 365 * 20)
 	zero := int64(0)
-	alg := chacha20Poly1305
-	digestAlg := sha256
+	alg := Chacha20Poly1305
+	digestAlg := Sha256
 	keyLen := int64(32)
 	falseValue := false
 
@@ -1174,7 +1176,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 			return err
 		}
 
-		idxOfPreferredPublicKey := 0;
+		idxOfPreferredPublicKey := 0
 		for idx, pubKey := range ok.Payload.PublicKeys {
 			if *pubKey.ID == ok.Payload.PreferredPublicKeyID {
 				idxOfPreferredPublicKey = idx
