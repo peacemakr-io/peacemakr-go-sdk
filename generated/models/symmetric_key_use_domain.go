@@ -6,8 +6,6 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	"encoding/json"
-
 	strfmt "github.com/go-openapi/strfmt"
 
 	"github.com/go-openapi/errors"
@@ -24,7 +22,6 @@ type SymmetricKeyUseDomain struct {
 	CreationTime *int64 `json:"creationTime"`
 
 	// The digest algorithm to use for signing messages in this use domain
-	// Enum: [Peacemakr.Digest.SHA_224 Peacemakr.Digest.SHA_256 Peacemakr.Digest.SHA_384 Peacemakr.Digest.SHA_512]
 	DigestAlgorithm *string `json:"digestAlgorithm,omitempty"`
 
 	// after encrypting new plaintexts, package the ciphertext with this version of the packaged ciphertext
@@ -68,7 +65,6 @@ type SymmetricKeyUseDomain struct {
 
 	// the specific encryption alg to encrypt new plaintexts for application layer encryption operations
 	// Required: true
-	// Enum: [Peacemakr.Symmetric.CHACHA20_POLY1305 Peacemakr.Symmetric.AES_128_GCM Peacemakr.Symmetric.AES_192_GCM Peacemakr.Symmetric.AES_256_GCM]
 	SymmetricKeyEncryptionAlg *string `json:"symmetricKeyEncryptionAlg"`
 
 	// whether this use domain is available for encryption; if false, these keys should not be used for encrypting new messages
@@ -97,10 +93,6 @@ func (m *SymmetricKeyUseDomain) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCreationTime(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateDigestAlgorithm(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -173,55 +165,6 @@ func (m *SymmetricKeyUseDomain) Validate(formats strfmt.Registry) error {
 func (m *SymmetricKeyUseDomain) validateCreationTime(formats strfmt.Registry) error {
 
 	if err := validate.Required("creationTime", "body", m.CreationTime); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-var symmetricKeyUseDomainTypeDigestAlgorithmPropEnum []interface{}
-
-func init() {
-	var res []string
-	if err := json.Unmarshal([]byte(`["Peacemakr.Digest.SHA_224","Peacemakr.Digest.SHA_256","Peacemakr.Digest.SHA_384","Peacemakr.Digest.SHA_512"]`), &res); err != nil {
-		panic(err)
-	}
-	for _, v := range res {
-		symmetricKeyUseDomainTypeDigestAlgorithmPropEnum = append(symmetricKeyUseDomainTypeDigestAlgorithmPropEnum, v)
-	}
-}
-
-const (
-
-	// SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA224 captures enum value "Peacemakr.Digest.SHA_224"
-	SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA224 string = "Peacemakr.Digest.SHA_224"
-
-	// SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA256 captures enum value "Peacemakr.Digest.SHA_256"
-	SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA256 string = "Peacemakr.Digest.SHA_256"
-
-	// SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA384 captures enum value "Peacemakr.Digest.SHA_384"
-	SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA384 string = "Peacemakr.Digest.SHA_384"
-
-	// SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA512 captures enum value "Peacemakr.Digest.SHA_512"
-	SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA512 string = "Peacemakr.Digest.SHA_512"
-)
-
-// prop value enum
-func (m *SymmetricKeyUseDomain) validateDigestAlgorithmEnum(path, location string, value string) error {
-	if err := validate.Enum(path, location, value, symmetricKeyUseDomainTypeDigestAlgorithmPropEnum); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *SymmetricKeyUseDomain) validateDigestAlgorithm(formats strfmt.Registry) error {
-
-	if swag.IsZero(m.DigestAlgorithm) { // not required
-		return nil
-	}
-
-	// value enum
-	if err := m.validateDigestAlgorithmEnum("digestAlgorithm", "body", *m.DigestAlgorithm); err != nil {
 		return err
 	}
 
@@ -309,49 +252,9 @@ func (m *SymmetricKeyUseDomain) validateSymmetricKeyDerivationServiceID(formats 
 	return nil
 }
 
-var symmetricKeyUseDomainTypeSymmetricKeyEncryptionAlgPropEnum []interface{}
-
-func init() {
-	var res []string
-	if err := json.Unmarshal([]byte(`["Peacemakr.Symmetric.CHACHA20_POLY1305","Peacemakr.Symmetric.AES_128_GCM","Peacemakr.Symmetric.AES_192_GCM","Peacemakr.Symmetric.AES_256_GCM"]`), &res); err != nil {
-		panic(err)
-	}
-	for _, v := range res {
-		symmetricKeyUseDomainTypeSymmetricKeyEncryptionAlgPropEnum = append(symmetricKeyUseDomainTypeSymmetricKeyEncryptionAlgPropEnum, v)
-	}
-}
-
-const (
-
-	// SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricCHACHA20POLY1305 captures enum value "Peacemakr.Symmetric.CHACHA20_POLY1305"
-	SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricCHACHA20POLY1305 string = "Peacemakr.Symmetric.CHACHA20_POLY1305"
-
-	// SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES128GCM captures enum value "Peacemakr.Symmetric.AES_128_GCM"
-	SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES128GCM string = "Peacemakr.Symmetric.AES_128_GCM"
-
-	// SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES192GCM captures enum value "Peacemakr.Symmetric.AES_192_GCM"
-	SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES192GCM string = "Peacemakr.Symmetric.AES_192_GCM"
-
-	// SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES256GCM captures enum value "Peacemakr.Symmetric.AES_256_GCM"
-	SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES256GCM string = "Peacemakr.Symmetric.AES_256_GCM"
-)
-
-// prop value enum
-func (m *SymmetricKeyUseDomain) validateSymmetricKeyEncryptionAlgEnum(path, location string, value string) error {
-	if err := validate.Enum(path, location, value, symmetricKeyUseDomainTypeSymmetricKeyEncryptionAlgPropEnum); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (m *SymmetricKeyUseDomain) validateSymmetricKeyEncryptionAlg(formats strfmt.Registry) error {
 
 	if err := validate.Required("symmetricKeyEncryptionAlg", "body", m.SymmetricKeyEncryptionAlg); err != nil {
-		return err
-	}
-
-	// value enum
-	if err := m.validateSymmetricKeyEncryptionAlgEnum("symmetricKeyEncryptionAlg", "body", *m.SymmetricKeyEncryptionAlg); err != nil {
 		return err
 	}
 

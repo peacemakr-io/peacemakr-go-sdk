@@ -1171,12 +1171,7 @@ definitions:
       symmetricKeyEncryptionAlg:
         description: the specific encryption alg to encrypt new plaintexts for application layer encryption operations
         type: string
-        enum:
-          - Peacemakr.Symmetric.CHACHA20_POLY1305
-          - Peacemakr.Symmetric.AES_128_GCM
-          - Peacemakr.Symmetric.AES_192_GCM
-          - Peacemakr.Symmetric.AES_256_GCM
-        default: Peacemakr.Symmetric.CHACHA20_POLY1305
+        default: "Peacemakr.Symmetric.CHACHA20_POLY1305"
       encryptingPackagedCiphertextVersion:
         description: after encrypting new plaintexts, package the ciphertext with this version of the packaged ciphertext
         type: integer
@@ -1197,12 +1192,7 @@ definitions:
       digestAlgorithm:
         description: The digest algorithm to use for signing messages in this use domain
         type: string
-        enum:
-          - Peacemakr.Digest.SHA_224
-          - Peacemakr.Digest.SHA_256
-          - Peacemakr.Digest.SHA_384
-          - Peacemakr.Digest.SHA_512
-        default: Peacemakr.Digest.SHA_256
+        default: "Peacemakr.Digest.SHA_256"
 
   EncryptedSymmetricKey:
     type: object

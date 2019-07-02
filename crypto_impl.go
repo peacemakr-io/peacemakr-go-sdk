@@ -48,15 +48,15 @@ type standardPeacemakrSDK struct {
 // Named constants, so we can change them everywhere at the same time
 
 const (
-	Chacha20Poly1305 = models.SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricCHACHA20POLY1305
-	Aes128gcm        = models.SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES128GCM
-	Aes192gcm        = models.SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES192GCM
-	Aes256gcm        = models.SymmetricKeyUseDomainSymmetricKeyEncryptionAlgPeacemakrSymmetricAES256GCM
+	Chacha20Poly1305 = "Peacemakr.Symmetric.CHACHA20_POLY1305"
+	Aes128gcm        = "Peacemakr.Symmetric.AES_128_GCM"
+	Aes192gcm        = "Peacemakr.Symmetric.AES_192_GCM"
+	Aes256gcm        = "Peacemakr.Symmetric.AES_256_GCM"
 
-	Sha224 = models.SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA224
-	Sha256 = models.SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA256
-	Sha384 = models.SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA384
-	Sha512 = models.SymmetricKeyUseDomainDigestAlgorithmPeacemakrDigestSHA512
+	Sha224 = "Peacemakr.Digest.SHA_224"
+	Sha256 = "Peacemakr.Digest.SHA_256"
+	Sha384 = "Peacemakr.Digest.SHA_384"
+	Sha512 = "Peacemakr.Digest.SHA_512"
 )
 
 func (sdk *standardPeacemakrSDK) getDebugInfo() string {
