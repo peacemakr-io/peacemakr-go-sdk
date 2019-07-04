@@ -14,4 +14,4 @@ ENV GOPATH=/go
 
 WORKDIR /opt/tests
 
-CMD go test -v -bench=. github.com/notasecret/peacemakr-go-sdk
+CMD go test -v github.com/notasecret/peacemakr-go-sdk

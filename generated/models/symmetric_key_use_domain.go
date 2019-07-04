@@ -52,8 +52,7 @@ type SymmetricKeyUseDomain struct {
 	RequireSignedKeyDelivery *bool `json:"requireSignedKeyDelivery"`
 
 	// whether this use domain is available for decryption; if false, these keys should not be used for decrypting messages
-	// Required: true
-	SymmetricKeyDecryptionAllowed *bool `json:"symmetricKeyDecryptionAllowed"`
+	SymmetricKeyDecryptionAllowed bool `json:"symmetricKeyDecryptionAllowed,omitempty"`
 
 	// number of seconds since key creation that the key will be available for decryption
 	// Required: true
@@ -68,8 +67,7 @@ type SymmetricKeyUseDomain struct {
 	SymmetricKeyEncryptionAlg *string `json:"symmetricKeyEncryptionAlg"`
 
 	// whether this use domain is available for encryption; if false, these keys should not be used for encrypting new messages
-	// Required: true
-	SymmetricKeyEncryptionAllowed *bool `json:"symmetricKeyEncryptionAllowed"`
+	SymmetricKeyEncryptionAllowed bool `json:"symmetricKeyEncryptionAllowed,omitempty"`
 
 	// number of seconds since key creation that the key will be available for encryption
 	// Required: true
@@ -120,10 +118,6 @@ func (m *SymmetricKeyUseDomain) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateSymmetricKeyDecryptionAllowed(formats); err != nil {
-		res = append(res, err)
-	}
-
 	if err := m.validateSymmetricKeyDecryptionUseTTL(formats); err != nil {
 		res = append(res, err)
 	}
@@ -133,10 +127,6 @@ func (m *SymmetricKeyUseDomain) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateSymmetricKeyEncryptionAlg(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateSymmetricKeyEncryptionAllowed(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -225,15 +215,6 @@ func (m *SymmetricKeyUseDomain) validateRequireSignedKeyDelivery(formats strfmt.
 	return nil
 }
 
-func (m *SymmetricKeyUseDomain) validateSymmetricKeyDecryptionAllowed(formats strfmt.Registry) error {
-
-	if err := validate.Required("symmetricKeyDecryptionAllowed", "body", m.SymmetricKeyDecryptionAllowed); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (m *SymmetricKeyUseDomain) validateSymmetricKeyDecryptionUseTTL(formats strfmt.Registry) error {
 
 	if err := validate.Required("symmetricKeyDecryptionUseTTL", "body", m.SymmetricKeyDecryptionUseTTL); err != nil {
@@ -255,15 +236,6 @@ func (m *SymmetricKeyUseDomain) validateSymmetricKeyDerivationServiceID(formats 
 func (m *SymmetricKeyUseDomain) validateSymmetricKeyEncryptionAlg(formats strfmt.Registry) error {
 
 	if err := validate.Required("symmetricKeyEncryptionAlg", "body", m.SymmetricKeyEncryptionAlg); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *SymmetricKeyUseDomain) validateSymmetricKeyEncryptionAllowed(formats strfmt.Registry) error {
-
-	if err := validate.Required("symmetricKeyEncryptionAllowed", "body", m.SymmetricKeyEncryptionAllowed); err != nil {
 		return err
 	}
 

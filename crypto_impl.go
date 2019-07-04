@@ -352,13 +352,14 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 	sdk.cryptoConfig = ret.Payload
 	sdk.lastUpdatedAt = time.Now().Unix()
 
-	if sdk.cryptoConfig.ClientKeyTTL == 0 {
+	if *sdk.cryptoConfig.ClientKeyTTL == 0 {
 		oneYear, err := time.ParseDuration("8760h")
 		if err != nil {
 			return err
 		}
 
-		sdk.cryptoConfig.ClientKeyTTL = oneYear.Nanoseconds() / 1e9
+		oneYearInSec := oneYear.Nanoseconds() / 1e9
+		sdk.cryptoConfig.ClientKeyTTL = &oneYearInSec
 	}
 
 	return nil
@@ -432,7 +433,7 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 }
 
 func isUseDomainEncryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
-	return *useDomain.SymmetricKeyEncryptionAllowed
+	return useDomain.SymmetricKeyEncryptionAllowed
 }
 
 func contains(s []string, e string) bool {
@@ -479,7 +480,7 @@ func (sdk *standardPeacemakrSDK) isKeyIdDecryptionViable(keyId string) bool {
 }
 
 func isUseDomainDecryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
-	return *useDomain.SymmetricKeyDecryptionAllowed
+	return useDomain.SymmetricKeyDecryptionAllowed
 }
 
 func (sdk *standardPeacemakrSDK) findViableDecryptionUseDomains() []*models.SymmetricKeyUseDomain {
@@ -1009,7 +1010,7 @@ func (sdk *standardPeacemakrSDK) generateKeys() (string, string, string, error) 
 		sdk.asymKeys = &keyStruct{}
 	}
 
-	pub, priv, keyTy := GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
+	pub, priv, keyTy := GetNewKey(*sdk.cryptoConfig.ClientKeyType, int(*sdk.cryptoConfig.ClientKeyBitlength))
 
 	err := sdk.savePrivKey(priv)
 	if err != nil {
@@ -1064,11 +1065,11 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 		Name:                                name,
 		OwnerOrgID:                          sdk.org.ID,
 		SymmetricKeyDecryptionUseTTL:        &twentyYears,
-		SymmetricKeyDecryptionAllowed:       &falseValue,
+		SymmetricKeyDecryptionAllowed:       false,
 		SymmetricKeyDerivationServiceID:     &emptyString, // Empty string, means the server randomly picks.
 		SymmetricKeyEncryptionAlg:           &alg,
 		SymmetricKeyEncryptionUseTTL:        &twentyYears,
-		SymmetricKeyEncryptionAllowed:       &falseValue,
+		SymmetricKeyEncryptionAllowed:       false,
 		SymmetricKeyInceptionTTL:            &zero,
 		SymmetricKeyLength:                  &keyLen,
 		SymmetricKeyRetentionUseTTL:         &twentyYears,
@@ -1174,7 +1175,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 			return err
 		}
 
-		idxOfPreferredPublicKey := 0;
+		idxOfPreferredPublicKey := 0
 		for idx, pubKey := range ok.Payload.PublicKeys {
 			if *pubKey.ID == ok.Payload.PreferredPublicKeyID {
 				idxOfPreferredPublicKey = idx
@@ -1237,9 +1238,9 @@ func (sdk *standardPeacemakrSDK) init() error {
 
 func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCipher {
 	var cryptoConfigCipher coreCrypto.AsymmetricCipher
-	switch sdk.cryptoConfig.ClientKeyType {
+	switch *sdk.cryptoConfig.ClientKeyType {
 	case "ec":
-		switch sdk.cryptoConfig.ClientKeyBitlength {
+		switch *sdk.cryptoConfig.ClientKeyBitlength {
 		case 256:
 			cryptoConfigCipher = coreCrypto.ECDH_P256
 		case 384:
@@ -1250,7 +1251,7 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 			cryptoConfigCipher = coreCrypto.ASYMMETRIC_UNSPECIFIED
 		}
 	case "rsa":
-		switch sdk.cryptoConfig.ClientKeyBitlength {
+		switch *sdk.cryptoConfig.ClientKeyBitlength {
 		case 2048:
 			cryptoConfigCipher = coreCrypto.RSA_2048
 		case 4096:
@@ -1260,8 +1261,10 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 		}
 	default:
 		// If they haven't specified anything for the client asymmetric keys, use ECDH_256
-		sdk.cryptoConfig.ClientKeyType = "ec"
-		sdk.cryptoConfig.ClientKeyBitlength = 256
+		defaultKeyType := "ec"
+		defaultBitLength := int64(521)
+		sdk.cryptoConfig.ClientKeyType = &defaultKeyType
+		sdk.cryptoConfig.ClientKeyBitlength = &defaultBitLength
 
 		cryptoConfigCipher = coreCrypto.ECDH_P256
 	}
@@ -1270,7 +1273,7 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 }
 
 func (sdk *standardPeacemakrSDK) asymKeysAreStale() bool {
-	return time.Now().Unix()-sdk.asymKeys.keyCreationTime > sdk.cryptoConfig.ClientKeyTTL
+	return time.Now().Unix()-sdk.asymKeys.keyCreationTime > *sdk.cryptoConfig.ClientKeyTTL
 }
 
 func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {

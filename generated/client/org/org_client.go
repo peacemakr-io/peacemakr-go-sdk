@@ -257,6 +257,34 @@ func (a *Client) GetOrganizationFromAPIKey(params *GetOrganizationFromAPIKeyPara
 }
 
 /*
+GetTestOrganizationAPIKey gets an ephemeral test org api key
+*/
+func (a *Client) GetTestOrganizationAPIKey(params *GetTestOrganizationAPIKeyParams) (*GetTestOrganizationAPIKeyOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewGetTestOrganizationAPIKeyParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "getTestOrganizationAPIKey",
+		Method:             "GET",
+		PathPattern:        "/org/key/test",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{""},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetTestOrganizationAPIKeyReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*GetTestOrganizationAPIKeyOK), nil
+
+}
+
+/*
 UpdateStripeCustomerID updates the stripe customer Id associated with this account
 */
 func (a *Client) UpdateStripeCustomerID(params *UpdateStripeCustomerIDParams, authInfo runtime.ClientAuthInfoWriter) (*UpdateStripeCustomerIDOK, error) {

@@ -20,13 +20,16 @@ import (
 type CryptoConfig struct {
 
 	// the bit length of all new client keys, for example, 2048
-	ClientKeyBitlength int64 `json:"clientKeyBitlength,omitempty"`
+	// Required: true
+	ClientKeyBitlength *int64 `json:"clientKeyBitlength"`
 
 	// the TTL on the client's local asymetric key
-	ClientKeyTTL int64 `json:"clientKeyTTL,omitempty"`
+	// Required: true
+	ClientKeyTTL *int64 `json:"clientKeyTTL"`
 
 	// the type of key that should be associated with clients, for example, rsa
-	ClientKeyType string `json:"clientKeyType,omitempty"`
+	// Required: true
+	ClientKeyType *string `json:"clientKeyType"`
 
 	// id
 	// Required: true
@@ -49,6 +52,18 @@ type CryptoConfig struct {
 func (m *CryptoConfig) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateClientKeyBitlength(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateClientKeyTTL(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateClientKeyType(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateID(formats); err != nil {
 		res = append(res, err)
 	}
@@ -68,6 +83,33 @@ func (m *CryptoConfig) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *CryptoConfig) validateClientKeyBitlength(formats strfmt.Registry) error {
+
+	if err := validate.Required("clientKeyBitlength", "body", m.ClientKeyBitlength); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *CryptoConfig) validateClientKeyTTL(formats strfmt.Registry) error {
+
+	if err := validate.Required("clientKeyTTL", "body", m.ClientKeyTTL); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *CryptoConfig) validateClientKeyType(formats strfmt.Registry) error {
+
+	if err := validate.Required("clientKeyType", "body", m.ClientKeyType); err != nil {
+		return err
+	}
+
 	return nil
 }
 

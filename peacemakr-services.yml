@@ -35,7 +35,7 @@ paths:
   /health:
     get:
       tags:
-      - ServerManagement
+        - ServerManagement
       summary: See if the server is healthy
       description: Returns 200 if the server is healthy
       responses:
@@ -45,7 +45,7 @@ paths:
   /log:
     post:
       tags:
-      - PhoneHome
+        - PhoneHome
       security:
         - header: []
       summary: Used to report back to server a logged event
@@ -95,7 +95,7 @@ paths:
       tags:
         - Login
       security:
-      - header: []
+        - header: []
       summary: Invite (bind) an existing user that is not already bound to an org, to your org
       operationId: loginInviteUser
       consumes:
@@ -118,7 +118,7 @@ paths:
       tags:
         - Login
       security:
-      - header: []
+        - header: []
       summary: Uninvite (remove) an existing user that is part of your org
       operationId: loginUninviteUser
       consumes:
@@ -225,20 +225,20 @@ paths:
   /org/key/{apikey}:
     get:
       security:
-      - header: []
+        - header: []
       tags:
-      - Org
+        - Org
       summary: Get an existing Organization
       operationId: getOrganizationFromAPIKey
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
-      - in: path
-        name: apikey
-        required: true
-        type: string
+        - in: path
+          name: apikey
+          required: true
+          type: string
       responses:
         '200':
           description: Returns the Org requested
@@ -250,20 +250,20 @@ paths:
           description: Not authenticated to perform request
     delete:
       security:
-      - header: []
+        - header: []
       tags:
-      - Org
+        - Org
       summary: Remove an existing API Key
       operationId: deleteAPIKeyFromOrg
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
-      - in: path
-        name: apikey
-        required: true
-        type: string
+        - in: path
+          name: apikey
+          required: true
+          type: string
       responses:
         '200':
           description: Successful deletion of an existing API key.
@@ -271,18 +271,37 @@ paths:
           description: Unable to process request
         '401':
           description: Not authenticated to perform request
+  /org/key/test:
+    get:
+      tags:
+        - Org
+      summary: Get an ephemeral test org api key
+      operationId: getTestOrganizationAPIKey
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Returns an apikey for a test org
+          schema:
+            $ref: '#/definitions/APIKey'
+        '400':
+          description: Unable to process request
+        '401':
+          description: Not authenticated to perform request
+        '500':
+          description: Unrecoverable internal server error
   /org/key:
     post:
       security:
-      - header: []
+        - header: []
       tags:
-      - Org
+        - Org
       summary: Add a new API Key to an org
       operationId: addAPIKeyToOrg
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       responses:
         '200':
           description: Successful addition of an API Key to its org
@@ -295,20 +314,20 @@ paths:
   /org/admin/{email}:
     delete:
       security:
-      - header: []
+        - header: []
       tags:
-      - Org
+        - Org
       summary: Remove an existing admin from the org (You can not remove the last admin. It will faile with a Bad Request response.)
       operationId: deleteAdminFromOrg
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
-      - in: path
-        name: email
-        required: true
-        type: string
+        - in: path
+          name: email
+          required: true
+          type: string
       responses:
         '200':
           description: Successful deletion of an existing admin from org.
@@ -325,15 +344,15 @@ paths:
   /org/admin:
     post:
       security:
-      - header: []
+        - header: []
       tags:
-      - Org
+        - Org
       summary: Add a new admin to this org
       operationId: addAdminToOrg
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
         - in: body
           name: contact
@@ -358,20 +377,20 @@ paths:
   /org/stripeId:
     post:
       security:
-      - header: []
+        - header: []
       tags:
-      - Org
+        - Org
       summary: Update the stripe customer Id associated with this account
       operationId: updateStripeCustomerId
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
-      - in: query
-        name: stripeCustomerId
-        required: true
-        type: string
+        - in: query
+          name: stripeCustomerId
+          required: true
+          type: string
       responses:
         '200':
           description: Successfully updated stripe customer id
@@ -507,9 +526,9 @@ paths:
           description: Not authorized
         '500':
           description: Internal server error
-# See:
-# get /crypto/asymmetric/{keyID}
-# for public key retrieval
+  # See:
+  # get /crypto/asymmetric/{keyID}
+  # for public key retrieval
 
   '/crypto/config/{cryptoConfigId}':
     get:
@@ -528,6 +547,34 @@ paths:
           name: cryptoConfigId
           required: true
           type: string
+      responses:
+        '200':
+          description: Returns the requested configuration
+          schema:
+            $ref: '#/definitions/CryptoConfig'
+        '400':
+          description: Unable to process request
+    post:
+      security:
+        - header: []
+      tags:
+        - CryptoConfig
+      summary: Update the crypto configuration, ONLY the clientKeyType clientKeyBitlength, and clientKeyTTL fields.
+      operationId: updateCryptoConfig
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: cryptoConfigId
+          required: true
+          type: string
+        - in: body
+          name: updatedCryptoConfig
+          required: true
+          schema:
+            $ref: '#/definitions/CryptoConfig'
       responses:
         '200':
           description: Returns the requested configuration
@@ -1092,6 +1139,9 @@ definitions:
       - symmetricKeyUseDomains
       - symmetricKeyUseDomainSelectorScheme
       - ownerOrgId
+      - clientKeyType
+      - clientKeyBitlength
+      - clientKeyTTL
     properties:
       id:
         type: string
@@ -1126,9 +1176,7 @@ definitions:
       - creationTime
       - symmetricKeyInceptionTTL
       - symmetricKeyEncryptionUseTTL
-      - symmetricKeyEncryptionAllowed
       - symmetricKeyDecryptionUseTTL
-      - symmetricKeyDecryptionAllowed
       - symmetricKeyRetentionUseTTL
       - symmetricKeyLength
       - symmetricKeyEncryptionAlg

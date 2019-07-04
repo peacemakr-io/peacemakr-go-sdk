@@ -2,6 +2,7 @@ package peacemakr_go_sdk
 
 import (
 	"crypto/rand"
+	"github.com/notasecret/peacemakr-go-sdk/generated/client"
 	"github.com/notasecret/peacemakr-go-sdk/utils"
 	"log"
 	"os"
@@ -13,7 +14,7 @@ func getHostname() string {
 	envHostname, isSet := os.LookupEnv("PEACEMAKR_TEST_HOSTNAME")
 	if !isSet {
 		// Until the prod server has a proper testing org, only a local env by default.
-		return "peacemakr-services:80"
+		return "localhost:8080"
 	}
 	return envHostname
 }
@@ -21,7 +22,7 @@ func getHostname() string {
 func getAPIKey() string {
 	envApiKey, isSet := os.LookupEnv("PEACEMAKR_TEST_API_KEY")
 	if !isSet {
-		return "peacemaker-key-123-123-123"
+		return ""
 	}
 	return envApiKey
 }
@@ -34,6 +35,24 @@ var apiKey = getAPIKey()
 var setupClinetPersister = utils.GetInMemPersister()
 
 func setup(m *testing.M) {
+
+	if apiKey == "" {
+		// Set up the client to get the test org and its API key
+		cfg := client.TransportConfig{
+			Host:     hostname,
+			BasePath: client.DefaultBasePath,
+			Schemes:  []string{"http"},
+		}
+
+		testClient := client.NewHTTPClientWithConfig(nil, &cfg)
+		ok, err := testClient.Org.GetTestOrganizationAPIKey(nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		apiKey = *ok.Payload.Key
+	}
+
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-SETUP", &hostname, setupClinetPersister, nil, true)
 	if err != nil {
 		log.Fatal(err)
