@@ -1065,11 +1065,11 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 		Name:                                name,
 		OwnerOrgID:                          sdk.org.ID,
 		SymmetricKeyDecryptionUseTTL:        &twentyYears,
-		SymmetricKeyDecryptionAllowed:       false,
+		SymmetricKeyDecryptionAllowed:       true,
 		SymmetricKeyDerivationServiceID:     &emptyString, // Empty string, means the server randomly picks.
 		SymmetricKeyEncryptionAlg:           &alg,
 		SymmetricKeyEncryptionUseTTL:        &twentyYears,
-		SymmetricKeyEncryptionAllowed:       false,
+		SymmetricKeyEncryptionAllowed:       true,
 		SymmetricKeyInceptionTTL:            &zero,
 		SymmetricKeyLength:                  &keyLen,
 		SymmetricKeyRetentionUseTTL:         &twentyYears,
