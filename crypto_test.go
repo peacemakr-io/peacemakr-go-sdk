@@ -149,6 +149,10 @@ func TestEncrypt(t *testing.T) {
 		}
 	}
 
+	if err := peacemakrSDK.Sync(); err != nil {
+		log.Fatal(err)
+	}
+
 	bytes := make([]byte, messageSize)
 	if _, err := rand.Read(bytes); err != nil {
 		t.Fatal(err)
