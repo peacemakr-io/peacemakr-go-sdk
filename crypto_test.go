@@ -32,10 +32,7 @@ var messageSize = 1 << 14
 var hostname = getHostname()
 var apiKey = getAPIKey()
 
-var setupClinetPersister = utils.GetInMemPersister()
-
 func setup(m *testing.M) {
-
 	if apiKey == "" {
 		// Set up the client to get the test org and its API key
 		cfg := client.TransportConfig{
@@ -53,27 +50,7 @@ func setup(m *testing.M) {
 		apiKey = *ok.Payload.Key
 	}
 
-	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-SETUP", &hostname, setupClinetPersister, nil, true)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := peacemakrSDK.Register(); err != nil {
-		log.Fatal(err)
-	}
-
-	if !peacemakrSDK.(*standardPeacemakrSDK).hasUseDomain() {
-		if err := peacemakrSDK.(*standardPeacemakrSDK).createUseDomain(1, "go-sdk-test-SETUP-DOMAIN"); err != nil {
-			log.Fatal(err)
-		}
-
-		// Use domain and key creation, are not instantaneous.
-		time.Sleep(time.Duration(15) * time.Second)
-
-		if err := peacemakrSDK.Sync(); err != nil {
-			log.Fatal(err)
-		}
-	}
+	time.Sleep(15 * time.Second)
 }
 
 func TestMain(m *testing.M) {
@@ -85,7 +62,14 @@ func TestMain(m *testing.M) {
 // Tests for the API functions
 
 func TestRegister(t *testing.T) {
-	persister := utils.GetDiskPersister(".")
+	if err := os.MkdirAll("/tmp/test/register", os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = os.Remove("/tmp/test/register")
+	}()
+
+	persister := utils.GetDiskPersister("/tmp/test/register")
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +81,14 @@ func TestRegister(t *testing.T) {
 }
 
 func TestCustomLogger(t *testing.T) {
-	persister := utils.GetDiskPersister(".")
+	if err := os.MkdirAll("/tmp/test/custom_logger", os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = os.Remove("/tmp/test/custom_logger")
+	}()
+
+	persister := utils.GetDiskPersister("/tmp/test/custom_logger")
 	logger := log.New(os.Stdout, "CustomLogger", log.LstdFlags)
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, logger, true)
 	if err != nil {
@@ -110,7 +101,14 @@ func TestCustomLogger(t *testing.T) {
 }
 
 func TestRegisterAndSync(t *testing.T) {
-	persister := utils.GetDiskPersister(".")
+	if err := os.MkdirAll("/tmp/test/register_and_sync", os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = os.Remove("/tmp/test/register_and_sync")
+	}()
+
+	persister := utils.GetDiskPersister("/tmp/test/register_and_sync")
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +124,14 @@ func TestRegisterAndSync(t *testing.T) {
 }
 
 func TestEncrypt(t *testing.T) {
-	persister := utils.GetDiskPersister(".")
+	if err := os.MkdirAll("/tmp/test/encrypt", os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = os.Remove("/tmp/test/encrypt")
+	}()
+
+	persister := utils.GetDiskPersister("/tmp/test/encrypt")
 	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -152,6 +157,9 @@ func TestEncrypt(t *testing.T) {
 	if err := peacemakrSDK.Sync(); err != nil {
 		log.Fatal(err)
 	}
+
+	// Wait on KD to boot up
+	time.Sleep(5 * time.Second)
 
 	bytes := make([]byte, messageSize)
 	if _, err := rand.Read(bytes); err != nil {

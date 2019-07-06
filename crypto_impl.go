@@ -14,6 +14,7 @@ import (
 	"github.com/notasecret/peacemakr-go-sdk/generated/client/org"
 	"github.com/notasecret/peacemakr-go-sdk/generated/models"
 	"github.com/notasecret/peacemakr-go-sdk/utils"
+	"log"
 	"math/rand"
 	goRt "runtime"
 	goRtDebug "runtime/debug"
@@ -94,6 +95,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		return err
 	}
 
+	log.Printf("Requesting key IDs %v", keyIds)
 	params := key_service.NewGetAllEncryptedKeysParams()
 	params.EncryptingKeyID = preferredPublicKeyId
 	params.SymmetricKeyIds = keyIds
@@ -110,6 +112,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		return err
 	}
 
+	log.Printf("Got a payload of %d keys", len(ret.Payload))
 	for _, key := range ret.Payload {
 
 		if key == nil {
@@ -238,6 +241,9 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			if err := sdk.persister.Save(keyBytesId, string(keyBytes)); err != nil {
 				return err
 			}
+
+			log.Printf("Saved key %s into persister", keyBytesId)
+
 		}
 	}
 
@@ -562,10 +568,23 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 		return "", nil, err
 	}
 
+	log.Printf("Selected use domain: %v", selectedDomain)
+
 	// Select a key in the use domain.
 	numPossibleKeys := len(selectedDomain.EncryptionKeyIds)
 	selectedKeyIdx := rand.Intn(numPossibleKeys)
 	keyId := selectedDomain.EncryptionKeyIds[selectedKeyIdx]
+
+	log.Printf("Chose key ID %s", keyId)
+	log.Printf("Key exists in persister: %v", sdk.persister.Exists(keyId))
+	if !sdk.persister.Exists(keyId) {
+		log.Printf("Downloading key %s...", keyId)
+		if err := sdk.downloadAndSaveAllKeys([]string{keyId}); err != nil {
+			return "", nil, err
+		}
+		log.Printf("Downloaded key %s", keyId)
+	}
+	log.Printf("Key %s exists in persister: %v", keyId, sdk.persister.Exists(keyId))
 
 	// Setup the crypto config for the encryption.
 	mode := coreCrypto.SYMMETRIC
@@ -679,7 +698,7 @@ func (sdk *standardPeacemakrSDK) getPrivKey() (string, error) {
 
 func (sdk *standardPeacemakrSDK) saveKeyCreationTime(time int64) error {
 	sdk.asymKeys.keyCreationTime = time
-	err := sdk.persister.Save("key_creation_time", strconv.FormatInt(time, 16))
+	err := sdk.persister.Save("key_creation_time", strconv.FormatInt(time, 10))
 	if err != nil {
 		return err
 	}
@@ -700,9 +719,8 @@ func (sdk *standardPeacemakrSDK) getKeyCreationTime() (int64, error) {
 		sdk.asymKeys = &keyStruct{}
 	}
 
-	sdk.asymKeys.keyCreationTime, err = strconv.ParseInt(timeStr, 16, 64)
+	sdk.asymKeys.keyCreationTime, err = strconv.ParseInt(timeStr, 10, 64)
 	if err != nil {
-		sdk.asymKeys.keyCreationTime = 0
 		return 0, err
 	}
 
@@ -1163,8 +1181,14 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		params.Client.ID = &tempId
 		params.Client.Sdk = sdk.version
 		encoding := "pem"
+		keyCreationTime, err := sdk.getKeyCreationTime()
+		if err != nil {
+			sdk.logError(err)
+			return err
+		}
+
 		params.Client.PublicKeys = []*models.PublicKey{{
-			CreationTime: &sdk.asymKeys.keyCreationTime,
+			CreationTime: &keyCreationTime,
 			Encoding:     &encoding,
 			ID:           &tempId,
 			Key:          &pub,
@@ -1275,7 +1299,13 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 }
 
 func (sdk *standardPeacemakrSDK) asymKeysAreStale() bool {
-	return time.Now().Unix()-sdk.asymKeys.keyCreationTime > *sdk.cryptoConfig.ClientKeyTTL
+	keyCreationTime, err := sdk.getKeyCreationTime()
+	if err != nil {
+		sdk.logError(err)
+		// Default to the keys not being stale
+		return false
+	}
+	return time.Now().Unix()-keyCreationTime > *sdk.cryptoConfig.ClientKeyTTL
 }
 
 func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
@@ -1299,7 +1329,7 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 	}
 
 	if sdk.asymKeysAreStale() {
-		sdk.logString("Rotating expired key")
+		sdk.logString("Rotating expired client keypair")
 	}
 
 	if cryptoConfigCipher != currentCipher {
@@ -1355,10 +1385,15 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 		return rollback(err)
 	}
 
+	keyCreationTime, err := sdk.getKeyCreationTime()
+	if err != nil {
+		return rollback(err)
+	}
+
 	updateKeyParams := &clientReq.AddClientPublicKeyParams{
 		ClientID: clientID,
 		NewPublicKey: &models.PublicKey{
-			CreationTime: &sdk.asymKeys.keyCreationTime,
+			CreationTime: &keyCreationTime,
 			Encoding:     &pemStr,
 			ID:           &keyID,
 			Key:          &pub,
