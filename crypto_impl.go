@@ -95,7 +95,6 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		return err
 	}
 
-	log.Printf("Requesting key IDs %v", keyIds)
 	params := key_service.NewGetAllEncryptedKeysParams()
 	params.EncryptingKeyID = preferredPublicKeyId
 	params.SymmetricKeyIds = keyIds
@@ -244,8 +243,6 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			if err := sdk.persister.Save(keyBytesId, string(keyBytes)); err != nil {
 				return err
 			}
-
-			log.Printf("Saved key %s into persister", keyBytesId)
 
 		}
 	}
