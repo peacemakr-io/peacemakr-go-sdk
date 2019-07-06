@@ -1219,7 +1219,7 @@ definitions:
       symmetricKeyEncryptionAlg:
         description: the specific encryption alg to encrypt new plaintexts for application layer encryption operations
         type: string
-        default: "CHACHA20_POLY1305"
+        default: "Peacemakr.Symmetric.CHACHA20_POLY1305"
       encryptingPackagedCiphertextVersion:
         description: after encrypting new plaintexts, package the ciphertext with this version of the packaged ciphertext
         type: integer
@@ -1240,7 +1240,7 @@ definitions:
       digestAlgorithm:
         description: The digest algorithm to use for signing messages in this use domain
         type: string
-        default: "SHA_256"
+        default: "Peacemakr.Digest.SHA_256"
 
   EncryptedSymmetricKey:
     type: object
