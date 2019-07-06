@@ -112,7 +112,10 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		return err
 	}
 
-	log.Printf("Got a payload of %d keys", len(ret.Payload))
+	if len(ret.Payload) == 0 && len(keyIds) != 0 {
+		return errors.New("unable to get any of the requested keys from the server")
+	}
+
 	for _, key := range ret.Payload {
 
 		if key == nil {
