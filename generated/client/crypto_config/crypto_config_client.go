@@ -170,6 +170,35 @@ func (a *Client) RemoveUseDomain(params *RemoveUseDomainParams, authInfo runtime
 }
 
 /*
+UpdateCryptoConfig updates the crypto configuration o n l y the client key type client key bitlength and client key TTL fields
+*/
+func (a *Client) UpdateCryptoConfig(params *UpdateCryptoConfigParams, authInfo runtime.ClientAuthInfoWriter) (*UpdateCryptoConfigOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewUpdateCryptoConfigParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "updateCryptoConfig",
+		Method:             "POST",
+		PathPattern:        "/crypto/config/{cryptoConfigId}",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &UpdateCryptoConfigReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*UpdateCryptoConfigOK), nil
+
+}
+
+/*
 UpdateCryptoConfigFallbackToCloud updates an existing crypto config s asymmetric key TTL
 */
 func (a *Client) UpdateCryptoConfigFallbackToCloud(params *UpdateCryptoConfigFallbackToCloudParams, authInfo runtime.ClientAuthInfoWriter) (*UpdateCryptoConfigFallbackToCloudOK, error) {

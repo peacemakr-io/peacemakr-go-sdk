@@ -110,6 +110,10 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		return err
 	}
 
+	if len(ret.Payload) == 0 && len(keyIds) != 0 {
+		return errors.New("unable to get any of the requested keys from the server")
+	}
+
 	for _, key := range ret.Payload {
 
 		if key == nil {
@@ -238,6 +242,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 			if err := sdk.persister.Save(keyBytesId, string(keyBytes)); err != nil {
 				return err
 			}
+
 		}
 	}
 
@@ -354,13 +359,14 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 	sdk.cryptoConfig = ret.Payload
 	sdk.lastUpdatedAt = time.Now().Unix()
 
-	if sdk.cryptoConfig.ClientKeyTTL == 0 {
+	if *sdk.cryptoConfig.ClientKeyTTL == 0 {
 		oneYear, err := time.ParseDuration("8760h")
 		if err != nil {
 			return err
 		}
 
-		sdk.cryptoConfig.ClientKeyTTL = oneYear.Nanoseconds() / 1e9
+		oneYearInSec := oneYear.Nanoseconds() / 1e9
+		sdk.cryptoConfig.ClientKeyTTL = &oneYearInSec
 	}
 
 	return nil
@@ -434,7 +440,7 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 }
 
 func isUseDomainEncryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
-	return *useDomain.SymmetricKeyEncryptionAllowed
+	return useDomain.SymmetricKeyEncryptionAllowed
 }
 
 func contains(s []string, e string) bool {
@@ -481,7 +487,7 @@ func (sdk *standardPeacemakrSDK) isKeyIdDecryptionViable(keyId string) bool {
 }
 
 func isUseDomainDecryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
-	return *useDomain.SymmetricKeyDecryptionAllowed
+	return useDomain.SymmetricKeyDecryptionAllowed
 }
 
 func (sdk *standardPeacemakrSDK) findViableDecryptionUseDomains() []*models.SymmetricKeyUseDomain {
@@ -565,6 +571,12 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 	numPossibleKeys := len(selectedDomain.EncryptionKeyIds)
 	selectedKeyIdx := rand.Intn(numPossibleKeys)
 	keyId := selectedDomain.EncryptionKeyIds[selectedKeyIdx]
+
+	if !sdk.persister.Exists(keyId) {
+		if err := sdk.downloadAndSaveAllKeys([]string{keyId}); err != nil {
+			return "", nil, err
+		}
+	}
 
 	// Setup the crypto config for the encryption.
 	mode := coreCrypto.SYMMETRIC
@@ -678,7 +690,7 @@ func (sdk *standardPeacemakrSDK) getPrivKey() (string, error) {
 
 func (sdk *standardPeacemakrSDK) saveKeyCreationTime(time int64) error {
 	sdk.asymKeys.keyCreationTime = time
-	err := sdk.persister.Save("key_creation_time", strconv.FormatInt(time, 16))
+	err := sdk.persister.Save("key_creation_time", strconv.FormatInt(time, 10))
 	if err != nil {
 		return err
 	}
@@ -699,9 +711,8 @@ func (sdk *standardPeacemakrSDK) getKeyCreationTime() (int64, error) {
 		sdk.asymKeys = &keyStruct{}
 	}
 
-	sdk.asymKeys.keyCreationTime, err = strconv.ParseInt(timeStr, 16, 64)
+	sdk.asymKeys.keyCreationTime, err = strconv.ParseInt(timeStr, 10, 64)
 	if err != nil {
-		sdk.asymKeys.keyCreationTime = 0
 		return 0, err
 	}
 
@@ -1011,7 +1022,7 @@ func (sdk *standardPeacemakrSDK) generateKeys() (string, string, string, error) 
 		sdk.asymKeys = &keyStruct{}
 	}
 
-	pub, priv, keyTy := GetNewKey(sdk.cryptoConfig.ClientKeyType, int(sdk.cryptoConfig.ClientKeyBitlength))
+	pub, priv, keyTy := GetNewKey(*sdk.cryptoConfig.ClientKeyType, int(*sdk.cryptoConfig.ClientKeyBitlength))
 
 	err := sdk.savePrivKey(priv)
 	if err != nil {
@@ -1066,11 +1077,11 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 		Name:                                name,
 		OwnerOrgID:                          sdk.org.ID,
 		SymmetricKeyDecryptionUseTTL:        &twentyYears,
-		SymmetricKeyDecryptionAllowed:       &falseValue,
+		SymmetricKeyDecryptionAllowed:       true,
 		SymmetricKeyDerivationServiceID:     &emptyString, // Empty string, means the server randomly picks.
 		SymmetricKeyEncryptionAlg:           &alg,
 		SymmetricKeyEncryptionUseTTL:        &twentyYears,
-		SymmetricKeyEncryptionAllowed:       &falseValue,
+		SymmetricKeyEncryptionAllowed:       true,
 		SymmetricKeyInceptionTTL:            &zero,
 		SymmetricKeyLength:                  &keyLen,
 		SymmetricKeyRetentionUseTTL:         &twentyYears,
@@ -1162,8 +1173,14 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		params.Client.ID = &tempId
 		params.Client.Sdk = sdk.version
 		encoding := "pem"
+		keyCreationTime, err := sdk.getKeyCreationTime()
+		if err != nil {
+			sdk.logError(err)
+			return err
+		}
+
 		params.Client.PublicKeys = []*models.PublicKey{{
-			CreationTime: &sdk.asymKeys.keyCreationTime,
+			CreationTime: &keyCreationTime,
 			Encoding:     &encoding,
 			ID:           &tempId,
 			Key:          &pub,
@@ -1239,9 +1256,9 @@ func (sdk *standardPeacemakrSDK) init() error {
 
 func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCipher {
 	var cryptoConfigCipher coreCrypto.AsymmetricCipher
-	switch sdk.cryptoConfig.ClientKeyType {
+	switch *sdk.cryptoConfig.ClientKeyType {
 	case "ec":
-		switch sdk.cryptoConfig.ClientKeyBitlength {
+		switch *sdk.cryptoConfig.ClientKeyBitlength {
 		case 256:
 			cryptoConfigCipher = coreCrypto.ECDH_P256
 		case 384:
@@ -1252,7 +1269,7 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 			cryptoConfigCipher = coreCrypto.ASYMMETRIC_UNSPECIFIED
 		}
 	case "rsa":
-		switch sdk.cryptoConfig.ClientKeyBitlength {
+		switch *sdk.cryptoConfig.ClientKeyBitlength {
 		case 2048:
 			cryptoConfigCipher = coreCrypto.RSA_2048
 		case 4096:
@@ -1262,8 +1279,10 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 		}
 	default:
 		// If they haven't specified anything for the client asymmetric keys, use ECDH_256
-		sdk.cryptoConfig.ClientKeyType = "ec"
-		sdk.cryptoConfig.ClientKeyBitlength = 256
+		defaultKeyType := "ec"
+		defaultBitLength := int64(521)
+		sdk.cryptoConfig.ClientKeyType = &defaultKeyType
+		sdk.cryptoConfig.ClientKeyBitlength = &defaultBitLength
 
 		cryptoConfigCipher = coreCrypto.ECDH_P256
 	}
@@ -1272,7 +1291,13 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 }
 
 func (sdk *standardPeacemakrSDK) asymKeysAreStale() bool {
-	return time.Now().Unix()-sdk.asymKeys.keyCreationTime > sdk.cryptoConfig.ClientKeyTTL
+	keyCreationTime, err := sdk.getKeyCreationTime()
+	if err != nil {
+		sdk.logError(err)
+		// Default to the keys not being stale
+		return false
+	}
+	return time.Now().Unix()-keyCreationTime > *sdk.cryptoConfig.ClientKeyTTL
 }
 
 func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
@@ -1296,7 +1321,7 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 	}
 
 	if sdk.asymKeysAreStale() {
-		sdk.logString("Rotating expired key")
+		sdk.logString("Rotating expired client keypair")
 	}
 
 	if cryptoConfigCipher != currentCipher {
@@ -1352,10 +1377,15 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 		return rollback(err)
 	}
 
+	keyCreationTime, err := sdk.getKeyCreationTime()
+	if err != nil {
+		return rollback(err)
+	}
+
 	updateKeyParams := &clientReq.AddClientPublicKeyParams{
 		ClientID: clientID,
 		NewPublicKey: &models.PublicKey{
-			CreationTime: &sdk.asymKeys.keyCreationTime,
+			CreationTime: &keyCreationTime,
 			Encoding:     &pemStr,
 			ID:           &keyID,
 			Key:          &pub,
