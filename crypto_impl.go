@@ -14,7 +14,6 @@ import (
 	"github.com/notasecret/peacemakr-go-sdk/generated/client/org"
 	"github.com/notasecret/peacemakr-go-sdk/generated/models"
 	"github.com/notasecret/peacemakr-go-sdk/utils"
-	"log"
 	"math/rand"
 	goRt "runtime"
 	goRtDebug "runtime/debug"
@@ -568,23 +567,16 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 		return "", nil, err
 	}
 
-	log.Printf("Selected use domain: %v", selectedDomain)
-
 	// Select a key in the use domain.
 	numPossibleKeys := len(selectedDomain.EncryptionKeyIds)
 	selectedKeyIdx := rand.Intn(numPossibleKeys)
 	keyId := selectedDomain.EncryptionKeyIds[selectedKeyIdx]
 
-	log.Printf("Chose key ID %s", keyId)
-	log.Printf("Key exists in persister: %v", sdk.persister.Exists(keyId))
 	if !sdk.persister.Exists(keyId) {
-		log.Printf("Downloading key %s...", keyId)
 		if err := sdk.downloadAndSaveAllKeys([]string{keyId}); err != nil {
 			return "", nil, err
 		}
-		log.Printf("Downloaded key %s", keyId)
 	}
-	log.Printf("Key %s exists in persister: %v", keyId, sdk.persister.Exists(keyId))
 
 	// Setup the crypto config for the encryption.
 	mode := coreCrypto.SYMMETRIC
