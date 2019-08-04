@@ -28,6 +28,9 @@ type KeyDerivationInstance struct {
 	// Required: true
 	ID *string `json:"id"`
 
+	// if true then the key deriver is visible to every other organization
+	IsPublic *bool `json:"isPublic,omitempty"`
+
 	// service id (virtual service id)
 	// Required: true
 	ServiceIds []string `json:"serviceIds"`

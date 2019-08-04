@@ -7,8 +7,8 @@ services:
   keyderiver-cloud:
     image: 716293438869.dkr.ecr.us-east-2.amazonaws.com/key-derivation-service:testing-stable
     environment:
-        - PEACEMAKR_KEYDERIVER_PEACEMAKR_APIKEY=peacemaker-key-123-123-123
-        - PEACEMAKR_KEYDERIVER_PEACEMAKR_HOST=peacemakr-services
+      - PEACEMAKR_KEYDERIVER_PEACEMAKR_BOOTSTRAPPRIVATEKEYLOCATION=/key/bootstrap
+      - PEACEMAKR_KEYDERIVER_PEACEMAKR_HOST=peacemakr-services
     depends_on:
       - peacemakr-services
     links:

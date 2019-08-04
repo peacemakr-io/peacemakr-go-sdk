@@ -39,6 +39,27 @@ func (o *AddKeyDerivationServiceInstanceReader) ReadResponse(response runtime.Cl
 		}
 		return nil, result
 
+	case 401:
+		result := NewAddKeyDerivationServiceInstanceUnauthorized()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
+	case 403:
+		result := NewAddKeyDerivationServiceInstanceForbidden()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
+	case 500:
+		result := NewAddKeyDerivationServiceInstanceInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+
 	default:
 		return nil, runtime.NewAPIError("unknown error", response, response.Code())
 	}
@@ -90,6 +111,69 @@ func (o *AddKeyDerivationServiceInstanceBadRequest) Error() string {
 }
 
 func (o *AddKeyDerivationServiceInstanceBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewAddKeyDerivationServiceInstanceUnauthorized creates a AddKeyDerivationServiceInstanceUnauthorized with default headers values
+func NewAddKeyDerivationServiceInstanceUnauthorized() *AddKeyDerivationServiceInstanceUnauthorized {
+	return &AddKeyDerivationServiceInstanceUnauthorized{}
+}
+
+/*AddKeyDerivationServiceInstanceUnauthorized handles this case with default header values.
+
+Not authenticated
+*/
+type AddKeyDerivationServiceInstanceUnauthorized struct {
+}
+
+func (o *AddKeyDerivationServiceInstanceUnauthorized) Error() string {
+	return fmt.Sprintf("[POST /crypto/deriver/instance][%d] addKeyDerivationServiceInstanceUnauthorized ", 401)
+}
+
+func (o *AddKeyDerivationServiceInstanceUnauthorized) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewAddKeyDerivationServiceInstanceForbidden creates a AddKeyDerivationServiceInstanceForbidden with default headers values
+func NewAddKeyDerivationServiceInstanceForbidden() *AddKeyDerivationServiceInstanceForbidden {
+	return &AddKeyDerivationServiceInstanceForbidden{}
+}
+
+/*AddKeyDerivationServiceInstanceForbidden handles this case with default header values.
+
+Not authorized
+*/
+type AddKeyDerivationServiceInstanceForbidden struct {
+}
+
+func (o *AddKeyDerivationServiceInstanceForbidden) Error() string {
+	return fmt.Sprintf("[POST /crypto/deriver/instance][%d] addKeyDerivationServiceInstanceForbidden ", 403)
+}
+
+func (o *AddKeyDerivationServiceInstanceForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewAddKeyDerivationServiceInstanceInternalServerError creates a AddKeyDerivationServiceInstanceInternalServerError with default headers values
+func NewAddKeyDerivationServiceInstanceInternalServerError() *AddKeyDerivationServiceInstanceInternalServerError {
+	return &AddKeyDerivationServiceInstanceInternalServerError{}
+}
+
+/*AddKeyDerivationServiceInstanceInternalServerError handles this case with default header values.
+
+Internal server error
+*/
+type AddKeyDerivationServiceInstanceInternalServerError struct {
+}
+
+func (o *AddKeyDerivationServiceInstanceInternalServerError) Error() string {
+	return fmt.Sprintf("[POST /crypto/deriver/instance][%d] addKeyDerivationServiceInstanceInternalServerError ", 500)
+}
+
+func (o *AddKeyDerivationServiceInstanceInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	return nil
 }
