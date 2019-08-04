@@ -199,6 +199,35 @@ func (a *Client) DeleteOrganization(params *DeleteOrganizationParams, authInfo r
 }
 
 /*
+GetCloudOrganizationAPIKey gets an access key for the peacemakr shared cloud org all cloud key derivers must use this
+*/
+func (a *Client) GetCloudOrganizationAPIKey(params *GetCloudOrganizationAPIKeyParams, authInfo runtime.ClientAuthInfoWriter) (*GetCloudOrganizationAPIKeyOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewGetCloudOrganizationAPIKeyParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "getCloudOrganizationAPIKey",
+		Method:             "GET",
+		PathPattern:        "/org/key/sharedCloud",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{""},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetCloudOrganizationAPIKeyReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*GetCloudOrganizationAPIKeyOK), nil
+
+}
+
+/*
 GetOrganization gets an existing organization
 */
 func (a *Client) GetOrganization(params *GetOrganizationParams, authInfo runtime.ClientAuthInfoWriter) (*GetOrganizationOK, error) {

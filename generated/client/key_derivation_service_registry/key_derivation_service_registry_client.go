@@ -83,23 +83,23 @@ func (a *Client) DeleteKeyDerivationServiceInstance(params *DeleteKeyDerivationS
 }
 
 /*
-GetAllKeyDerivationServiceInstances gets the all key derivers registerd to org
+GetAllOrgKeyDerivationServiceInstances gets the all key derivers registerd to org
 */
-func (a *Client) GetAllKeyDerivationServiceInstances(params *GetAllKeyDerivationServiceInstancesParams, authInfo runtime.ClientAuthInfoWriter) (*GetAllKeyDerivationServiceInstancesOK, error) {
+func (a *Client) GetAllOrgKeyDerivationServiceInstances(params *GetAllOrgKeyDerivationServiceInstancesParams, authInfo runtime.ClientAuthInfoWriter) (*GetAllOrgKeyDerivationServiceInstancesOK, error) {
 	// TODO: Validate the params before sending
 	if params == nil {
-		params = NewGetAllKeyDerivationServiceInstancesParams()
+		params = NewGetAllOrgKeyDerivationServiceInstancesParams()
 	}
 
 	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "getAllKeyDerivationServiceInstances",
+		ID:                 "getAllOrgKeyDerivationServiceInstances",
 		Method:             "GET",
-		PathPattern:        "/crypto/deriver/all-instances",
+		PathPattern:        "/crypto/deriver/all-org-instances",
 		ProducesMediaTypes: []string{"application/json"},
 		ConsumesMediaTypes: []string{"application/json"},
 		Schemes:            []string{"http"},
 		Params:             params,
-		Reader:             &GetAllKeyDerivationServiceInstancesReader{formats: a.formats},
+		Reader:             &GetAllOrgKeyDerivationServiceInstancesReader{formats: a.formats},
 		AuthInfo:           authInfo,
 		Context:            params.Context,
 		Client:             params.HTTPClient,
@@ -107,7 +107,36 @@ func (a *Client) GetAllKeyDerivationServiceInstances(params *GetAllKeyDerivation
 	if err != nil {
 		return nil, err
 	}
-	return result.(*GetAllKeyDerivationServiceInstancesOK), nil
+	return result.(*GetAllOrgKeyDerivationServiceInstancesOK), nil
+
+}
+
+/*
+GetAllSharedKeyDerivationServiceInstances gets the all key derivers that the org has access to including shared cloud instances
+*/
+func (a *Client) GetAllSharedKeyDerivationServiceInstances(params *GetAllSharedKeyDerivationServiceInstancesParams, authInfo runtime.ClientAuthInfoWriter) (*GetAllSharedKeyDerivationServiceInstancesOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewGetAllSharedKeyDerivationServiceInstancesParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "getAllSharedKeyDerivationServiceInstances",
+		Method:             "GET",
+		PathPattern:        "/crypto/deriver/all-shared-instances",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetAllSharedKeyDerivationServiceInstancesReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*GetAllSharedKeyDerivationServiceInstancesOK), nil
 
 }
 
