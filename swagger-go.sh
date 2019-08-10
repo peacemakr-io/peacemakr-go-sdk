@@ -2,7 +2,7 @@
 # go look at, https://quay.io/repository/goswagger/swagger?tab=tags
 docker pull quay.io/goswagger/swagger:0.15.0
 
-DOCKER_WORKDIR=/go/src/github.com/notasecret/peacemakr-go-sdk
+DOCKER_WORKDIR=/go/src/github.com/peacemakr-io/peacemakr-go-sdk
 
 swagger() {
 	echo "running swagger command with args: $@"

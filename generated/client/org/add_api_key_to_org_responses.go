@@ -13,7 +13,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	models "github.com/notasecret/peacemakr-go-sdk/generated/models"
+	models "github.com/peacemakr-io/peacemakr-go-sdk/generated/models"
 )
 
 // AddAPIKeyToOrgReader is a Reader for the AddAPIKeyToOrg structure.

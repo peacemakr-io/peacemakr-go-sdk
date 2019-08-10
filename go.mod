@@ -1,4 +1,4 @@
-module github.com/notasecret/peacemakr-go-sdk
+module github.com/peacemakr-io/peacemakr-go-sdk
 
 go 1.12
 

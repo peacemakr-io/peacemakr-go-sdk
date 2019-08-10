@@ -11,14 +11,14 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/notasecret/peacemakr-go-sdk/generated/client/client"
-	"github.com/notasecret/peacemakr-go-sdk/generated/client/crypto_config"
-	"github.com/notasecret/peacemakr-go-sdk/generated/client/key_derivation_service_registry"
-	"github.com/notasecret/peacemakr-go-sdk/generated/client/key_service"
-	"github.com/notasecret/peacemakr-go-sdk/generated/client/login"
-	"github.com/notasecret/peacemakr-go-sdk/generated/client/org"
-	"github.com/notasecret/peacemakr-go-sdk/generated/client/phone_home"
-	"github.com/notasecret/peacemakr-go-sdk/generated/client/server_management"
+	"github.com/peacemakr-io/peacemakr-go-sdk/generated/client/client"
+	"github.com/peacemakr-io/peacemakr-go-sdk/generated/client/crypto_config"
+	"github.com/peacemakr-io/peacemakr-go-sdk/generated/client/key_derivation_service_registry"
+	"github.com/peacemakr-io/peacemakr-go-sdk/generated/client/key_service"
+	"github.com/peacemakr-io/peacemakr-go-sdk/generated/client/login"
+	"github.com/peacemakr-io/peacemakr-go-sdk/generated/client/org"
+	"github.com/peacemakr-io/peacemakr-go-sdk/generated/client/phone_home"
+	"github.com/peacemakr-io/peacemakr-go-sdk/generated/client/server_management"
 )
 
 // Default peacemakr client HTTP client.

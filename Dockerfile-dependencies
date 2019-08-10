@@ -15,11 +15,11 @@ WORKDIR /go/.
 
 ENV GOPATH=/go
 
-ADD go.mod go.sum crypto.go crypto_impl.go crypto_test.go utils.go /go/src/github.com/notasecret/peacemakr-go-sdk/
-ADD ./utils /go/src/github.com/notasecret/peacemakr-go-sdk/utils/
-ADD ./example /go/src/github.com/notasecret/peacemakr-go-sdk/example/
-ADD ./crypto /go/src/github.com/notasecret/peacemakr-go-sdk/crypto/
-ADD ./include /go/src/github.com/notasecret/peacemakr-go-sdk/include/
-ADD ./generated /go/src/github.com/notasecret/peacemakr-go-sdk/generated/
+ADD go.mod go.sum crypto.go crypto_impl.go crypto_test.go utils.go /go/src/github.com/peacemakr-io/peacemakr-go-sdk/
+ADD ./utils /go/src/github.com/peacemakr-io/peacemakr-go-sdk/utils/
+ADD ./example /go/src/github.com/peacemakr-io/peacemakr-go-sdk/example/
+ADD ./crypto /go/src/github.com/peacemakr-io/peacemakr-go-sdk/crypto/
+ADD ./include /go/src/github.com/peacemakr-io/peacemakr-go-sdk/include/
+ADD ./generated /go/src/github.com/peacemakr-io/peacemakr-go-sdk/generated/
 
-RUN cd src/github.com/notasecret/peacemakr-go-sdk/.; GO111MODULE=on go mod vendor
+RUN cd src/github.com/peacemakr-io/peacemakr-go-sdk/.; GO111MODULE=on go mod vendor
