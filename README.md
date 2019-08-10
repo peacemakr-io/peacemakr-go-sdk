@@ -24,7 +24,12 @@ How do I build this?
 ./build-dependencies.sh
 ```
 
-### (4) Build binaries for all peacmakr-go-sdk artifacts,
+### (4) Build docker images,
 ```
 ./build-binaries.sh
+```
+
+### (5) Release docker images,
+```
+./build-binaries.sh -release
 ```
