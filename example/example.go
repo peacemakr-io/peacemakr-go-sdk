@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"github.com/notasecret/peacemakr-go-sdk"
-	"github.com/notasecret/peacemakr-go-sdk/utils"
+	"github.com/peacemakr-io/peacemakr-go-sdk"
+	"github.com/peacemakr-io/peacemakr-go-sdk/utils"
 	"log"
 	"math/rand"
 	"os"
