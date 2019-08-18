@@ -2,7 +2,7 @@ package peacemakr_go_sdk
 
 import (
 	"errors"
-	"github.com/notasecret/peacemakr-go-sdk/pkg/utils"
+	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"log"
 	"os"
 	"time"

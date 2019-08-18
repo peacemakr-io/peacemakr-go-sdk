@@ -4,7 +4,7 @@ RUN apk update && apk upgrade && apk add --no-cache git curl gcc musl-dev libbsd
 
 ENV GOPATH=/go
 
-ADD go.mod go.sum /go/src/github.com/notasecret/peacemakr-go-sdk/
-ADD ./pkg /go/src/github.com/notasecret/peacemakr-go-sdk/pkg
+ADD go.mod go.sum /go/src/github.com/peacemakr-io/peacemakr-go-sdk/
+ADD ./pkg /go/src/github.com/peacemakr-io/peacemakr-go-sdk/pkg
 
-RUN cd src/github.com/notasecret/peacemakr-go-sdk/. && GO111MODULE=on go mod vendor
+RUN cd src/github.com/peacemakr-io/peacemakr-go-sdk/. && GO111MODULE=on go mod vendor

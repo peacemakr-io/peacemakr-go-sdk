@@ -1,5 +1,5 @@
 # Peacemakr Go SDK
-[![CircleCI](https://circleci.com/gh/notasecret/peacemakr-go-sdk/tree/master.svg?style=svg)](https://circleci.com/gh/notasecret/peacemakr-go-sdk/tree/master)
+[![CircleCI](https://circleci.com/gh/peacemakr-io/peacemakr-go-sdk/tree/master.svg?style=svg)](https://circleci.com/gh/peacemakr-io/peacemakr-go-sdk/tree/master)
 
 A cloud or on-prem backed service that which provides simple, backward compatible, and secure key lifecycle management.
 

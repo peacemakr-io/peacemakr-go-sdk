@@ -2,8 +2,8 @@ package peacemakr_go_sdk
 
 import (
 	"crypto/rand"
-	"github.com/notasecret/peacemakr-go-sdk/pkg/generated/client"
-	"github.com/notasecret/peacemakr-go-sdk/pkg/utils"
+	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client"
+	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"log"
 	"os"
 	"testing"

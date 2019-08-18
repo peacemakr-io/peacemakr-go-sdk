@@ -17,7 +17,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
+	models "github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewAddUseDomainParams creates a new AddUseDomainParams object
