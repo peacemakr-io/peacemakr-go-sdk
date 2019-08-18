@@ -8,16 +8,17 @@ package client
 import (
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
-	client2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/client"
-	crypto_config2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/crypto_config"
-	key_derivation_service_registry2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/key_derivation_service_registry"
-	key_service2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/key_service"
-	login2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/login"
-	org2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/org"
-	phone_home2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/phone_home"
-	server_management2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/server_management"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	"github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/client"
+	"github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/crypto_config"
+	"github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/key_derivation_service_registry"
+	"github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/key_service"
+	"github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/login"
+	"github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/org"
+	"github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/phone_home"
+	"github.com/notasecret/peacemakr-go-sdk/pkg/generated/client/server_management"
 )
 
 // Default peacemakr client HTTP client.
@@ -63,21 +64,21 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *PeacemakrC
 	cli := new(PeacemakrClient)
 	cli.Transport = transport
 
-	cli.Client = client2.New(transport, formats)
+	cli.Client = client.New(transport, formats)
 
-	cli.CryptoConfig = crypto_config2.New(transport, formats)
+	cli.CryptoConfig = crypto_config.New(transport, formats)
 
-	cli.KeyDerivationServiceRegistry = key_derivation_service_registry2.New(transport, formats)
+	cli.KeyDerivationServiceRegistry = key_derivation_service_registry.New(transport, formats)
 
-	cli.KeyService = key_service2.New(transport, formats)
+	cli.KeyService = key_service.New(transport, formats)
 
-	cli.Login = login2.New(transport, formats)
+	cli.Login = login.New(transport, formats)
 
-	cli.Org = org2.New(transport, formats)
+	cli.Org = org.New(transport, formats)
 
-	cli.PhoneHome = phone_home2.New(transport, formats)
+	cli.PhoneHome = phone_home.New(transport, formats)
 
-	cli.ServerManagement = server_management2.New(transport, formats)
+	cli.ServerManagement = server_management.New(transport, formats)
 
 	return cli
 }
@@ -123,21 +124,21 @@ func (cfg *TransportConfig) WithSchemes(schemes []string) *TransportConfig {
 
 // PeacemakrClient is a client for peacemakr client
 type PeacemakrClient struct {
-	Client *client2.Client
+	Client *client.Client
 
-	CryptoConfig *crypto_config2.Client
+	CryptoConfig *crypto_config.Client
 
-	KeyDerivationServiceRegistry *key_derivation_service_registry2.Client
+	KeyDerivationServiceRegistry *key_derivation_service_registry.Client
 
-	KeyService *key_service2.Client
+	KeyService *key_service.Client
 
-	Login *login2.Client
+	Login *login.Client
 
-	Org *org2.Client
+	Org *org.Client
 
-	PhoneHome *phone_home2.Client
+	PhoneHome *phone_home.Client
 
-	ServerManagement *server_management2.Client
+	ServerManagement *server_management.Client
 
 	Transport runtime.ClientTransport
 }

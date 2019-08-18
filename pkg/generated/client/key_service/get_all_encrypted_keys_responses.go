@@ -7,12 +7,13 @@ package key_service
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // GetAllEncryptedKeysReader is a Reader for the GetAllEncryptedKeys structure.
@@ -53,7 +54,7 @@ func NewGetAllEncryptedKeysOK() *GetAllEncryptedKeysOK {
 Returns an array of encrypted keys
 */
 type GetAllEncryptedKeysOK struct {
-	Payload []*models2.EncryptedSymmetricKey
+	Payload []*models.EncryptedSymmetricKey
 }
 
 func (o *GetAllEncryptedKeysOK) Error() string {

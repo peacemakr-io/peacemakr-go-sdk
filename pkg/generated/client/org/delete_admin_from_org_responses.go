@@ -7,12 +7,13 @@ package org
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // DeleteAdminFromOrgReader is a Reader for the DeleteAdminFromOrg structure.
@@ -88,7 +89,7 @@ func NewDeleteAdminFromOrgBadRequest() *DeleteAdminFromOrgBadRequest {
 Unable to process request
 */
 type DeleteAdminFromOrgBadRequest struct {
-	Payload *models2.ErrorResponse
+	Payload *models.ErrorResponse
 }
 
 func (o *DeleteAdminFromOrgBadRequest) Error() string {
@@ -97,7 +98,7 @@ func (o *DeleteAdminFromOrgBadRequest) Error() string {
 
 func (o *DeleteAdminFromOrgBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.ErrorResponse)
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -138,7 +139,7 @@ func NewDeleteAdminFromOrgInternalServerError() *DeleteAdminFromOrgInternalServe
 Unrecoverable error
 */
 type DeleteAdminFromOrgInternalServerError struct {
-	Payload *models2.ErrorResponse
+	Payload *models.ErrorResponse
 }
 
 func (o *DeleteAdminFromOrgInternalServerError) Error() string {
@@ -147,7 +148,7 @@ func (o *DeleteAdminFromOrgInternalServerError) Error() string {
 
 func (o *DeleteAdminFromOrgInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.ErrorResponse)
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

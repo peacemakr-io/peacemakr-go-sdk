@@ -7,12 +7,13 @@ package login
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // LoginReader is a Reader for the Login structure.
@@ -60,7 +61,7 @@ func NewLoginOK() *LoginOK {
 Returns a LoginResponse, which helps the calling client determine what screen to load next (create org vs current org).
 */
 type LoginOK struct {
-	Payload *models2.LoginResponse
+	Payload *models.LoginResponse
 }
 
 func (o *LoginOK) Error() string {
@@ -69,7 +70,7 @@ func (o *LoginOK) Error() string {
 
 func (o *LoginOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.LoginResponse)
+	o.Payload = new(models.LoginResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

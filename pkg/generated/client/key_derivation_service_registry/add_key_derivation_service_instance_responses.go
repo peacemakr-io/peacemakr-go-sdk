@@ -7,12 +7,13 @@ package key_derivation_service_registry
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // AddKeyDerivationServiceInstanceReader is a Reader for the AddKeyDerivationServiceInstance structure.
@@ -74,7 +75,7 @@ func NewAddKeyDerivationServiceInstanceOK() *AddKeyDerivationServiceInstanceOK {
 Returns the newly registered key derivation service instance
 */
 type AddKeyDerivationServiceInstanceOK struct {
-	Payload *models2.KeyDerivationInstance
+	Payload *models.KeyDerivationInstance
 }
 
 func (o *AddKeyDerivationServiceInstanceOK) Error() string {
@@ -83,7 +84,7 @@ func (o *AddKeyDerivationServiceInstanceOK) Error() string {
 
 func (o *AddKeyDerivationServiceInstanceOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.KeyDerivationInstance)
+	o.Payload = new(models.KeyDerivationInstance)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

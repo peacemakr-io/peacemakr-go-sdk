@@ -6,7 +6,6 @@ package key_derivation_service_registry
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"net/http"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewAddKeyDerivationServiceInstanceParams creates a new AddKeyDerivationServiceInstanceParams object
@@ -64,7 +65,7 @@ for the add key derivation service instance operation typically these are writte
 type AddKeyDerivationServiceInstanceParams struct {
 
 	/*KeyDerivationInstance*/
-	KeyDerivationInstance *models2.KeyDerivationInstance
+	KeyDerivationInstance *models.KeyDerivationInstance
 
 	timeout    time.Duration
 	Context    context.Context
@@ -105,13 +106,13 @@ func (o *AddKeyDerivationServiceInstanceParams) SetHTTPClient(client *http.Clien
 }
 
 // WithKeyDerivationInstance adds the keyDerivationInstance to the add key derivation service instance params
-func (o *AddKeyDerivationServiceInstanceParams) WithKeyDerivationInstance(keyDerivationInstance *models2.KeyDerivationInstance) *AddKeyDerivationServiceInstanceParams {
+func (o *AddKeyDerivationServiceInstanceParams) WithKeyDerivationInstance(keyDerivationInstance *models.KeyDerivationInstance) *AddKeyDerivationServiceInstanceParams {
 	o.SetKeyDerivationInstance(keyDerivationInstance)
 	return o
 }
 
 // SetKeyDerivationInstance adds the keyDerivationInstance to the add key derivation service instance params
-func (o *AddKeyDerivationServiceInstanceParams) SetKeyDerivationInstance(keyDerivationInstance *models2.KeyDerivationInstance) {
+func (o *AddKeyDerivationServiceInstanceParams) SetKeyDerivationInstance(keyDerivationInstance *models.KeyDerivationInstance) {
 	o.KeyDerivationInstance = keyDerivationInstance
 }
 

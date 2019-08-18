@@ -7,12 +7,13 @@ package crypto_config
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // UpdateExpireUseDomainReader is a Reader for the UpdateExpireUseDomain structure.
@@ -95,7 +96,7 @@ func NewUpdateExpireUseDomainBadRequest() *UpdateExpireUseDomainBadRequest {
 Unable to process request
 */
 type UpdateExpireUseDomainBadRequest struct {
-	Payload *models2.ErrorResponse
+	Payload *models.ErrorResponse
 }
 
 func (o *UpdateExpireUseDomainBadRequest) Error() string {
@@ -104,7 +105,7 @@ func (o *UpdateExpireUseDomainBadRequest) Error() string {
 
 func (o *UpdateExpireUseDomainBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.ErrorResponse)
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -166,7 +167,7 @@ func NewUpdateExpireUseDomainInternalServerError() *UpdateExpireUseDomainInterna
 Unrecoverable internal error
 */
 type UpdateExpireUseDomainInternalServerError struct {
-	Payload *models2.ErrorResponse
+	Payload *models.ErrorResponse
 }
 
 func (o *UpdateExpireUseDomainInternalServerError) Error() string {
@@ -175,7 +176,7 @@ func (o *UpdateExpireUseDomainInternalServerError) Error() string {
 
 func (o *UpdateExpireUseDomainInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.ErrorResponse)
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

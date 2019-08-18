@@ -7,12 +7,13 @@ package key_derivation_service_registry
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // HeartbeatKeyDerivationServiceInstanceReader is a Reader for the HeartbeatKeyDerivationServiceInstance structure.
@@ -53,7 +54,7 @@ func NewHeartbeatKeyDerivationServiceInstanceOK() *HeartbeatKeyDerivationService
 Heatbeat accepted, possibly returning work
 */
 type HeartbeatKeyDerivationServiceInstanceOK struct {
-	Payload *models2.HeatbeatResponse
+	Payload *models.HeatbeatResponse
 }
 
 func (o *HeartbeatKeyDerivationServiceInstanceOK) Error() string {
@@ -62,7 +63,7 @@ func (o *HeartbeatKeyDerivationServiceInstanceOK) Error() string {
 
 func (o *HeartbeatKeyDerivationServiceInstanceOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.HeatbeatResponse)
+	o.Payload = new(models.HeatbeatResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

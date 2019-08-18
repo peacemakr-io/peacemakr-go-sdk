@@ -6,7 +6,6 @@ package key_service
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"net/http"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewPostNewEncryptedKeysParams creates a new PostNewEncryptedKeysParams object
@@ -64,7 +65,7 @@ for the post new encrypted keys operation typically these are written to a http.
 type PostNewEncryptedKeysParams struct {
 
 	/*EncryptedSymmetricKey*/
-	EncryptedSymmetricKey []*models2.EncryptedSymmetricKey
+	EncryptedSymmetricKey []*models.EncryptedSymmetricKey
 	/*EncryptingKeyID*/
 	EncryptingKeyID string
 
@@ -107,13 +108,13 @@ func (o *PostNewEncryptedKeysParams) SetHTTPClient(client *http.Client) {
 }
 
 // WithEncryptedSymmetricKey adds the encryptedSymmetricKey to the post new encrypted keys params
-func (o *PostNewEncryptedKeysParams) WithEncryptedSymmetricKey(encryptedSymmetricKey []*models2.EncryptedSymmetricKey) *PostNewEncryptedKeysParams {
+func (o *PostNewEncryptedKeysParams) WithEncryptedSymmetricKey(encryptedSymmetricKey []*models.EncryptedSymmetricKey) *PostNewEncryptedKeysParams {
 	o.SetEncryptedSymmetricKey(encryptedSymmetricKey)
 	return o
 }
 
 // SetEncryptedSymmetricKey adds the encryptedSymmetricKey to the post new encrypted keys params
-func (o *PostNewEncryptedKeysParams) SetEncryptedSymmetricKey(encryptedSymmetricKey []*models2.EncryptedSymmetricKey) {
+func (o *PostNewEncryptedKeysParams) SetEncryptedSymmetricKey(encryptedSymmetricKey []*models.EncryptedSymmetricKey) {
 	o.EncryptedSymmetricKey = encryptedSymmetricKey
 }
 

@@ -6,7 +6,6 @@ package client
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"net/http"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewAddClientParams creates a new AddClientParams object
@@ -64,7 +65,7 @@ for the add client operation typically these are written to a http.Request
 type AddClientParams struct {
 
 	/*Client*/
-	Client *models2.Client
+	Client *models.Client
 
 	timeout    time.Duration
 	Context    context.Context
@@ -105,13 +106,13 @@ func (o *AddClientParams) SetHTTPClient(client *http.Client) {
 }
 
 // WithClient adds the client to the add client params
-func (o *AddClientParams) WithClient(client *models2.Client) *AddClientParams {
+func (o *AddClientParams) WithClient(client *models.Client) *AddClientParams {
 	o.SetClient(client)
 	return o
 }
 
 // SetClient adds the client to the add client params
-func (o *AddClientParams) SetClient(client *models2.Client) {
+func (o *AddClientParams) SetClient(client *models.Client) {
 	o.Client = client
 }
 

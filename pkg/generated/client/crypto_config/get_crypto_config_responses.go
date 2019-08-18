@@ -7,12 +7,13 @@ package crypto_config
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // GetCryptoConfigReader is a Reader for the GetCryptoConfig structure.
@@ -53,7 +54,7 @@ func NewGetCryptoConfigOK() *GetCryptoConfigOK {
 Returns the requested configuration
 */
 type GetCryptoConfigOK struct {
-	Payload *models2.CryptoConfig
+	Payload *models.CryptoConfig
 }
 
 func (o *GetCryptoConfigOK) Error() string {
@@ -62,7 +63,7 @@ func (o *GetCryptoConfigOK) Error() string {
 
 func (o *GetCryptoConfigOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.CryptoConfig)
+	o.Payload = new(models.CryptoConfig)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

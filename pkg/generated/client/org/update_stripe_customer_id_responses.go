@@ -7,12 +7,13 @@ package org
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // UpdateStripeCustomerIDReader is a Reader for the UpdateStripeCustomerID structure.
@@ -60,7 +61,7 @@ func NewUpdateStripeCustomerIDOK() *UpdateStripeCustomerIDOK {
 Successfully updated stripe customer id
 */
 type UpdateStripeCustomerIDOK struct {
-	Payload *models2.APIKey
+	Payload *models.APIKey
 }
 
 func (o *UpdateStripeCustomerIDOK) Error() string {
@@ -69,7 +70,7 @@ func (o *UpdateStripeCustomerIDOK) Error() string {
 
 func (o *UpdateStripeCustomerIDOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.APIKey)
+	o.Payload = new(models.APIKey)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

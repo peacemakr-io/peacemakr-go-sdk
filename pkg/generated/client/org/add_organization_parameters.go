@@ -6,7 +6,6 @@ package org
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"net/http"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewAddOrganizationParams creates a new AddOrganizationParams object
@@ -64,7 +65,7 @@ for the add organization operation typically these are written to a http.Request
 type AddOrganizationParams struct {
 
 	/*Contact*/
-	Contact *models2.Contact
+	Contact *models.Contact
 	/*IDToken*/
 	IDToken string
 	/*OrgName*/
@@ -111,13 +112,13 @@ func (o *AddOrganizationParams) SetHTTPClient(client *http.Client) {
 }
 
 // WithContact adds the contact to the add organization params
-func (o *AddOrganizationParams) WithContact(contact *models2.Contact) *AddOrganizationParams {
+func (o *AddOrganizationParams) WithContact(contact *models.Contact) *AddOrganizationParams {
 	o.SetContact(contact)
 	return o
 }
 
 // SetContact adds the contact to the add organization params
-func (o *AddOrganizationParams) SetContact(contact *models2.Contact) {
+func (o *AddOrganizationParams) SetContact(contact *models.Contact) {
 	o.Contact = contact
 }
 

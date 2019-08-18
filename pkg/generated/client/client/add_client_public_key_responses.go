@@ -7,12 +7,13 @@ package client
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // AddClientPublicKeyReader is a Reader for the AddClientPublicKey structure.
@@ -74,7 +75,7 @@ func NewAddClientPublicKeyOK() *AddClientPublicKeyOK {
 Public key for the client successfully added
 */
 type AddClientPublicKeyOK struct {
-	Payload *models2.PublicKey
+	Payload *models.PublicKey
 }
 
 func (o *AddClientPublicKeyOK) Error() string {
@@ -83,7 +84,7 @@ func (o *AddClientPublicKeyOK) Error() string {
 
 func (o *AddClientPublicKeyOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.PublicKey)
+	o.Payload = new(models.PublicKey)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

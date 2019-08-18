@@ -1,4 +1,4 @@
 #!/bin/sh
 
-rm -rf generated || true
+rm -rf pkg/generated || true
 ./generate-stub-client.sh

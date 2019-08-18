@@ -6,7 +6,6 @@ package phone_home
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"net/http"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewPostLogParams creates a new PostLogParams object
@@ -64,7 +65,7 @@ for the post log operation typically these are written to a http.Request
 type PostLogParams struct {
 
 	/*Log*/
-	Log *models2.Log
+	Log *models.Log
 
 	timeout    time.Duration
 	Context    context.Context
@@ -105,13 +106,13 @@ func (o *PostLogParams) SetHTTPClient(client *http.Client) {
 }
 
 // WithLog adds the log to the post log params
-func (o *PostLogParams) WithLog(log *models2.Log) *PostLogParams {
+func (o *PostLogParams) WithLog(log *models.Log) *PostLogParams {
 	o.SetLog(log)
 	return o
 }
 
 // SetLog adds the log to the post log params
-func (o *PostLogParams) SetLog(log *models2.Log) {
+func (o *PostLogParams) SetLog(log *models.Log) {
 	o.Log = log
 }
 

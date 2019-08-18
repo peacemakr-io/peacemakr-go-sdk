@@ -7,12 +7,13 @@ package org
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // GetOrganizationReader is a Reader for the GetOrganization structure.
@@ -53,7 +54,7 @@ func NewGetOrganizationOK() *GetOrganizationOK {
 Returns the Org requested
 */
 type GetOrganizationOK struct {
-	Payload *models2.Organization
+	Payload *models.Organization
 }
 
 func (o *GetOrganizationOK) Error() string {
@@ -62,7 +63,7 @@ func (o *GetOrganizationOK) Error() string {
 
 func (o *GetOrganizationOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.Organization)
+	o.Payload = new(models.Organization)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

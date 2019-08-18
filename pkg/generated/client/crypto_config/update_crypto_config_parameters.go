@@ -6,7 +6,6 @@ package crypto_config
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"net/http"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewUpdateCryptoConfigParams creates a new UpdateCryptoConfigParams object
@@ -66,7 +67,7 @@ type UpdateCryptoConfigParams struct {
 	/*CryptoConfigID*/
 	CryptoConfigID string
 	/*UpdatedCryptoConfig*/
-	UpdatedCryptoConfig *models2.CryptoConfig
+	UpdatedCryptoConfig *models.CryptoConfig
 
 	timeout    time.Duration
 	Context    context.Context
@@ -118,13 +119,13 @@ func (o *UpdateCryptoConfigParams) SetCryptoConfigID(cryptoConfigID string) {
 }
 
 // WithUpdatedCryptoConfig adds the updatedCryptoConfig to the update crypto config params
-func (o *UpdateCryptoConfigParams) WithUpdatedCryptoConfig(updatedCryptoConfig *models2.CryptoConfig) *UpdateCryptoConfigParams {
+func (o *UpdateCryptoConfigParams) WithUpdatedCryptoConfig(updatedCryptoConfig *models.CryptoConfig) *UpdateCryptoConfigParams {
 	o.SetUpdatedCryptoConfig(updatedCryptoConfig)
 	return o
 }
 
 // SetUpdatedCryptoConfig adds the updatedCryptoConfig to the update crypto config params
-func (o *UpdateCryptoConfigParams) SetUpdatedCryptoConfig(updatedCryptoConfig *models2.CryptoConfig) {
+func (o *UpdateCryptoConfigParams) SetUpdatedCryptoConfig(updatedCryptoConfig *models.CryptoConfig) {
 	o.UpdatedCryptoConfig = updatedCryptoConfig
 }
 

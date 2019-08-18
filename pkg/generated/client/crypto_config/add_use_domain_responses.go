@@ -7,12 +7,13 @@ package crypto_config
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // AddUseDomainReader is a Reader for the AddUseDomain structure.
@@ -53,7 +54,7 @@ func NewAddUseDomainOK() *AddUseDomainOK {
 Successfully add the new use domain to the crypto config overrides the id due to object creation
 */
 type AddUseDomainOK struct {
-	Payload *models2.SymmetricKeyUseDomain
+	Payload *models.SymmetricKeyUseDomain
 }
 
 func (o *AddUseDomainOK) Error() string {
@@ -62,7 +63,7 @@ func (o *AddUseDomainOK) Error() string {
 
 func (o *AddUseDomainOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.SymmetricKeyUseDomain)
+	o.Payload = new(models.SymmetricKeyUseDomain)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

@@ -7,12 +7,13 @@ package org
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // AddAdminToOrgReader is a Reader for the AddAdminToOrg structure.
@@ -67,7 +68,7 @@ func NewAddAdminToOrgOK() *AddAdminToOrgOK {
 Successful addition of a new admin to this org
 */
 type AddAdminToOrgOK struct {
-	Payload *models2.Contact
+	Payload *models.Contact
 }
 
 func (o *AddAdminToOrgOK) Error() string {
@@ -76,7 +77,7 @@ func (o *AddAdminToOrgOK) Error() string {
 
 func (o *AddAdminToOrgOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.Contact)
+	o.Payload = new(models.Contact)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -96,7 +97,7 @@ func NewAddAdminToOrgBadRequest() *AddAdminToOrgBadRequest {
 Unable to process request
 */
 type AddAdminToOrgBadRequest struct {
-	Payload *models2.ErrorResponse
+	Payload *models.ErrorResponse
 }
 
 func (o *AddAdminToOrgBadRequest) Error() string {
@@ -105,7 +106,7 @@ func (o *AddAdminToOrgBadRequest) Error() string {
 
 func (o *AddAdminToOrgBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.ErrorResponse)
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -146,7 +147,7 @@ func NewAddAdminToOrgInternalServerError() *AddAdminToOrgInternalServerError {
 Unrecoverable error
 */
 type AddAdminToOrgInternalServerError struct {
-	Payload *models2.ErrorResponse
+	Payload *models.ErrorResponse
 }
 
 func (o *AddAdminToOrgInternalServerError) Error() string {
@@ -155,7 +156,7 @@ func (o *AddAdminToOrgInternalServerError) Error() string {
 
 func (o *AddAdminToOrgInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.ErrorResponse)
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

@@ -7,12 +7,13 @@ package client
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // GetClientReader is a Reader for the GetClient structure.
@@ -74,7 +75,7 @@ func NewGetClientOK() *GetClientOK {
 Returns the client requested
 */
 type GetClientOK struct {
-	Payload *models2.Client
+	Payload *models.Client
 }
 
 func (o *GetClientOK) Error() string {
@@ -83,7 +84,7 @@ func (o *GetClientOK) Error() string {
 
 func (o *GetClientOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.Client)
+	o.Payload = new(models.Client)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

@@ -6,7 +6,6 @@ package client
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"net/http"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewAddClientPublicKeyParams creates a new AddClientPublicKeyParams object
@@ -66,7 +67,7 @@ type AddClientPublicKeyParams struct {
 	/*ClientID*/
 	ClientID string
 	/*NewPublicKey*/
-	NewPublicKey *models2.PublicKey
+	NewPublicKey *models.PublicKey
 
 	timeout    time.Duration
 	Context    context.Context
@@ -118,13 +119,13 @@ func (o *AddClientPublicKeyParams) SetClientID(clientID string) {
 }
 
 // WithNewPublicKey adds the newPublicKey to the add client public key params
-func (o *AddClientPublicKeyParams) WithNewPublicKey(newPublicKey *models2.PublicKey) *AddClientPublicKeyParams {
+func (o *AddClientPublicKeyParams) WithNewPublicKey(newPublicKey *models.PublicKey) *AddClientPublicKeyParams {
 	o.SetNewPublicKey(newPublicKey)
 	return o
 }
 
 // SetNewPublicKey adds the newPublicKey to the add client public key params
-func (o *AddClientPublicKeyParams) SetNewPublicKey(newPublicKey *models2.PublicKey) {
+func (o *AddClientPublicKeyParams) SetNewPublicKey(newPublicKey *models.PublicKey) {
 	o.NewPublicKey = newPublicKey
 }
 

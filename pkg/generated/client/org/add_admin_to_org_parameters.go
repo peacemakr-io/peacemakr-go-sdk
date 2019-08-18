@@ -6,7 +6,6 @@ package org
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"net/http"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewAddAdminToOrgParams creates a new AddAdminToOrgParams object
@@ -64,7 +65,7 @@ for the add admin to org operation typically these are written to a http.Request
 type AddAdminToOrgParams struct {
 
 	/*Contact*/
-	Contact *models2.Contact
+	Contact *models.Contact
 
 	timeout    time.Duration
 	Context    context.Context
@@ -105,13 +106,13 @@ func (o *AddAdminToOrgParams) SetHTTPClient(client *http.Client) {
 }
 
 // WithContact adds the contact to the add admin to org params
-func (o *AddAdminToOrgParams) WithContact(contact *models2.Contact) *AddAdminToOrgParams {
+func (o *AddAdminToOrgParams) WithContact(contact *models.Contact) *AddAdminToOrgParams {
 	o.SetContact(contact)
 	return o
 }
 
 // SetContact adds the contact to the add admin to org params
-func (o *AddAdminToOrgParams) SetContact(contact *models2.Contact) {
+func (o *AddAdminToOrgParams) SetContact(contact *models.Contact) {
 	o.Contact = contact
 }
 

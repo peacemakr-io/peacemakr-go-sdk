@@ -7,12 +7,13 @@ package crypto_config
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // RemoveUseDomainReader is a Reader for the RemoveUseDomain structure.
@@ -95,7 +96,7 @@ func NewRemoveUseDomainBadRequest() *RemoveUseDomainBadRequest {
 Unable to process request
 */
 type RemoveUseDomainBadRequest struct {
-	Payload *models2.ErrorResponse
+	Payload *models.ErrorResponse
 }
 
 func (o *RemoveUseDomainBadRequest) Error() string {
@@ -104,7 +105,7 @@ func (o *RemoveUseDomainBadRequest) Error() string {
 
 func (o *RemoveUseDomainBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.ErrorResponse)
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -166,7 +167,7 @@ func NewRemoveUseDomainInternalServerError() *RemoveUseDomainInternalServerError
 Unrecoverable internal error
 */
 type RemoveUseDomainInternalServerError struct {
-	Payload *models2.ErrorResponse
+	Payload *models.ErrorResponse
 }
 
 func (o *RemoveUseDomainInternalServerError) Error() string {
@@ -175,7 +176,7 @@ func (o *RemoveUseDomainInternalServerError) Error() string {
 
 func (o *RemoveUseDomainInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.ErrorResponse)
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

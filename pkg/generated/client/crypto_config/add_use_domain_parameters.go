@@ -6,7 +6,6 @@ package crypto_config
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"net/http"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // NewAddUseDomainParams creates a new AddUseDomainParams object
@@ -66,7 +67,7 @@ type AddUseDomainParams struct {
 	/*CryptoConfigID*/
 	CryptoConfigID string
 	/*NewUseDomain*/
-	NewUseDomain *models2.SymmetricKeyUseDomain
+	NewUseDomain *models.SymmetricKeyUseDomain
 
 	timeout    time.Duration
 	Context    context.Context
@@ -118,13 +119,13 @@ func (o *AddUseDomainParams) SetCryptoConfigID(cryptoConfigID string) {
 }
 
 // WithNewUseDomain adds the newUseDomain to the add use domain params
-func (o *AddUseDomainParams) WithNewUseDomain(newUseDomain *models2.SymmetricKeyUseDomain) *AddUseDomainParams {
+func (o *AddUseDomainParams) WithNewUseDomain(newUseDomain *models.SymmetricKeyUseDomain) *AddUseDomainParams {
 	o.SetNewUseDomain(newUseDomain)
 	return o
 }
 
 // SetNewUseDomain adds the newUseDomain to the add use domain params
-func (o *AddUseDomainParams) SetNewUseDomain(newUseDomain *models2.SymmetricKeyUseDomain) {
+func (o *AddUseDomainParams) SetNewUseDomain(newUseDomain *models.SymmetricKeyUseDomain) {
 	o.NewUseDomain = newUseDomain
 }
 

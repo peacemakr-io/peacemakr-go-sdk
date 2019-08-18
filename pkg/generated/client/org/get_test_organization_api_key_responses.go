@@ -7,12 +7,13 @@ package org
 
 import (
 	"fmt"
-	models2 "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 	"io"
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/go-openapi/strfmt"
+	strfmt "github.com/go-openapi/strfmt"
+
+	models "github.com/notasecret/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // GetTestOrganizationAPIKeyReader is a Reader for the GetTestOrganizationAPIKey structure.
@@ -67,7 +68,7 @@ func NewGetTestOrganizationAPIKeyOK() *GetTestOrganizationAPIKeyOK {
 Returns an apikey for a test org
 */
 type GetTestOrganizationAPIKeyOK struct {
-	Payload *models2.APIKey
+	Payload *models.APIKey
 }
 
 func (o *GetTestOrganizationAPIKeyOK) Error() string {
@@ -76,7 +77,7 @@ func (o *GetTestOrganizationAPIKeyOK) Error() string {
 
 func (o *GetTestOrganizationAPIKeyOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models2.APIKey)
+	o.Payload = new(models.APIKey)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
