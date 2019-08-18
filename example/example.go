@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"github.com/notasecret/peacemakr-go-sdk"
-	"github.com/notasecret/peacemakr-go-sdk/utils"
+	"github.com/notasecret/peacemakr-go-sdk/pkg"
+	"github.com/notasecret/peacemakr-go-sdk/pkg/utils"
 	"log"
 	"math/rand"
 	"os"
@@ -154,7 +154,7 @@ func testBadDecryption(err error, clientNum int, sdk peacemakr_go_sdk.PeacemakrS
 
 func main() {
 	apiKey := flag.String("apiKey", "", "apiKey")
-	host := flag.String("host", "api.peacemakr.io", "host of peacemakr services")
+	host := flag.String("host", "localhost:8080", "host of peacemakr services")
 	numCryptoTrips := flag.Int("numCryptoTrips", 100, "Total number of example encrypt and decrypt operations.")
 	numEncryptThreads := flag.Int("numEncryptClients", 1, "Total number of encryption clients. (1)")
 	numDecryptThreads := flag.Int("numDecryptClients", 10, "Total number of decryption clients. (10)")

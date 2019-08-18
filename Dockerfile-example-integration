@@ -1,18 +1,16 @@
 FROM peacemakr-go-sdk-dependencies as builder
 
-ADD go.mod go.sum crypto.go crypto_impl.go utils.go /go/src/github.com/notasecret/peacemakr-go-sdk/
-ADD ./utils /go/src/github.com/notasecret/peacemakr-go-sdk/utils/
+ADD go.mod go.sum /go/src/github.com/notasecret/peacemakr-go-sdk/
+ADD ./pkg /go/src/github.com/notasecret/peacemakr-go-sdk/pkg/
 ADD ./example /go/src/github.com/notasecret/peacemakr-go-sdk/example/
-ADD ./crypto /go/src/github.com/notasecret/peacemakr-go-sdk/crypto/
-ADD ./include /go/src/github.com/notasecret/peacemakr-go-sdk/include/
-ADD ./generated /go/src/github.com/notasecret/peacemakr-go-sdk/generated/
 
-ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 ENV GOPATH=/go
 
 RUN go install github.com/notasecret/peacemakr-go-sdk/example
 
-FROM 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto:0.0.3
+FROM alpine:3.10
+
+COPY --from=builder /go/src/github.com/notasecret/peacemakr-go-sdk/pkg/crypto/lib /go/src/github.com/notasecret/peacemakr-go-sdk/pkg/crypto/lib
 
 WORKDIR /go/bin/
 COPY --from=builder /go/bin /go/bin

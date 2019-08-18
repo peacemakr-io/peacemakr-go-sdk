@@ -1,25 +1,10 @@
-ARG CORE_CRYPTO_VERSION
-FROM 716293438869.dkr.ecr.us-east-2.amazonaws.com/corecrypto-dependencies:$CORE_CRYPTO_VERSION as builder
-
 FROM golang:1.12-alpine
-
-COPY --from=builder /usr/local/lib/cmake /usr/local/lib/cmake
-COPY --from=builder /usr/local/lib/libpeacemakr* /usr/local/lib/
-COPY --from=builder /usr/local/include/peacemakr /usr/local/include/peacemakr
-COPY --from=builder /usr/include/openssl /usr/include/openssl
-COPY --from=builder /go/src /go/src
 
 RUN apk update && apk upgrade && apk add --no-cache git curl gcc musl-dev libbsd-dev ca-certificates && update-ca-certificates
 
-WORKDIR /go/.
-
 ENV GOPATH=/go
 
-ADD go.mod go.sum crypto.go crypto_impl.go crypto_test.go utils.go /go/src/github.com/notasecret/peacemakr-go-sdk/
-ADD ./utils /go/src/github.com/notasecret/peacemakr-go-sdk/utils/
-ADD ./example /go/src/github.com/notasecret/peacemakr-go-sdk/example/
-ADD ./crypto /go/src/github.com/notasecret/peacemakr-go-sdk/crypto/
-ADD ./include /go/src/github.com/notasecret/peacemakr-go-sdk/include/
-ADD ./generated /go/src/github.com/notasecret/peacemakr-go-sdk/generated/
+ADD go.mod go.sum /go/src/github.com/notasecret/peacemakr-go-sdk/
+ADD ./pkg /go/src/github.com/notasecret/peacemakr-go-sdk/pkg
 
-RUN cd src/github.com/notasecret/peacemakr-go-sdk/.; GO111MODULE=on go mod vendor
+RUN cd src/github.com/notasecret/peacemakr-go-sdk/. && GO111MODULE=on go mod vendor
