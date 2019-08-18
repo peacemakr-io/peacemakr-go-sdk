@@ -13,7 +13,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	models "github.com/peacemakr-io/peacemakr-go-sdk/generated/models"
+	models "github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/models"
 )
 
 // GetAllSharedKeyDerivationServiceInstancesReader is a Reader for the GetAllSharedKeyDerivationServiceInstances structure.
