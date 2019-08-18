@@ -2,8 +2,6 @@
 *.exe
 *.exe~
 *.dll
-*.so
-*.dylib
 
 # Test binary, build with `go test -c`
 *.test
@@ -12,3 +10,6 @@
 *.out
 
 test_outputs/
+peacemakr-core-crypto-*.tar.gz
+
+.idea/

@@ -1,17 +1,8 @@
 FROM peacemakr-go-sdk-dependencies
 
-FROM peacemakr-go-sdk-dependencies as builder
-
-ADD go.mod go.sum crypto.go crypto_impl.go crypto_test.go utils.go /go/src/github.com/peacemakr-io/peacemakr-go-sdk/
-ADD ./utils /go/src/github.com/peacemakr-io/peacemakr-go-sdk/utils/
-ADD ./example /go/src/github.com/peacemakr-io/peacemakr-go-sdk/example/
-ADD ./crypto /go/src/github.com/peacemakr-io/peacemakr-go-sdk/crypto/
-ADD ./include /go/src/github.com/peacemakr-io/peacemakr-go-sdk/include/
-ADD ./generated /go/src/github.com/peacemakr-io/peacemakr-go-sdk/generated/
-
-ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-ENV GOPATH=/go
+ADD go.mod go.sum /go/src/github.com/peacemakr-io/peacemakr-go-sdk/
+ADD ./pkg /go/src/github.com/peacemakr-io/peacemakr-go-sdk/pkg/
 
 WORKDIR /opt/tests
 
-CMD go test -v github.com/peacemakr-io/peacemakr-go-sdk
+CMD go test -v github.com/peacemakr-io/peacemakr-go-sdk/...
