@@ -75,7 +75,7 @@ func TestRegister(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Register(); err != nil {
+	if err := peacemakrSDK.Register(); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -95,7 +95,7 @@ func TestCustomLogger(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Register(); err != nil {
+	if err := peacemakrSDK.Register(); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -114,11 +114,11 @@ func TestRegisterAndSync(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Register(); err != nil {
+	if err := peacemakrSDK.Register(); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := Sync(); err != nil {
+	if err := peacemakrSDK.Sync(); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -137,7 +137,7 @@ func TestEncrypt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Register(); err != nil {
+	if err := peacemakrSDK.Register(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -149,12 +149,12 @@ func TestEncrypt(t *testing.T) {
 		// Use domain and key creation, are not instantaneous.
 		time.Sleep(time.Duration(5) * time.Second)
 
-		if err := Sync(); err != nil {
+		if err := peacemakrSDK.Sync(); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	if err := Sync(); err != nil {
+	if err := peacemakrSDK.Sync(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -166,12 +166,12 @@ func TestEncrypt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	encryptedBlob, err := Encrypt(bytes)
+	encryptedBlob, err := peacemakrSDK.Encrypt(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	decryptedBytes, err := Decrypt(encryptedBlob)
+	decryptedBytes, err := peacemakrSDK.Decrypt(encryptedBlob)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func BenchmarkRegister(b *testing.B) {
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		err = Register()
+		err = peacemakrSDK.Register()
 	}
 	b.StopTimer()
 
@@ -210,14 +210,14 @@ func BenchmarkSync(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	err = Register()
+	err = peacemakrSDK.Register()
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		err = Sync()
+		err = peacemakrSDK.Sync()
 	}
 	b.StopTimer()
 
@@ -233,11 +233,11 @@ func BenchmarkEncrypt(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	if err := Register(); err != nil {
+	if err := peacemakrSDK.Register(); err != nil {
 		b.Fatal(err)
 	}
 
-	if err := Sync(); err != nil {
+	if err := peacemakrSDK.Sync(); err != nil {
 		b.Fatal(err)
 	}
 
@@ -248,7 +248,7 @@ func BenchmarkEncrypt(b *testing.B) {
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := Encrypt(bytes); err != nil {
+		if _, err := peacemakrSDK.Encrypt(bytes); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -262,11 +262,11 @@ func BenchmarkDecrypt(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	if err := Register(); err != nil {
+	if err := peacemakrSDK.Register(); err != nil {
 		b.Fatal(err)
 	}
 
-	if err := Sync(); err != nil {
+	if err := peacemakrSDK.Sync(); err != nil {
 		b.Fatal(err)
 	}
 
@@ -275,14 +275,14 @@ func BenchmarkDecrypt(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	encryptedBlob, err := Encrypt(bytes)
+	encryptedBlob, err := peacemakrSDK.Encrypt(bytes)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := Decrypt(encryptedBlob); err != nil {
+		if _, err := peacemakrSDK.Decrypt(encryptedBlob); err != nil {
 			b.Fatal(err)
 		}
 	}
