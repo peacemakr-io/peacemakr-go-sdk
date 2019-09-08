@@ -1246,8 +1246,21 @@ func (sdk *standardPeacemakrSDK) init() error {
 	return nil
 }
 
-func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCipher {
+func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() (coreCrypto.AsymmetricCipher, error) {
 	var cryptoConfigCipher coreCrypto.AsymmetricCipher
+
+	if sdk.cryptoConfig == nil {
+		err := sdk.populateCryptoConfig()
+		if err != nil {
+			sdk.logError(err)
+			return coreCrypto.ASYMMETRIC_UNSPECIFIED, err
+		}
+	}
+
+	if sdk.cryptoConfig.ClientKeyType == nil {
+		return coreCrypto.ASYMMETRIC_UNSPECIFIED, errors.New("missing clientKeyType")
+	}
+
 	switch *sdk.cryptoConfig.ClientKeyType {
 	case "ec":
 		switch *sdk.cryptoConfig.ClientKeyBitlength {
@@ -1279,7 +1292,7 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 		cryptoConfigCipher = coreCrypto.ECDH_P256
 	}
 
-	return cryptoConfigCipher
+	return cryptoConfigCipher, nil
 }
 
 func (sdk *standardPeacemakrSDK) asymKeysAreStale() bool {
@@ -1303,7 +1316,11 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 		return err
 	}
 
-	cryptoConfigCipher := sdk.getCryptoConfigCipher()
+	cryptoConfigCipher, err := sdk.getCryptoConfigCipher()
+	if err != nil {
+		sdk.logError(err)
+		return err
+	}
 
 	// Rotate if the key has expired OR if the cipher changed
 	shouldRotate := sdk.asymKeysAreStale() || (cryptoConfigCipher != currentCipher)
