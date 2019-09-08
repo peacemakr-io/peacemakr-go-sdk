@@ -140,6 +140,35 @@ func (a *Client) GetClient(params *GetClientParams, authInfo runtime.ClientAuthI
 
 }
 
+/*
+ReturnPagedClientIds returns a page of client ids that belong to the authenticated org
+*/
+func (a *Client) ReturnPagedClientIds(params *ReturnPagedClientIdsParams, authInfo runtime.ClientAuthInfoWriter) (*ReturnPagedClientIdsOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewReturnPagedClientIdsParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "returnPagedClientIds",
+		Method:             "GET",
+		PathPattern:        "/client",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &ReturnPagedClientIdsReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*ReturnPagedClientIdsOK), nil
+
+}
+
 // SetTransport changes the transport on the client
 func (a *Client) SetTransport(transport runtime.ClientTransport) {
 	a.transport = transport
