@@ -102,7 +102,7 @@ type PeacemakrSDK interface {
 //
 // printStackTrace changes the behavior of the SDK's logging; if true then each log message will print a stack trace. Good for debugging
 // when something goes sideways, but can usually be left off.
-func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister, optionalLogger SDKLogger, printStackTrace bool) (PeacemakrSDK, error) {
+func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister, optionalLogger SDKLogger) (PeacemakrSDK, error) {
 
 	if persister == nil {
 		return nil, errors.New("persister is required")
@@ -128,7 +128,6 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 		nil,
 		map[string][]byte{},
 		loggerToUse,
-		printStackTrace,
 	}
 	return PeacemakrSDK(sdk), nil
 }

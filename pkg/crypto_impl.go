@@ -16,7 +16,6 @@ import (
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"math/rand"
 	goRt "runtime"
-	goRtDebug "runtime/debug"
 	"strconv"
 	"time"
 )
@@ -42,7 +41,6 @@ type standardPeacemakrSDK struct {
 	asymKeys           *keyStruct
 	symKeyCache        map[string][]byte
 	sysLog             SDKLogger
-	printStackTrace    bool
 }
 
 // Named constants, so we can change them everywhere at the same time
@@ -275,18 +273,12 @@ func (sdk *standardPeacemakrSDK) logString(s string) {
 	_, file, line, _ := goRt.Caller(1)
 	debugInfo := sdk.getDebugInfo()
 	sdk.sysLog.Printf("[%s: %d] %s : %s", file, line, debugInfo, s)
-	if sdk.printStackTrace {
-		goRtDebug.PrintStack()
-	}
 }
 
 func (sdk *standardPeacemakrSDK) logError(err error) {
 	_, file, line, _ := goRt.Caller(1)
 	debugInfo := sdk.getDebugInfo()
 	sdk.sysLog.Printf("[%s: %d] %s : %v", file, line, debugInfo, err)
-	if sdk.printStackTrace {
-		goRtDebug.PrintStack()
-	}
 }
 
 func (sdk *standardPeacemakrSDK) isLocalStateValid() bool {
@@ -1254,8 +1246,21 @@ func (sdk *standardPeacemakrSDK) init() error {
 	return nil
 }
 
-func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCipher {
+func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() (coreCrypto.AsymmetricCipher, error) {
 	var cryptoConfigCipher coreCrypto.AsymmetricCipher
+
+	if sdk.cryptoConfig == nil {
+		err := sdk.populateCryptoConfig()
+		if err != nil {
+			sdk.logError(err)
+			return coreCrypto.ASYMMETRIC_UNSPECIFIED, err
+		}
+	}
+
+	if sdk.cryptoConfig.ClientKeyType == nil {
+		return coreCrypto.ASYMMETRIC_UNSPECIFIED, errors.New("missing clientKeyType")
+	}
+
 	switch *sdk.cryptoConfig.ClientKeyType {
 	case "ec":
 		switch *sdk.cryptoConfig.ClientKeyBitlength {
@@ -1287,7 +1292,7 @@ func (sdk *standardPeacemakrSDK) getCryptoConfigCipher() coreCrypto.AsymmetricCi
 		cryptoConfigCipher = coreCrypto.ECDH_P256
 	}
 
-	return cryptoConfigCipher
+	return cryptoConfigCipher, nil
 }
 
 func (sdk *standardPeacemakrSDK) asymKeysAreStale() bool {
@@ -1311,7 +1316,11 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 		return err
 	}
 
-	cryptoConfigCipher := sdk.getCryptoConfigCipher()
+	cryptoConfigCipher, err := sdk.getCryptoConfigCipher()
+	if err != nil {
+		sdk.logError(err)
+		return err
+	}
 
 	// Rotate if the key has expired OR if the cipher changed
 	shouldRotate := sdk.asymKeysAreStale() || (cryptoConfigCipher != currentCipher)

@@ -455,6 +455,41 @@ paths:
           description: Not authorized
         '500':
           description: Internal server error
+    get:
+      security:
+        - header: []
+      tags:
+        - Client
+      summary: Returns a page of clientIds that belong to the authenticated org
+      operationId: returnPagedClientIds
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: page
+          required: true
+          type: integer
+          format: int64
+        - in: query
+          name: pageSize
+          required: true
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: A list of clientIds in the requested page.
+          schema:
+            $ref: '#/definitions/PagedArray'
+        '400':
+          description: Unable to process request
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal server error
   '/client/{clientId}':
     get:
       security:
@@ -1116,9 +1151,9 @@ definitions:
         description: Identifies the the customer in Stripe associated with this org
       clientIds:
         type: array
-        description: Array of client id's registered to this org
         items:
           type: string
+        description: Array of first 10 client id's registered to this org
       apiKeys:
         type: array
         description: Array of api keys registered to this org
@@ -1127,6 +1162,24 @@ definitions:
       cryptoConfigId:
         type: string
         description: cryptoconfigId of this org
+      numberOfRegisteredClients:
+        type: integer
+        description: Number of registered clients to this org
+
+  PagedArray:
+    type: object
+    properties:
+      pageNumber:
+        type: integer
+        description: Current page of these elements
+      elements:
+        type: array
+        items:
+          type: string
+        description: The current page's elements
+      pageSize:
+        type: integer
+        description: The max number of elements on a page
 
   APIKey:
     type: object

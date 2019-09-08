@@ -23,7 +23,7 @@ type Organization struct {
 	// Required: true
 	APIKeys []*APIKey `json:"apiKeys"`
 
-	// Array of client id's registered to this org
+	// Array of first 10 client id's registered to this org
 	// Required: true
 	ClientIds []string `json:"clientIds"`
 
@@ -42,6 +42,9 @@ type Organization struct {
 	// name
 	// Required: true
 	Name *string `json:"name"`
+
+	// Number of registered clients to this org
+	NumberOfRegisteredClients int64 `json:"numberOfRegisteredClients,omitempty"`
 
 	// Identifies the the customer in Stripe associated with this org
 	// Required: true
