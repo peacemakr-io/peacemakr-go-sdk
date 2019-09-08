@@ -26,7 +26,7 @@ We know what it's like to have your PM come to you late on a Friday and ask you 
 complicated. That's why we want to make it simple - to let you go home on that Friday night.
 You can start encrypting messages in half an hour and get home in time for dinner.
 
-This is all you need to get started, along with an API key. Visit [peacemakr.io](https://peacemakr.io) to get one of those.
+This is all you need to get started, along with an API key. Visit [admin.peacemakr.io](https://admin.peacemakr.io) to get one of those.
 ```go
 import (
     peacemakr "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
@@ -49,9 +49,10 @@ func GetPeacemakrSdk(apiKey string) (peacemakr.PeacemakrSDK, error) {
                         utils.GetDiskPersister("/tmp/"), // <- This can be substituted for utils.GetInMemPersister(). 
                                                          //    Benefits include that nothing will hit disk, but you 
                                                          //    will lose all your state and have to re-register on restart.
-                        log.New(os.Stdout, "MyProjectCrypto", log.LstdFlags), // <- This can also be nil, but this way
-                                                                              //    you have a nice log prefix.
-                        false         // <- Setting this to true will print out stack traces for every error. Helpful for debugging.
+                                                         //    want to write a different persister? Go for it, and open a
+                                                         //    PR.
+                        log.New(os.Stdout, "MyProjectCrypto", log.LstdFlags) // <- This can also be nil, but this way
+                                                                             //    you have a nice log prefix.
     )
     if err != nil {
         return nil, err
