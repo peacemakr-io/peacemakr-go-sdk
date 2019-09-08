@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
@@ -12,8 +13,8 @@ import (
 )
 
 type TestMessage struct {
-	encrypted string
-	plaintext string
+	encrypted []byte
+	plaintext []byte
 }
 
 // Simple custom logger
@@ -51,23 +52,23 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 
 		randLen := rand.Intn(4096) + 1
 
-		plaintext, err := utils.GenerateRandomString(randLen)
+		plaintext, err := generateRandomBytes(randLen)
 		if err != nil {
 			wg.Done()
 			log.Fatalf("Encrypting client %d%s: failed to get random plaintext to encrypt %s", clientNum, useDomainName, err)
 		}
 
-		var ciphertext string
+		var ciphertext []byte
 		if len(useDomainName) == 0 {
-			ciphertext, err = sdk.EncryptStr(plaintext)
+			ciphertext, err = sdk.Encrypt(plaintext)
 		} else {
-			ciphertext, err = sdk.EncryptStrInDomain(plaintext, useDomainName)
+			ciphertext, err = sdk.EncryptInDomain(plaintext, useDomainName)
 		}
 		if err != nil {
 			wg.Done()
-			log.Fatalf("Failed to encrypt string (clientDebugInfo = %s, clientNum = %d) %v", sdk.GetDebugInfo(), clientNum, err)
+			log.Fatalf("Failed to encrypt an array (clientDebugInfo = %s, clientNum = %d) %v", sdk.GetDebugInfo(), clientNum, err)
 		}
-		if ciphertext == plaintext {
+		if bytes.Equal(ciphertext, plaintext) {
 			wg.Done()
 			log.Fatalf("Encrypting client %d%s: encryption did nothing.", clientNum, useDomainName)
 		}
@@ -78,13 +79,13 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 		}
 		encrypted <- &testMessage
 
-		decrypted, err := sdk.DecryptStr(ciphertext)
+		decrypted, err := sdk.Decrypt(ciphertext)
 		if err != nil {
 			wg.Done()
-			log.Fatalf("Encrypting client %d%s: failed to decrypt string %s", clientNum, useDomainName, err)
+			log.Fatalf("Encrypting client %d%s: failed to decrypt an array of bytes %s", clientNum, useDomainName, err)
 		}
 
-		if plaintext != decrypted {
+		if !bytes.Equal(plaintext, decrypted) {
 			wg.Done()
 			log.Fatalf("Encrypting client %d%s: failed to decrypt to original plaintext.", clientNum, useDomainName)
 		}
@@ -123,12 +124,12 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 			break
 		}
 
-		decrypted, err := sdk.DecryptStr(msg.encrypted)
+		decrypted, err := sdk.Decrypt(msg.encrypted)
 		if err != nil {
 			log.Fatalf("Decrypting client %d failed to decrypt in DECYRTION CLIENT string %s", clientNum, err)
 		}
 
-		if decrypted != msg.plaintext {
+		if !bytes.Equal(decrypted, msg.plaintext) {
 			log.Fatalf("Decrypting client %d failed to decrypt in DECYRTION CLIENT decrypted %s but expected %s", clientNum, decrypted, msg.plaintext)
 		}
 		log.Println("Decrypting client", clientNum, "decrypted", i, " messages")
@@ -140,26 +141,40 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 func testBadDecryption(err error, clientNum int, sdk peacemakr_go_sdk.PeacemakrSDK) {
 	// Attempt a single "bad" decryption:
 	randLen := rand.Intn(1<<16) + 1
-	notPeaceMakrCiphertext, err := utils.GenerateRandomString(randLen)
+	notPeaceMakrCiphertext, err := generateRandomBytes(randLen)
 	if err != nil {
-		log.Fatalf("Decrypting client %d: failed to get random string %s", clientNum, err)
+		log.Fatalf("Decrypting client %d: failed to get random byte array %s", clientNum, err)
 	}
-	decrypted, err := sdk.DecryptStr(notPeaceMakrCiphertext)
-	if decrypted != "" || err == nil {
+	decrypted, err := sdk.Decrypt(notPeaceMakrCiphertext)
+	if len(decrypted) != 0 || err == nil {
 		log.Fatalf("Decrypting client %d: failed to detect non-peacemkr ciphertext %s", clientNum, notPeaceMakrCiphertext)
 	}
 
 	log.Printf("Decrypting client %d: invalid ciphertext detected", clientNum)
 }
 
+func generateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
 func main() {
 	apiKey := flag.String("apiKey", "", "apiKey")
-	host := flag.String("host", "api.peacemakr.io", "host of peacemakr services")
+	host := flag.String("host", "api.peacemakr.io", "host of Peacemakr services")
 	numCryptoTrips := flag.Int("numCryptoTrips", 100, "Total number of example encrypt and decrypt operations.")
 	numEncryptThreads := flag.Int("numEncryptClients", 1, "Total number of encryption clients. (1)")
 	numDecryptThreads := flag.Int("numDecryptClients", 10, "Total number of decryption clients. (10)")
 	useDomainName := flag.String("useDomainName", "", "The specific and enforced Use Domain's name for encryption")
 	flag.Parse()
+	if apiKey == nil || *apiKey == "" {
+		log.Fatal("You are missing an API Key.")
+	}
 
 	log.Println("apiKey:", *apiKey)
 	log.Println("host:", *host)

@@ -36,31 +36,25 @@ type PeacemakrSDK interface {
 	Sync() error
 
 	//
-	// Encrypt the plaintext. Returns a b64 encoded ciphertext blob on success, else returns a non-nil error.
+	// Encrypt a byte array. Returns a ciphertext blob on success, else returns a non-nil error.
 	//
-	EncryptStr(plaintext string) (string, error)
-
 	Encrypt(plaintext []byte) ([]byte, error)
 
 	//
-	// Encrypt the plaintext, but restrict which keys may be used to a Use Domain of this specific name. Names of Use
+	// Encrypt a byte array, but restrict which keys may be used to a Use Domain of this specific name. Names of Use
 	// Domains are not unique, and this non-unique property of your Organization's Use Domains allows for graceful
 	// rotation of encryption keys off of old (retiring, stale, or compromised) Use Domains, simply by creating a new
 	// Use Domain with the same name. The transitional purity, both Use Domains may be selected for encryption use by
 	// clients restricted to one particular name. Then, retiring of one of the two Use Domains is possible without
 	// disrupting your deployed application.
 	//
-	// Returns a b64 encoded ciphertext blob on success, else returns a non-nil error.
+	// Returns a ciphertext blob on success, else returns a non-nil error.
 	//
-	EncryptStrInDomain(plaintext string, useDomainName string) (string, error)
-
 	EncryptInDomain(plaintext []byte, useDomainName string) ([]byte, error)
 
 	//
-	// Decrypt the ciphertexts. Returns original plaintext on success, else returns a non-nil error.
+	// Decrypt the ciphertexts. Returns original byte array on success, else returns a non-nil error.
 	//
-	DecryptStr(ciphertext string) (string, error)
-
 	Decrypt(ciphertext []byte) ([]byte, error)
 
 	//

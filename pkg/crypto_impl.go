@@ -261,14 +261,6 @@ func (sdk *standardPeacemakrSDK) Sync() error {
 	return sdk.preloadAll(nil)
 }
 
-func (sdk *standardPeacemakrSDK) EncryptStr(plaintext string) (string, error) {
-	encryptedBytes, err := sdk.Encrypt([]byte(plaintext))
-	if err != nil {
-		return "", err
-	}
-	return string(encryptedBytes), nil
-}
-
 func (sdk *standardPeacemakrSDK) logString(s string) {
 	_, file, line, _ := goRt.Caller(1)
 	debugInfo := sdk.getDebugInfo()
@@ -781,24 +773,6 @@ func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
 	return sdk.encrypt(plaintext, nil)
 }
 
-func (sdk *standardPeacemakrSDK) EncryptStrInDomain(plaintext string, useDomainName string) (string, error) {
-	err := sdk.verifyRegistrationAndInit()
-	if err != nil {
-		return "", err
-	}
-
-	err = sdk.verifyUserSelectedUseDomain(useDomainName)
-	if err != nil {
-		return "", err
-	}
-
-	encryptedBytes, err := sdk.encrypt([]byte(plaintext), &useDomainName)
-	if err != nil {
-		return "", err
-	}
-	return string(encryptedBytes), nil
-}
-
 func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomainName string) ([]byte, error) {
 	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
@@ -811,16 +785,6 @@ func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomainName
 	}
 
 	return sdk.encrypt(plaintext, &useDomainName)
-}
-
-func (sdk *standardPeacemakrSDK) DecryptStr(ciphertext string) (string, error) {
-	plain, err := sdk.Decrypt([]byte(ciphertext))
-	if err != nil {
-		// No phonehome here, it was already taken care of in Decrypt.
-		return "", err
-	}
-
-	return string(plain), nil
 }
 
 func (sdk *standardPeacemakrSDK) getKeyIdFromCiphertext(ciphertext []byte) (*PeacemakrAAD, error) {
