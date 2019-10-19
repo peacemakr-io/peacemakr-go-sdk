@@ -33,7 +33,8 @@ type standardPeacemakrSDK struct {
 	cryptoConfig       *models.CryptoConfig
 	authInfo           runtime.ClientAuthInfoWriter
 	version            string
-	peacemakrHostname  *string
+	peacemakrHostname  string
+	peacemakrScheme    string
 	persister          utils.Persister
 	isRegisteredCache  bool
 	lastUpdatedAt      int64
@@ -58,20 +59,29 @@ const (
 )
 
 func (sdk *standardPeacemakrSDK) getDebugInfo() string {
-	id, err := sdk.getClientId()
-	if err != nil {
-		id = "(unregistered)"
+
+	//
+	// DO NOT USE GET'S HERE (inf recursive loop)
+	//
+	clientId := "(unknown clientId)"
+	if sdk.persister != nil && sdk.persister.Exists("clientId") {
+		id, err := sdk.persister.Load("clientId")
+		if err != nil {
+			clientId = "(unknown clientId, persister read failed)"
+		} else {
+			clientId = id
+		}
 	}
 
-	orgId := "(failed to populate org)"
-	if err := sdk.populateOrg(); err != nil {
-		orgId = "(failed to populate org)"
-	}
-	if sdk.org != nil {
+	//
+	// DO NOT USE GET'S HERE (inf recursive loop)
+	//
+	orgId := "(unknown org)"
+	if sdk.org != nil && sdk.org.ID != nil {
 		orgId = *sdk.org.ID
 	}
 
-	return "ClientDebugInfo *** clientId = " + id + ", org id = " + orgId + ", version = " + sdk.version
+	return "ClientDebugInfo *** clientId = " + clientId + ", clientName = " + sdk.clientName + ", org id = " + orgId + ", version = " + sdk.version
 }
 
 func (sdk *standardPeacemakrSDK) GetDebugInfo() string {
@@ -885,17 +895,13 @@ func (sdk *standardPeacemakrSDK) getClient() *client.PeacemakrClient {
 		return sdkClient
 	}
 
-	var hostname string
-	if sdk.peacemakrHostname == nil || *sdk.peacemakrHostname == "" {
-		hostname = client.DefaultHost
-	} else {
-		hostname = *sdk.peacemakrHostname
-	}
+	hostname := sdk.peacemakrHostname
+	scheme := sdk.peacemakrScheme
 
 	cfg := client.TransportConfig{
 		Host:     hostname,
 		BasePath: client.DefaultBasePath,
-		Schemes:  []string{"https"},
+		Schemes:  []string{scheme},
 	}
 
 	sdkClient = client.NewHTTPClientWithConfig(nil, &cfg)

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"log"
+	"net/url"
 	"os"
 	"time"
 )
@@ -96,7 +97,7 @@ type PeacemakrSDK interface {
 //
 // printStackTrace changes the behavior of the SDK's logging; if true then each log message will print a stack trace. Good for debugging
 // when something goes sideways, but can usually be left off.
-func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persister utils.Persister, optionalLogger SDKLogger) (PeacemakrSDK, error) {
+func GetPeacemakrSDK(apiKey, clientName string, peacemakrURL *string, persister utils.Persister, optionalLogger SDKLogger) (PeacemakrSDK, error) {
 
 	if persister == nil {
 		return nil, errors.New("persister is required")
@@ -107,6 +108,17 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 		loggerToUse = log.New(os.Stderr, "", log.LstdFlags)
 	}
 
+	peacemakrHost := "api.peacemakr.io"
+	peacemakrScheme := "https"
+	if peacemakrURL != nil {
+		url, err := url.Parse(*peacemakrURL)
+		if err != nil {
+			return nil, err
+		}
+		peacemakrHost = url.Host
+		peacemakrScheme = url.Scheme
+	}
+
 	sdk := &standardPeacemakrSDK{
 		clientName,
 		apiKey,
@@ -114,7 +126,8 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrHostname *string, persi
 		nil,
 		utils.GetAuthWriter(apiKey),
 		"0.0.1",
-		peacemakrHostname,
+		peacemakrHost,
+		peacemakrScheme,
 		persister,
 		false,
 		0,

@@ -166,7 +166,7 @@ func generateRandomBytes(n int) ([]byte, error) {
 
 func main() {
 	apiKey := flag.String("apiKey", "", "apiKey")
-	host := flag.String("host", "api.peacemakr.io", "host of Peacemakr services")
+	peacemakrUrl := flag.String("peacemakrUrl", "https://api.peacemakr.io", "URL of Peacemakr cloud services")
 	numCryptoTrips := flag.Int("numCryptoTrips", 100, "Total number of example encrypt and decrypt operations.")
 	numEncryptThreads := flag.Int("numEncryptClients", 1, "Total number of encryption clients. (1)")
 	numDecryptThreads := flag.Int("numDecryptClients", 10, "Total number of decryption clients. (10)")
@@ -177,7 +177,7 @@ func main() {
 	}
 
 	log.Println("apiKey:", *apiKey)
-	log.Println("host:", *host)
+	log.Println("peacemakrUrl:", *peacemakrUrl)
 	log.Println("numCryptoTrips:", *numCryptoTrips)
 	log.Println("numEncryptThreads:", *numEncryptThreads)
 	log.Println("numDecryptThreads:", *numDecryptThreads)
@@ -190,7 +190,7 @@ func main() {
 	// Just one decryptor
 
 	for i := 0; i < *numDecryptThreads; i++ {
-		go runDecryptingClient(i, *apiKey, *host, encrypted)
+		go runDecryptingClient(i, *apiKey, *peacemakrUrl, encrypted)
 	}
 
 	// Fire up the encryption clients.
@@ -198,12 +198,12 @@ func main() {
 
 		// Do it once with indiscriminate useDomains.
 		encryptionWork.Add(1)
-		go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &encryptionWork, "")
+		go runEncryptingClient(i, *apiKey, *peacemakrUrl, *numCryptoTrips, encrypted, &encryptionWork, "")
 
 		// And, again with a specific useDomain.
 		if len(*useDomainName) > 0 {
 			encryptionWork.Add(1)
-			go runEncryptingClient(i, *apiKey, *host, *numCryptoTrips, encrypted, &encryptionWork, *useDomainName)
+			go runEncryptingClient(i, *apiKey, *peacemakrUrl, *numCryptoTrips, encrypted, &encryptionWork, *useDomainName)
 		}
 
 		// Why Sleep? The number of clients can't just explode, need to give them a chance to spin up,
