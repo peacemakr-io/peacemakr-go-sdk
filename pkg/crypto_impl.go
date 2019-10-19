@@ -895,7 +895,7 @@ func (sdk *standardPeacemakrSDK) getClient() *client.PeacemakrClient {
 	cfg := client.TransportConfig{
 		Host:     hostname,
 		BasePath: client.DefaultBasePath,
-		Schemes:  []string{"http"},
+		Schemes:  []string{"https"},
 	}
 
 	sdkClient = client.NewHTTPClientWithConfig(nil, &cfg)
