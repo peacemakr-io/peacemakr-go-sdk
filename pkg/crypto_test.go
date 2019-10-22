@@ -5,16 +5,17 @@ import (
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"log"
+	"net/url"
 	"os"
 	"testing"
 	"time"
 )
 
-func getHostname() string {
-	envHostname, isSet := os.LookupEnv("PEACEMAKR_TEST_HOSTNAME")
+func getURL() string {
+	envHostname, isSet := os.LookupEnv("PEACEMAKR_TEST_URL")
 	if !isSet {
 		// Until the prod server has a proper testing org, only a local env by default.
-		return "peacemakr-services:80"
+		return "http://peacemakr-services:80"
 	}
 	return envHostname
 }
@@ -29,16 +30,24 @@ func getAPIKey() string {
 
 var messageSize = 1 << 14
 
-var hostname = getHostname()
+var peacemakrUrl = getURL()
 var apiKey = getAPIKey()
 
 func setup(m *testing.M) {
 	if apiKey == "" {
+
+		url, err := url.Parse(peacemakrUrl)
+		if err != nil {
+			log.Fatal(err)
+		}
+		peacemakrHost := url.Host
+		peacemakrScheme := url.Scheme
+
 		// Set up the client to get the test org and its API key
 		cfg := client.TransportConfig{
-			Host:     hostname,
+			Host:     peacemakrHost,
 			BasePath: client.DefaultBasePath,
-			Schemes:  []string{"http"},
+			Schemes:  []string{peacemakrScheme},
 		}
 
 		testClient := client.NewHTTPClientWithConfig(nil, &cfg)
@@ -50,7 +59,7 @@ func setup(m *testing.M) {
 		apiKey = *ok.Payload.Key
 	}
 
-	time.Sleep(15 * time.Second)
+	time.Sleep(5 * time.Second)
 }
 
 func TestMain(m *testing.M) {
@@ -70,7 +79,7 @@ func TestRegister(t *testing.T) {
 	}()
 
 	persister := utils.GetDiskPersister("/tmp/test/register")
-	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, nil)
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &peacemakrUrl, persister, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +99,7 @@ func TestCustomLogger(t *testing.T) {
 
 	persister := utils.GetDiskPersister("/tmp/test/custom_logger")
 	logger := log.New(os.Stdout, "CustomLogger", log.LstdFlags)
-	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, logger)
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &peacemakrUrl, persister, logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +118,7 @@ func TestRegisterAndSync(t *testing.T) {
 	}()
 
 	persister := utils.GetDiskPersister("/tmp/test/register_and_sync")
-	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, nil)
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &peacemakrUrl, persister, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +141,7 @@ func TestEncrypt(t *testing.T) {
 	}()
 
 	persister := utils.GetDiskPersister("/tmp/test/encrypt")
-	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &hostname, persister, nil)
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &peacemakrUrl, persister, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +196,7 @@ func TestEncrypt(t *testing.T) {
 
 func BenchmarkRegister(b *testing.B) {
 	persister := utils.GetInMemPersister()
-	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &hostname, persister, nil)
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &peacemakrUrl, persister, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -205,7 +214,7 @@ func BenchmarkRegister(b *testing.B) {
 
 func BenchmarkSync(b *testing.B) {
 	persister := utils.GetInMemPersister()
-	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &hostname, persister, nil)
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &peacemakrUrl, persister, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -228,7 +237,7 @@ func BenchmarkSync(b *testing.B) {
 
 func BenchmarkEncrypt(b *testing.B) {
 	persister := utils.GetInMemPersister()
-	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &hostname, persister, nil)
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &peacemakrUrl, persister, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -257,7 +266,7 @@ func BenchmarkEncrypt(b *testing.B) {
 
 func BenchmarkDecrypt(b *testing.B) {
 	persister := utils.GetInMemPersister()
-	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &hostname, persister, nil)
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-benchmark-client", &peacemakrUrl, persister, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
