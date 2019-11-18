@@ -727,6 +727,11 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 		return nil, err
 	}
 
+	// The encryption of nothing is nothing.
+	if len(plaintext) == 0 {
+		return plaintext, nil
+	}
+
 	pmKey := coreCrypto.NewPeacemakrKeyFromBytes(cfg.SymmetricCipher, key)
 	defer pmKey.Destroy()
 	myKeyId, err := sdk.getPreferredPubKeyId()
@@ -842,6 +847,11 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 	err := sdk.verifyRegistrationAndInit()
 	if err != nil {
 		return nil, err
+	}
+
+	// Decryption of nothing is nothing.
+	if len(ciphertext) == 0 {
+		return ciphertext, nil
 	}
 
 	ciphertextblob, cfg, err := coreCrypto.Deserialize(ciphertext)
