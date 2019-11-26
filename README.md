@@ -37,15 +37,15 @@ type MySDK struct {
 }
 
 func GetPeacemakrSdk(apiKey string) (peacemakr.PeacemakrSDK, error) {
-    hostname := "api.peacemakr.io"
+    url := "https://api.peacemakr.io"
 
     // Set up the SDK
     sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(
                         apiKey,       // <- This will need to be set up in advance
                         "my-project", // <- This is the name of the client that will show up in logs. Making it descriptive 
                                       //    will make it easier for us and for you!
-                        &hostname,    // <- You'll usually ping api.peacemakr.io directly, but you may want to redirect 
-                                      //    and you're free to do that! 
+                        &url,         // <- You'll usually ping https://api.peacemakr.io directly, but you may want to 
+                                      //    redirect and you're free to do that! 
                         utils.GetDiskPersister("/tmp/"), // <- This can be substituted for utils.GetInMemPersister(). 
                                                          //    Benefits include that nothing will hit disk, but you 
                                                          //    will lose all your state and have to re-register on restart.
