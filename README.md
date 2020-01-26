@@ -1,3 +1,9 @@
+<p align="center">
+  <br>
+    <img src="https://github.com/peacemakr-io/peacemakr-admin-portal/blob/master/peacemakr-admin/public/images/PeacemakrP-Golden.png" width="150"/>
+  <br>
+</p>
+
 # Peacemakr Go SDK
 [![CircleCI](https://circleci.com/gh/peacemakr-io/peacemakr-go-sdk/tree/master.svg?style=svg&circle-token=a5e0dd516384638b6e97cd79c7963d8081873df2)](https://circleci.com/gh/peacemakr-io/peacemakr-go-sdk/tree/master)
 
