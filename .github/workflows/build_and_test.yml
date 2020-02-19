@@ -1,0 +1,19 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+name: Build and Test
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v1
+
+      - name: Build and Test Go
+        run: |
+          go test ./pkg/...

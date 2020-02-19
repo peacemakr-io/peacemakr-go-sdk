@@ -128,11 +128,10 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrURL *string, persister 
 		"0.0.1",
 		peacemakrHost,
 		peacemakrScheme,
-		persister,
+		sdkPersister{persister: persister},
 		false,
 		0,
 		int64(time.Duration(time.Hour * 24)),
-		nil,
 		map[string][]byte{},
 		loggerToUse,
 	}
