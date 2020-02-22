@@ -6,17 +6,10 @@ import (
 	"testing"
 )
 
-type testmsg struct {
-	msg []byte
-}
-
-func (m *testmsg) MarshalBinary() ([]byte, error) {
-	return m.msg, nil
-}
-
-func (m *testmsg) UnmarshalBinary(data []byte) error {
-	m.msg = data
-	return nil
+type Testmsg struct {
+	Secret    []byte `encrypt:"true"`
+	NewSecret string `encrypt:"true"`
+	Public    string
 }
 
 func TestEncryptor_Encrypt(t *testing.T) {
@@ -31,24 +24,36 @@ func TestEncryptor_Encrypt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	message := make([]byte, 100)
+	message := make([]byte, 10)
 	_, err = rand.Read(message)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	msg := testmsg{msg:message}
-	encrypted, err := e.Encrypt(&msg)
-	if err != nil {
+	msg := Testmsg{Secret: message, NewSecret: "Another secret message", Public: "hello there"}
+	t.Logf("Message before encryption: %+v", msg)
+
+	if err := e.Encrypt(&msg); err != nil {
 		t.Fatal(err)
 	}
 
-	var newmsg testmsg
-	if err := e.Decrypt(encrypted, &newmsg); err != nil {
+	t.Logf("Message after encryption: %+v", msg)
+
+	if err := e.Decrypt(&msg); err != nil {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(newmsg.msg, msg.msg) != 0 {
+	t.Logf("Message after decryption: %+v", msg)
+
+	if bytes.Compare(message, msg.Secret) != 0 {
 		t.Fatal("encrypted and decrypted do not match")
+	}
+
+	if msg.NewSecret != "Another secret message" {
+		t.Fatal("encrypted and decrypted do not match")
+	}
+
+	if msg.Public != "hello there" {
+		t.Fatal("Modified the wrong struct field")
 	}
 }

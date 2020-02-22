@@ -1,13 +1,14 @@
 package tools
 
 import (
-	"encoding"
 	"github.com/google/uuid"
 	peacemakr_go_sdk "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"github.com/spf13/viper"
 	"log"
 	"os"
+	"reflect"
+	"unsafe"
 )
 
 type EncryptorConfig struct {
@@ -30,7 +31,18 @@ func (e *EncryptorError) Error() string {
 	return e.msg
 }
 
-var NoApiKey = &EncryptorError{msg: "no API key provided"}
+func BytesToString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+func StringToBytes(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(
+		&struct {
+			string
+			Cap int
+		}{s, len(s)},
+	))
+}
 
 func NewEncryptor(cfg *EncryptorConfig) (*Encryptor, error) {
 	config := EncryptorConfig{}
@@ -71,28 +83,67 @@ func NewEncryptor(cfg *EncryptorConfig) (*Encryptor, error) {
 	}, nil
 }
 
-func (e *Encryptor) Encrypt(plaintext encoding.BinaryMarshaler) ([]byte, error) {
-	bytes, err := plaintext.MarshalBinary()
-	if err != nil {
-		return nil, err
+func (e *Encryptor) Encrypt(plaintext interface{}) error {
+	pType := reflect.TypeOf(plaintext).Elem()
+	value := reflect.ValueOf(plaintext).Elem()
+	for i := 0; i < pType.NumField(); i++ {
+		valueField := value.Field(i)
+		typeField := pType.Field(i)
+		tag := typeField.Tag.Get("encrypt")
+		if tag != "true" {
+			continue
+		}
+
+		if typeField.Type.String() == "[]uint8" {
+			encrypted, err := e.Sdk.Encrypt(valueField.Bytes())
+			if err != nil {
+				return err
+			}
+			valueField.SetBytes(encrypted)
+			continue
+		}
+
+		if typeField.Type.String() == "string" {
+			encrypted, err := e.Sdk.Encrypt(StringToBytes(valueField.String()))
+			if err != nil {
+				return err
+			}
+			valueField.SetString(BytesToString(encrypted))
+			continue
+		}
 	}
 
-	encrypted, err := e.Sdk.Encrypt(bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return encrypted, nil
+	return nil
 }
 
-func (e *Encryptor) Decrypt(encrypted []byte, plaintext encoding.BinaryUnmarshaler) error {
-	decrypted, err := e.Sdk.Decrypt(encrypted)
-	if err != nil {
-		return err
-	}
+func (e *Encryptor) Decrypt(encrypted interface{}) error {
+	pType := reflect.TypeOf(encrypted).Elem()
+	value := reflect.ValueOf(encrypted).Elem()
+	for i := 0; i < pType.NumField(); i++ {
+		valueField := value.Field(i)
+		typeField := pType.Field(i)
+		tag := typeField.Tag.Get("encrypt")
+		if tag != "true" {
+			continue
+		}
 
-	if err := plaintext.UnmarshalBinary(decrypted); err != nil {
-		return err
+		if typeField.Type.String() == "[]uint8" {
+			encrypted, err := e.Sdk.Decrypt(valueField.Bytes())
+			if err != nil {
+				return err
+			}
+			valueField.SetBytes(encrypted)
+			continue
+		}
+
+		if typeField.Type.String() == "string" {
+			encrypted, err := e.Sdk.Decrypt(StringToBytes(valueField.String()))
+			if err != nil {
+				return err
+			}
+			valueField.SetString(BytesToString(encrypted))
+			continue
+		}
 	}
 
 	return nil
