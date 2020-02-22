@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"errors"
 	"github.com/google/uuid"
 	peacemakr_go_sdk "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
@@ -84,6 +85,10 @@ func NewEncryptor(cfg *EncryptorConfig) (*Encryptor, error) {
 }
 
 func (e *Encryptor) Encrypt(plaintext interface{}) error {
+	if reflect.TypeOf(plaintext).Kind() != reflect.Ptr {
+		return errors.New("must pass a pointer")
+	}
+
 	pType := reflect.TypeOf(plaintext).Elem()
 	value := reflect.ValueOf(plaintext).Elem()
 	for i := 0; i < pType.NumField(); i++ {
@@ -117,6 +122,10 @@ func (e *Encryptor) Encrypt(plaintext interface{}) error {
 }
 
 func (e *Encryptor) Decrypt(encrypted interface{}) error {
+	if reflect.TypeOf(encrypted).Kind() != reflect.Ptr {
+		return errors.New("must pass a pointer")
+	}
+
 	pType := reflect.TypeOf(encrypted).Elem()
 	value := reflect.ValueOf(encrypted).Elem()
 	for i := 0; i < pType.NumField(); i++ {

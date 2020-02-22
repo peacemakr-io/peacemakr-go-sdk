@@ -33,11 +33,19 @@ func TestEncryptor_Encrypt(t *testing.T) {
 	msg := Testmsg{Secret: message, NewSecret: "Another secret message", Public: "hello there"}
 	t.Logf("Message before encryption: %+v", msg)
 
+	if err := e.Encrypt(msg); err == nil {
+		t.Fatal("Supposed to fail with non-pointer arg")
+	}
+
 	if err := e.Encrypt(&msg); err != nil {
 		t.Fatal(err)
 	}
 
 	t.Logf("Message after encryption: %+v", msg)
+
+	if err := e.Decrypt(msg); err == nil {
+		t.Fatal("Supposed to fail with non-pointer arg")
+	}
 
 	if err := e.Decrypt(&msg); err != nil {
 		t.Fatal(err)
