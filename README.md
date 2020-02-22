@@ -38,8 +38,12 @@ package my_sdk
 
 import (
     peacemakr_tools "github.com/peacemakr-io/peacemakr-go-sdk/pkg/tools"
-    "encoding"
 )
+
+type MyMessage struct {
+    Secret []byte `encrypt:"true"`
+    Public []byte
+}
 
 type MySDK struct {
     Encryptor peacemakr_tools.Encryptor
@@ -58,12 +62,14 @@ func GetMySDK(cfg *peacemakr_tools.EncryptorConfig) (*MySDK, error) {
     }, nil
 }
 
-func (m *MySDK) EncryptMessage(plaintext encoding.BinaryMarshaler) ([]byte, error) {
-    return m.Encryptor.Encrypt(plaintext)
+func (m *MySDK) EncryptMessage(message *MyMessage) error {
+    // Make sure you pass a pointer into this, it modifies the message in-place to encrypt the marked fields
+    return m.Encryptor.Encrypt(message)
 }
 
-func (m *MySDK) DecryptMessage(encrypted []byte, plaintext encoding.BinaryUnmarshaler) error {
-    return m.Encryptor.Decrypt(encrypted, plaintext)
+func (m *MySDK) DecryptMessage(message *MyMessage) error {
+    // Make sure you pass a pointer into this, it modifies the message in-place to decrypt the marked fields
+    return m.Encryptor.Decrypt(message)
 }
 
 ```
