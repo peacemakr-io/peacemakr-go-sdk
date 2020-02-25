@@ -7,9 +7,15 @@ import (
 )
 
 type Testmsg struct {
-	Secret    []byte `encrypt:"true"`
-	NewSecret string `encrypt:"true"`
-	Public    string
+	Secret       []byte `encrypt:"true"`
+	NewSecret    string `encrypt:"true"`
+	StructSecret SecretStruct
+	Public       string
+}
+
+type SecretStruct struct {
+	SecretString       string `encrypt:"true"`
+	NotEncryptedSecret []byte
 }
 
 func TestEncryptor_Encrypt(t *testing.T) {
@@ -30,7 +36,17 @@ func TestEncryptor_Encrypt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msg := Testmsg{Secret: message, NewSecret: "Another secret message", Public: "hello there"}
+	secretStrct := SecretStruct{
+		SecretString:       "hello secret",
+		NotEncryptedSecret: []byte("hello"),
+	}
+
+	msg := Testmsg{
+		Secret:       message,
+		NewSecret:    "Another secret message",
+		StructSecret: secretStrct,
+		Public:       "hello there",
+	}
 	t.Logf("Message before encryption: %+v", msg)
 
 	if err := e.Encrypt(msg); err == nil {
@@ -62,6 +78,14 @@ func TestEncryptor_Encrypt(t *testing.T) {
 	}
 
 	if msg.Public != "hello there" {
+		t.Fatal("Modified the wrong struct field")
+	}
+
+	if msg.StructSecret.SecretString != "hello secret" {
+		t.Fatal("encrypted and decryped do not match for struct secret string")
+	}
+
+	if bytes.Compare(msg.StructSecret.NotEncryptedSecret, []byte("hello")) != 0 {
 		t.Fatal("Modified the wrong struct field")
 	}
 }

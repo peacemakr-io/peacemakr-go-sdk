@@ -2,14 +2,15 @@ package tools
 
 import (
 	"errors"
-	"github.com/google/uuid"
-	peacemakr_go_sdk "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
-	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"reflect"
 	"unsafe"
+
+	"github.com/google/uuid"
+	peacemakr_go_sdk "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
+	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
+	"github.com/spf13/viper"
 )
 
 type EncryptorConfig struct {
@@ -95,6 +96,13 @@ func (e *Encryptor) Encrypt(plaintext interface{}) error {
 		valueField := value.Field(i)
 		typeField := pType.Field(i)
 		tag := typeField.Tag.Get("encrypt")
+
+		if typeField.Type.Kind() == reflect.Struct {
+			if err := e.Encrypt(valueField.Addr().Interface()); err != nil {
+				return err
+			}
+		}
+
 		if tag != "true" {
 			continue
 		}
@@ -132,6 +140,13 @@ func (e *Encryptor) Decrypt(encrypted interface{}) error {
 		valueField := value.Field(i)
 		typeField := pType.Field(i)
 		tag := typeField.Tag.Get("encrypt")
+
+		if typeField.Type.Kind() == reflect.Struct {
+			if err := e.Decrypt(valueField.Addr().Interface()); err != nil {
+				return err
+			}
+		}
+
 		if tag != "true" {
 			continue
 		}
