@@ -17,6 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get install musl musl-dev
+          ln -s /usr/lib/x86_64-linux-musl/libc.so /usr/lib/libc.musl-x86_64.so.1
 
       - name: Build and Test Go
         run: |
