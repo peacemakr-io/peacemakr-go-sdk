@@ -16,7 +16,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install musl-dev
+          sudo apt-get install musl musl-dev
 
       - name: Build and Test Go
         run: |
