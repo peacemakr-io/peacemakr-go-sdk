@@ -111,6 +111,7 @@ const (
 	ECDH_P256              AsymmetricCipher = 3
 	ECDH_P384              AsymmetricCipher = 4
 	ECDH_P521              AsymmetricCipher = 5
+	ECDH_SECP256K1         AsymmetricCipher = 6
 )
 
 type MessageDigestAlgorithm int
@@ -521,7 +522,6 @@ func (k *PeacemakrKey) Destroy() {
 		return
 	}
 	C.peacemakr_key_free((*C.peacemakr_key_t)(k.key))
-	k.key = nil
 }
 
 // ========================= Core APIs =========================
@@ -580,7 +580,10 @@ func Sign(senderKey *PeacemakrKey, plaintext Plaintext, digest MessageDigestAlgo
 	cPlaintext := plaintextToInternal(plaintext)
 	defer freeInternalPlaintext(&cPlaintext)
 
-	C.peacemakr_sign(senderKey.key, (*C.plaintext_t)(unsafe.Pointer(&cPlaintext)), (C.message_digest_algorithm)(digest), ciphertext.blob)
+	if !C.peacemakr_sign(senderKey.key, (*C.plaintext_t)(unsafe.Pointer(&cPlaintext)), (C.message_digest_algorithm)(digest), ciphertext.blob) {
+		return errors.New("signing failed")
+	}
+
 	return nil
 }
 
