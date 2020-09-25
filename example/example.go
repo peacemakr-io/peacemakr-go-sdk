@@ -36,7 +36,6 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	log.Printf("Encrypting client %d%s: registering to host %s", clientNum, useDomainName, hostname)
 	for err = sdk.Register(); err != nil; {
 		log.Println("Encrypting client,", clientNum, "failed to register, trying again...")
-		time.Sleep(time.Duration(1) * time.Second)
 	}
 	log.Printf("Encrypting client %d%s: starting %d registered.  Starting crypto round trips ...", clientNum, useDomainName, numRuns)
 
@@ -90,7 +89,7 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 			log.Fatalf("Encrypting client %d%s: failed to decrypt to original plaintext.", clientNum, useDomainName)
 		}
 
-		log.Printf("Encrypting client %d%s: encrypted %d messages\n", clientNum, useDomainName, i)
+		log.Printf("Encrypting client %d%s: encrypted message number %d \n", clientNum, useDomainName, i)
 
 		if i == 42 {
 			// Example how to release memory back to the system.  Forces keys to be re-loaded.
@@ -113,8 +112,7 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 		log.Println("Decryption client,", clientNum, "failed to register, trying again...")
 		time.Sleep(time.Duration(1) * time.Second)
 	}
-
-	testBadDecryption(err, clientNum, sdk)
+	log.Printf("Getting decrypting client %d registered...\n", clientNum)
 
 	i := 0
 	for msg := range encrypted {
@@ -126,31 +124,17 @@ func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypte
 
 		decrypted, err := sdk.Decrypt(msg.encrypted)
 		if err != nil {
-			log.Fatalf("Decrypting client %d failed to decrypt in DECYRTION CLIENT string %s", clientNum, err)
+			log.Fatalf("Decrypting client %d failed to decrypt in DECYRTION CLIENT string", clientNum, err)
 		}
 
 		if !bytes.Equal(decrypted, msg.plaintext) {
 			log.Fatalf("Decrypting client %d failed to decrypt in DECYRTION CLIENT decrypted %s but expected %s", clientNum, decrypted, msg.plaintext)
 		}
-		log.Println("Decrypting client", clientNum, "decrypted", i, " messages")
+		log.Println("Decrypting client", clientNum, "decrypted message number", i)
 		i++
 	}
 
 	log.Println("decryption client number", clientNum, "done.")
-}
-func testBadDecryption(err error, clientNum int, sdk peacemakr_go_sdk.PeacemakrSDK) {
-	// Attempt a single "bad" decryption:
-	randLen := rand.Intn(1<<16) + 1
-	notPeaceMakrCiphertext, err := generateRandomBytes(randLen)
-	if err != nil {
-		log.Fatalf("Decrypting client %d: failed to get random byte array %s", clientNum, err)
-	}
-	decrypted, err := sdk.Decrypt(notPeaceMakrCiphertext)
-	if len(decrypted) != 0 || err == nil {
-		log.Fatalf("Decrypting client %d: failed to detect non-peacemkr ciphertext %s", clientNum, notPeaceMakrCiphertext)
-	}
-
-	log.Printf("Decrypting client %d: invalid ciphertext detected", clientNum)
 }
 
 func generateRandomBytes(n int) ([]byte, error) {
@@ -167,7 +151,7 @@ func generateRandomBytes(n int) ([]byte, error) {
 func main() {
 	apiKey := flag.String("apiKey", "", "apiKey")
 	peacemakrUrl := flag.String("peacemakrUrl", "https://api.peacemakr.io", "URL of Peacemakr cloud services")
-	numCryptoTrips := flag.Int("numCryptoTrips", 100, "Total number of example encrypt and decrypt operations.")
+	numCryptoTrips := flag.Int("numCryptoTrips", 1, "Total number of example encrypt and decrypt operations.")
 	numEncryptThreads := flag.Int("numEncryptClients", 1, "Total number of encryption clients. (1)")
 	numDecryptThreads := flag.Int("numDecryptClients", 10, "Total number of decryption clients. (10)")
 	useDomainName := flag.String("useDomainName", "", "The specific and enforced Use Domain's name for encryption")
@@ -208,7 +192,7 @@ func main() {
 
 		// Why Sleep? The number of clients can't just explode, need to give them a chance to spin up,
 		// work a little, and go away.
-		time.Sleep(10 * time.Microsecond)
+		time.Sleep(1 * time.Microsecond)
 
 	}
 
