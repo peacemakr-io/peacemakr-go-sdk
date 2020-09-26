@@ -205,5 +205,6 @@ func main() {
 	for i := 0; i < *numDecryptThreads; i++ {
 		encrypted <- nil
 	}
+	decryptorWork.Wait()
 	close(encrypted)
 }
