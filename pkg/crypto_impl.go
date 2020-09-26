@@ -315,7 +315,7 @@ func (sdk *standardPeacemakrSDK) populateOrg() error {
 	return nil
 }
 
-func (sdk *standardPeacemakrSDK) getCryptoConfigIdFromAPIToken() (string, error) {
+func (sdk *standardPeacemakrSDK) getCryptoConfigIdFromOrgInfo() (string, error) {
 
 	err := sdk.populateOrg()
 	if err != nil {
@@ -338,7 +338,7 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 	var err error
 
 	params := crypto_config.NewGetCryptoConfigParams()
-	params.CryptoConfigID, err = sdk.getCryptoConfigIdFromAPIToken()
+	params.CryptoConfigID, err = sdk.getCryptoConfigIdFromOrgInfo()
 	if err != nil {
 		sdk.logError(err)
 		return err
