@@ -102,7 +102,7 @@ func publicPemKey(key rsa.PublicKey) string {
 
 func GetNewKey(keyType string, bitlength int) (string, string, string) {
 
-	if keyType == "rsa" {
+	if keyType == "RSA" {
 		reader := rand.Reader
 
 		//
@@ -121,25 +121,25 @@ func GetNewKey(keyType string, bitlength int) (string, string, string) {
 		pemPub := publicPemKey(key.PublicKey)
 		pemPriv := pemString(key)
 
-		return pemPub, pemPriv, "rsa"
-	} else if keyType == "ec" {
+		return pemPub, pemPriv, "RSA"
+	} else if keyType == "EC" {
 		switch bitlength {
 		case 256:
 			pub, priv := getNewECKey(elliptic.P256())
-			return pub, priv, "ec"
+			return pub, priv, "EC"
 		case 384:
 			pub, priv := getNewECKey(elliptic.P384())
-			return pub, priv, "ec"
+			return pub, priv, "EC"
 		case 521:
 			pub, priv := getNewECKey(elliptic.P521())
-			return pub, priv, "ec"
+			return pub, priv, "EC"
 		default:
 			pub, priv := getNewECKey(elliptic.P256())
-			return pub, priv, "ec"
+			return pub, priv, "EC"
 		}
 	} else {
 		// Then, just default to an EC key type of 256 bits.
-		return GetNewKey("ec", 256)
+		return GetNewKey("EC", 256)
 	}
 
 }

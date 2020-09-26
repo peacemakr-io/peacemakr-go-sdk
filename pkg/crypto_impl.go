@@ -1123,11 +1123,11 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		}
 
 		if cfg == coreCrypto.RSA_2048 || cfg == coreCrypto.RSA_4096 {
-			keyTy = "rsa"
+			keyTy = "RSA"
 		} else if cfg == coreCrypto.ECDH_P256 ||
 			cfg == coreCrypto.ECDH_P384 ||
 			cfg == coreCrypto.ECDH_P521 {
-			keyTy = "ec"
+			keyTy = "EC"
 		}
 	}
 
