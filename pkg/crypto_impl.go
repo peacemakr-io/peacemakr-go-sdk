@@ -359,7 +359,7 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 			return err
 		}
 
-		oneYearInSec := oneYear.Nanoseconds() / 1e9
+		oneYearInSec := int64(oneYear.Seconds())
 		sdk.cryptoConfig.ClientKeyTTL = &oneYearInSec
 	}
 
