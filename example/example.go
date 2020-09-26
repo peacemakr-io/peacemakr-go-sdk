@@ -3,13 +3,14 @@ package main
 import (
 	"bytes"
 	"flag"
-	"github.com/peacemakr-io/peacemakr-go-sdk/pkg"
-	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"log"
 	"math/rand"
 	"os"
 	"sync"
 	"time"
+
+	peacemakr_go_sdk "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
+	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 )
 
 type TestMessage struct {
@@ -101,7 +102,8 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	wg.Done()
 }
 
-func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan *TestMessage) {
+func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan *TestMessage, wg *sync.WaitGroup) {
+	defer wg.Done()
 	log.Printf("Getting Peacemakr SDK for decrypting client %d...\n", clientNum)
 	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), log.New(os.Stdout, "DecryptingClient", log.LstdFlags))
 	if err != nil {
@@ -170,11 +172,13 @@ func main() {
 	// Channel of encrypted things.
 	encrypted := make(chan *TestMessage)
 	var encryptionWork sync.WaitGroup
+	var decryptorWork sync.WaitGroup
 
 	// Just one decryptor
 
 	for i := 0; i < *numDecryptThreads; i++ {
-		go runDecryptingClient(i, *apiKey, *peacemakrUrl, encrypted)
+		decryptorWork.Add(1)
+		go runDecryptingClient(i, *apiKey, *peacemakrUrl, encrypted, &decryptorWork)
 	}
 
 	// Fire up the encryption clients.
