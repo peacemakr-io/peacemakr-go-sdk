@@ -11,12 +11,7 @@ import (
 	"fmt"
 )
 
-type LocalizedKeyFetcherService struct {
-	LocalPubKeys  map[string]string
-	LocalPrivKeys map[string]string
-}
-
-func ECPemString(key *ecdsa.PrivateKey) string {
+func ecPemString(key *ecdsa.PrivateKey) string {
 	buf := new(bytes.Buffer)
 
 	marshalled, err := x509.MarshalECPrivateKey(key)
@@ -37,7 +32,7 @@ func ECPemString(key *ecdsa.PrivateKey) string {
 	return buf.String()
 }
 
-func PublicECPemKey(key ecdsa.PublicKey) string {
+func publicECPemKey(key ecdsa.PublicKey) string {
 	pub, err := x509.MarshalPKIXPublicKey(&key)
 	if err != nil {
 		panic(err)
@@ -61,8 +56,8 @@ func getNewECKey(curve elliptic.Curve) (string, string) {
 		return "", ""
 	}
 
-	pemPriv := ECPemString(key)
-	pemPub := PublicECPemKey(key.PublicKey)
+	pemPriv := ecPemString(key)
+	pemPub := publicECPemKey(key.PublicKey)
 
 	return pemPub, pemPriv
 }
@@ -100,7 +95,7 @@ func publicPemKey(key rsa.PublicKey) string {
 	return string(pubPem)
 }
 
-func GetNewKey(keyType string, bitlength int) (string, string, string) {
+func getNewKey(keyType string, bitlength int) (string, string, string) {
 
 	if keyType == "rsa" {
 		reader := rand.Reader
@@ -139,7 +134,7 @@ func GetNewKey(keyType string, bitlength int) (string, string, string) {
 		}
 	} else {
 		// Then, just default to an EC key type of 256 bits.
-		return GetNewKey("ec", 256)
+		return getNewKey("ec", 256)
 	}
 
 }

@@ -2,10 +2,10 @@ package peacemakr_go_sdk
 
 import (
 	"crypto/rand"
+	"fmt"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"log"
-	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -14,8 +14,7 @@ import (
 func getURL() string {
 	envHostname, isSet := os.LookupEnv("PEACEMAKR_TEST_URL")
 	if !isSet {
-		// Until the prod server has a proper testing org, only a local env by default.
-		return "http://peacemakr-services:80"
+		return ""
 	}
 	return envHostname
 }
@@ -34,21 +33,16 @@ var peacemakrUrl = getURL()
 var apiKey = getAPIKey()
 
 func setup(m *testing.M) {
-	if apiKey == "" {
-
-		url, err := url.Parse(peacemakrUrl)
-		if err != nil {
-			log.Fatal(err)
-		}
-		peacemakrHost := url.Host
-		peacemakrScheme := url.Scheme
+	if apiKey == "" && peacemakrUrl != "" {
 
 		// Set up the client to get the test org and its API key
 		cfg := client.TransportConfig{
-			Host:     peacemakrHost,
+			Host:     peacemakrUrl,
 			BasePath: client.DefaultBasePath,
-			Schemes:  []string{peacemakrScheme},
+			Schemes:  []string{"http"},
 		}
+
+		peacemakrUrl = fmt.Sprintf("http://%s", peacemakrUrl)
 
 		testClient := client.NewHTTPClientWithConfig(nil, &cfg)
 		ok, err := testClient.Org.GetTestOrganizationAPIKey(nil)
@@ -58,8 +52,7 @@ func setup(m *testing.M) {
 
 		apiKey = *ok.Payload.Key
 	}
-
-	time.Sleep(5 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 }
 
 func TestMain(m *testing.M) {
@@ -150,25 +143,9 @@ func TestEncrypt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !peacemakrSDK.(*standardPeacemakrSDK).hasUseDomain() {
-		if err := peacemakrSDK.(*standardPeacemakrSDK).createUseDomain(1, t.Name()); err != nil {
-			t.Fatal(err)
-		}
-
-		// Use domain and key creation, are not instantaneous.
-		time.Sleep(time.Duration(5) * time.Second)
-
-		if err := peacemakrSDK.Sync(); err != nil {
-			t.Fatal(err)
-		}
-	}
-
 	if err := peacemakrSDK.Sync(); err != nil {
 		log.Fatal(err)
 	}
-
-	// Wait on KD to boot up
-	time.Sleep(5 * time.Second)
 
 	bytes := make([]byte, messageSize)
 	if _, err := rand.Read(bytes); err != nil {

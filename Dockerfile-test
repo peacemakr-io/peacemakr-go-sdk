@@ -1,8 +1,0 @@
-FROM peacemakr-go-sdk-dependencies
-
-ADD go.mod go.sum /go/src/github.com/peacemakr-io/peacemakr-go-sdk/
-ADD ./pkg /go/src/github.com/peacemakr-io/peacemakr-go-sdk/pkg/
-
-WORKDIR /opt/tests
-
-CMD go test -v github.com/peacemakr-io/peacemakr-go-sdk/...
