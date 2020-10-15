@@ -34,61 +34,42 @@ You can start encrypting messages in half an hour and get home in time for dinne
 
 This is all you need to get started, along with an API key. Visit [admin.peacemakr.io](https://admin.peacemakr.io) to get one of those.
 ```go
+package my_sdk
+
 import (
-    peacemakr "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
+    peacemakr_tools "github.com/peacemakr-io/peacemakr-go-sdk/pkg/tools"
 )
 
+type MyMessage struct {
+    Secret []byte `encrypt:"true"`
+    Public []byte
+}
+
 type MySDK struct {
-    PeacemakrSdk peacemakr.PeacemakrSDK
+    Encryptor peacemakr_tools.Encryptor
 }
 
-func GetPeacemakrSdk(apiKey string) (peacemakr.PeacemakrSDK, error) {
-    url := "https://api.peacemakr.io"
-
-    // Set up the SDK
-    sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(
-                        apiKey,       // <- This will need to be set up in advance
-                        "my-project", // <- This is the name of the client that will show up in logs. Making it descriptive 
-                                      //    will make it easier for us and for you!
-                        &url,         // <- You'll usually ping https://api.peacemakr.io directly, but you may want to 
-                                      //    redirect and you're free to do that! 
-                        utils.GetDiskPersister("/tmp/"), // <- This can be substituted for utils.GetInMemPersister(). 
-                                                         //    Benefits include that nothing will hit disk, but you 
-                                                         //    will lose all your state and have to re-register on restart.
-                                                         //    want to write a different persister? Go for it, and open a
-                                                         //    PR.
-                        log.New(os.Stdout, "MyProjectCrypto", log.LstdFlags) // <- This can also be nil, but this way
-                                                                             //    you have a nice log prefix.
-    )
-    if err != nil {
-        return nil, err
-    }
-
-    // Register as a client of the Peacemakr server
-    if err := sdk.Register(); err != nil {
-        return nil, err
-    }
-
-    return sdk, nil
-}
-
-func GetMySDK(apiKey string) (*MySDK, error) {
-    peacemakrSDK, err := GetPeacemakrSdk(apiKey)
+func GetMySDK(cfg *peacemakr_tools.EncryptorConfig) (*MySDK, error) {
+    // This can also be nil. If it is, peacemakr will read the values from the environment
+    // that are prefixed with PEACEMAKR_ENCRYPTOR
+    encryptor, err := peacemakr_tools.NewEncryptor(cfg)
     if err != nil {
         return nil, err
     }
 
     return &MySDK{
-        PeacemakrSdk: sdk,
+        Encryptor: encryptor,
     }, nil
 }
 
-func (m *MySDK) EncryptMessage(message []byte) ([]byte, error) {
-    return m.PeacemakrSdk.Encrypt(message)
+func (m *MySDK) EncryptMessage(message *MyMessage) error {
+    // Make sure you pass a pointer into this, it modifies the message in-place to encrypt the marked fields
+    return m.Encryptor.Encrypt(message)
 }
 
-func (m *MySDK) DecryptMessage(encrypted []byte) ([]byte, error) {
-    return m.PeacemakrSdk.Decrypt(encrypted)
+func (m *MySDK) DecryptMessage(message *MyMessage) error {
+    // Make sure you pass a pointer into this, it modifies the message in-place to decrypt the marked fields
+    return m.Encryptor.Decrypt(message)
 }
 
 ```

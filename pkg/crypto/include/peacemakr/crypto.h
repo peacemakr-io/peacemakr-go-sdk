@@ -56,6 +56,7 @@ typedef enum {
   ECDH_P256 = 3,
   ECDH_P384 = 4,
   ECDH_P521 = 5,
+  ECDH_SECP256K1 = 6,
 } asymmetric_cipher;
 
 /**
@@ -285,8 +286,9 @@ peacemakr_encrypt(const peacemakr_key_t *recipient_key,
  * in \p sender_key is SYMMETRIC then this method stores an HMAC in \p cipher.
  * If the configuration is ASYMMETRIC then this method uses the EVP_DigestSign*
  * functions to do asymmetric signing of \p plain and stores it in \p cipher.
+ * Returns true on success and false on error.
  */
-PEACEMAKR_EXPORT void peacemakr_sign(const peacemakr_key_t *sender_key,
+PEACEMAKR_EXPORT bool peacemakr_sign(const peacemakr_key_t *sender_key,
                                      const plaintext_t *plain,
                                      message_digest_algorithm digest,
                                      ciphertext_blob_t *cipher);

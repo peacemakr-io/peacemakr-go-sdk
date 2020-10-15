@@ -2,6 +2,8 @@
 
 set -ex
 
+rm -rf pkg/generated || true
+
 ./swagger-go.sh validate peacemakr-services.yml
 
 # Strip .yml off swagger file name

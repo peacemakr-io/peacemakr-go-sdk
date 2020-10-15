@@ -14,9 +14,10 @@ require (
 	github.com/go-openapi/strfmt v0.17.0
 	github.com/go-openapi/swag v0.17.0
 	github.com/go-openapi/validate v0.0.0-20180703152151-9a6e517cddf1
+	github.com/google/uuid v1.0.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/mailru/easyjson v0.0.0-20190312143242-1de009706dbe // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	golang.org/x/net v0.0.0-20190328230028-74de082e2cca
-	gopkg.in/yaml.v2 v2.2.2 // indirect
+	github.com/spf13/viper v1.6.2
+	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
 )
