@@ -969,7 +969,7 @@ func (sdk *standardPeacemakrSDK) errOnNotRegistered() error {
 }
 
 func (sdk *standardPeacemakrSDK) generateKeys() (string, string, string, error) {
-	pub, priv, keyTy := getNewKey(*sdk.cryptoConfig.ClientKeyType, int(*sdk.cryptoConfig.ClientKeyBitlength))
+	pub, priv, keyTy := GetNewKey(*sdk.cryptoConfig.ClientKeyType, int(*sdk.cryptoConfig.ClientKeyBitlength))
 
 	err := sdk.persister.setPrivateKey(priv)
 	if err != nil {
