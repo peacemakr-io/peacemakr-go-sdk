@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-openapi/runtime"
+	auth2 "github.com/peacemakr-io/peacemakr-go-sdk/pkg/auth"
 	coreCrypto "github.com/peacemakr-io/peacemakr-go-sdk/pkg/crypto"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client"
 	clientReq "github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client/client"
@@ -116,7 +117,7 @@ func (p *sdkPersister) setAsymmetricKey(id string, key string) error {
 
 type standardPeacemakrSDK struct {
 	clientName         string
-	apiKey             string
+	auth               auth2.Authenticator
 	org                *models.Organization
 	cryptoConfig       *models.CryptoConfig
 	authInfo           runtime.ClientAuthInfoWriter
@@ -339,8 +340,8 @@ func (sdk *standardPeacemakrSDK) preloadAll(keyIds []string) error {
 }
 
 func (sdk *standardPeacemakrSDK) Sync() error {
-	if sdk.apiKey == "" {
-		sdk.logString("No sync occurred because there is no API Key")
+	if sdk.auth == nil {
+		sdk.logString("No sync occurred because there is no API key")
 		return nil
 	}
 
@@ -377,7 +378,12 @@ func (sdk *standardPeacemakrSDK) populateOrg() error {
 	}
 
 	params := org.NewGetOrganizationFromAPIKeyParams()
-	params.Apikey = sdk.apiKey
+	token, err := sdk.auth.GetAuthToken()
+	if err != nil {
+		return err
+	}
+
+	params.Apikey = token
 
 	ret, err := sdkClient.Org.GetOrganizationFromAPIKey(params, sdk.authInfo)
 	if err != nil {
@@ -448,8 +454,8 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 }
 
 func (sdk *standardPeacemakrSDK) verifyMessage(aad *PeacemakrAAD, cfg coreCrypto.CryptoConfig, ciphertext *coreCrypto.CiphertextBlob, plaintext *coreCrypto.Plaintext) error {
-	if sdk.apiKey == "" {
-		sdk.logString("No verification occurred because there is no API Key")
+	if sdk.auth == nil {
+		sdk.logString("No verification occurred because there is no API key")
 		return nil
 	}
 
@@ -650,8 +656,8 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 
 func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (string, *coreCrypto.CryptoConfig, error) {
 
-	if sdk.apiKey == "" {
-		sdk.logString("Returning local-only test key because there is no API Key")
+	if sdk.auth == nil {
+		sdk.logString("Returning local-only test key because there is no API key")
 		return "local-only-test-key", &coreCrypto.CryptoConfig{
 			Mode:             coreCrypto.SYMMETRIC,
 			SymmetricCipher:  coreCrypto.CHACHA20_POLY1305,
@@ -801,7 +807,7 @@ func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string
 }
 
 func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
-	if sdk.apiKey != "" {
+	if sdk.auth != nil {
 		err := sdk.verifyRegistrationAndInit()
 		if err != nil {
 			return nil, err
@@ -812,7 +818,7 @@ func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
 }
 
 func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomainName string) ([]byte, error) {
-	if sdk.apiKey != "" {
+	if sdk.auth != nil {
 		err := sdk.verifyRegistrationAndInit()
 		if err != nil {
 			return nil, err
@@ -869,7 +875,7 @@ func (sdk *standardPeacemakrSDK) getPublicKey(keyID string) (string, error) {
 }
 
 func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
-	if sdk.apiKey != "" {
+	if sdk.auth != nil {
 		err := sdk.verifyRegistrationAndInit()
 		if err != nil {
 			return nil, err
@@ -1063,8 +1069,8 @@ func (sdk *standardPeacemakrSDK) Register() error {
 		return err
 	}
 
-	if sdk.apiKey == "" {
-		sdk.logString("Using local-only test settings for client because there is no API Key")
+	if sdk.auth == nil {
+		sdk.logString("Using local-only test settings for client because there is no API key")
 		if err := sdk.persister.setPublicKeyID("my-public-key-id"); err != nil {
 			return err
 		}

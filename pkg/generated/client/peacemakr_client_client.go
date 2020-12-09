@@ -11,6 +11,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
+	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client/billing"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client/client"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client/crypto_config"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client/key_derivation_service_registry"
@@ -63,6 +64,8 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *PeacemakrC
 
 	cli := new(PeacemakrClient)
 	cli.Transport = transport
+
+	cli.Billing = billing.New(transport, formats)
 
 	cli.Client = client.New(transport, formats)
 
@@ -124,6 +127,8 @@ func (cfg *TransportConfig) WithSchemes(schemes []string) *TransportConfig {
 
 // PeacemakrClient is a client for peacemakr client
 type PeacemakrClient struct {
+	Billing *billing.Client
+
 	Client *client.Client
 
 	CryptoConfig *crypto_config.Client
@@ -146,6 +151,8 @@ type PeacemakrClient struct {
 // SetTransport changes the transport on the client and all its subresources
 func (c *PeacemakrClient) SetTransport(transport runtime.ClientTransport) {
 	c.Transport = transport
+
+	c.Billing.SetTransport(transport)
 
 	c.Client.SetTransport(transport)
 

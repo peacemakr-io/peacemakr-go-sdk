@@ -159,7 +159,7 @@ func main() {
 	useDomainName := flag.String("useDomainName", "", "The specific and enforced Use Domain's name for encryption")
 	flag.Parse()
 	if apiKey == nil || *apiKey == "" {
-		log.Fatal("You are missing an API Key.")
+		log.Fatal("You are missing an API key.")
 	}
 
 	log.Println("apiKey:", *apiKey)
