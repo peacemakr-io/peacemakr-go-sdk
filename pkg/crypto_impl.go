@@ -1392,6 +1392,7 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 
 	newKeyTime := keyCreationTime.Unix()
 
+	var d time.Duration = time.Duration(1) * time.Second
 	updateKeyParams := &clientReq.AddClientPublicKeyParams{
 		ClientID: clientID,
 		NewPublicKey: &models.PublicKey{
@@ -1402,6 +1403,7 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 			KeyType:      &keyTy,
 		},
 	}
+	updateKeyParams.SetTimeout(d)
 
 	updatedKey, err := networkClient.Client.AddClientPublicKey(updateKeyParams, sdk.authInfo)
 	if err != nil {
