@@ -1392,15 +1392,14 @@ func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
 
 	newKeyTime := keyCreationTime.Unix()
 
-	updateKeyParams := &clientReq.AddClientPublicKeyParams{
-		ClientID: clientID,
-		NewPublicKey: &models.PublicKey{
-			CreationTime: &newKeyTime,
-			Encoding:     &pemStr,
-			ID:           &keyID,
-			Key:          &pub,
-			KeyType:      &keyTy,
-		},
+	updateKeyParams := clientReq.NewAddClientPublicKeyParams()
+	updateKeyParams.ClientID = clientID
+	updateKeyParams.NewPublicKey = &models.PublicKey{
+		CreationTime: &newKeyTime,
+		Encoding:     &pemStr,
+		ID:           &keyID,
+		Key:          &pub,
+		KeyType:      &keyTy,
 	}
 
 	updatedKey, err := networkClient.Client.AddClientPublicKey(updateKeyParams, sdk.authInfo)
