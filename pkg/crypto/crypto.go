@@ -647,7 +647,6 @@ func Verify(senderKey *PeacemakrKey, plaintext *Plaintext, ciphertext *Ciphertex
 
 	cPlaintext := plaintextToInternal(*plaintext)
 	defer freeInternalPlaintext(&cPlaintext)
-
 	verified := C.peacemakr_verify(senderKey.key, (*C.plaintext_t)(unsafe.Pointer(&cPlaintext)), ciphertext.blob)
 	if !verified {
 		return errors.New("verification failed")

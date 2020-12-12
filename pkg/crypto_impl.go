@@ -216,6 +216,7 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		return errors.New("unable to get any of the requested keys from the server")
 	}
 
+	sdk.sysLog.Printf("total key: %v", len(ret.Payload))
 	for _, key := range ret.Payload {
 
 		if key == nil {
@@ -223,7 +224,6 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		}
 
 		numKeys := len(key.KeyIds)
-
 		blob, cfg, err := coreCrypto.Deserialize([]byte(*key.PackagedCiphertext))
 		if err != nil {
 			sdk.logError(err)
@@ -287,10 +287,14 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 		}
 
 		// Decrypt the binary ciphertext
+		blobStr := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", blob)))
+		blobStr2 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", *blob)))
+		sdk.sysLog.Printf("type %T: addr=%p p=&i=%p  *p=i=%v %v %v\n", blob, &blob, blob, *blob, blobStr, blobStr2)
 		plaintext, needVerify, err := coreCrypto.Decrypt(decryptionDeliveredKey, blob)
 		if err != nil {
 			sdk.logError(err)
-			return err
+			// return err
+			continue
 		}
 
 		if needVerify {
@@ -672,6 +676,7 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 	keyId := selectedDomain.EncryptionKeyIds[selectedKeyIdx]
 
 	if !sdk.persister.hasKey(keyId) {
+		sdk.logString("downloading keys in select encryption key")
 		if err := sdk.downloadAndSaveAllKeys([]string{keyId}); err != nil {
 			return "", nil, err
 		}

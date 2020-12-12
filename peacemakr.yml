@@ -1,0 +1,5 @@
+
+Verbose: true
+Host: "https://api.peacemakr.io"
+ApiKey: "pLN+fMFFhNgpP/ZxwOYkz4Jt5EpJAC1duuv9JKO9z40="
+PersisterFileLocation: "/tmp/.peacemakr"
