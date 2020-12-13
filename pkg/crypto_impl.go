@@ -524,8 +524,9 @@ func (sdk *standardPeacemakrSDK) loadOneKeySymmetricKey(keyId string) ([]byte, e
 	return []byte(foundKey), nil
 }
 
-func isUseDomainEncryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
-	return useDomain.SymmetricKeyEncryptionAllowed
+func isUseDomainEncryptionViable(useDomain *models.SymmetricKeyUseDomain, myOrg string) bool {
+	// If myOrg is specified, then it has to match the useDomain's owner ID. Otherwise, it doesn't have to match
+	return useDomain.SymmetricKeyEncryptionAllowed && (*useDomain.OwnerOrgID == myOrg || myOrg == "")
 }
 
 func contains(s []string, e string) bool {
@@ -589,11 +590,11 @@ func (sdk *standardPeacemakrSDK) findViableDecryptionUseDomains() []*models.Symm
 	return availableDomains
 }
 
-func findViableEncryptionUseDomains(useDomains []*models.SymmetricKeyUseDomain) []*models.SymmetricKeyUseDomain {
+func findViableEncryptionUseDomains(useDomains []*models.SymmetricKeyUseDomain, myOrg string) []*models.SymmetricKeyUseDomain {
 	availableDomain := []*models.SymmetricKeyUseDomain{}
 
 	for _, useDomain := range useDomains {
-		if isUseDomainEncryptionViable(useDomain) {
+		if isUseDomainEncryptionViable(useDomain, myOrg) {
 			availableDomain = append(availableDomain, useDomain)
 		}
 	}
@@ -611,7 +612,8 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 	var selectedDomain *models.SymmetricKeyUseDomain = nil
 
 	if useDomainName == nil {
-		viableUseDomain := findViableEncryptionUseDomains(sdk.cryptoConfig.SymmetricKeyUseDomains)
+		// Only select a use domain that belongs to the client's encompassing org
+		viableUseDomain := findViableEncryptionUseDomains(sdk.cryptoConfig.SymmetricKeyUseDomains, *sdk.cryptoConfig.OwnerOrgID)
 		if len(viableUseDomain) == 0 {
 			// We only have invalid domains ... but we can't just fail. Just use something.
 			numSelectedUseDomains := len(sdk.cryptoConfig.SymmetricKeyUseDomains)
@@ -625,13 +627,14 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 		selectedDomain = viableUseDomain[selectedDomainIdx]
 	} else {
 		for _, domain := range sdk.cryptoConfig.SymmetricKeyUseDomains {
-			if domain.Name == *useDomainName && isUseDomainEncryptionViable(domain) {
+			if domain.Name == *useDomainName && isUseDomainEncryptionViable(domain, "") {
 				return domain, nil
 			}
 		}
 
+		sdk.logString(fmt.Sprintf("Unable to find use domain %s, falling back to a known good use domain", *useDomainName))
 		// Else just fall back on a well known domain.
-		viableUseDomain := findViableEncryptionUseDomains(sdk.cryptoConfig.SymmetricKeyUseDomains)
+		viableUseDomain := findViableEncryptionUseDomains(sdk.cryptoConfig.SymmetricKeyUseDomains, *sdk.cryptoConfig.OwnerOrgID)
 		if len(viableUseDomain) == 0 {
 			// We only have invalid domains ... but we can't just fail. Just use something.
 			numSelectedUseDomains := len(sdk.cryptoConfig.SymmetricKeyUseDomains)
