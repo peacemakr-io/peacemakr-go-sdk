@@ -59,6 +59,11 @@ type PeacemakrSDK interface {
 	Decrypt(ciphertext []byte) ([]byte, error)
 
 	//
+	// Verifies the ciphertext. Returns true if the ciphertext is a Peacemakr ciphertext, else false.
+	//
+	IsPeacemakrCipher(ciphertext []byte) bool
+
+	//
 	// For visibility or debugging purposes, identify which client and configuration this client is running.
 	// Also forwards debug info to peacemakr if phonehome enabled.
 	//

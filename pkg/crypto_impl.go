@@ -924,6 +924,11 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 	return plaintext.Data, nil
 }
 
+func (sdk *standardPeacemakrSDK) IsPeacemakrCipher(ciphertext []byte) bool {
+	_, _, err := coreCrypto.Deserialize(ciphertext)
+	return err == nil
+}
+
 var sdkClient *client.PeacemakrClient
 
 func (sdk *standardPeacemakrSDK) getClient() *client.PeacemakrClient {
