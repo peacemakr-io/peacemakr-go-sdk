@@ -61,7 +61,7 @@ type PeacemakrSDK interface {
 	//
 	// Verifies the ciphertext. Returns true if the ciphertext is a Peacemakr ciphertext, else false.
 	//
-	IsPeacemakrCipher(ciphertext []byte) bool
+	IsPeacemakrCiphertext(ciphertext []byte) bool
 
 	//
 	// For visibility or debugging purposes, identify which client and configuration this client is running.

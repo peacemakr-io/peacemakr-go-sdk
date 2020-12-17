@@ -924,7 +924,7 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 	return plaintext.Data, nil
 }
 
-func (sdk *standardPeacemakrSDK) IsPeacemakrCipher(ciphertext []byte) bool {
+func (sdk *standardPeacemakrSDK) IsPeacemakrCiphertext(ciphertext []byte) bool {
 	_, _, err := coreCrypto.Deserialize(ciphertext)
 	return err == nil
 }

@@ -170,7 +170,7 @@ func TestEncrypt(t *testing.T) {
 	}
 }
 
-func TestIsPeacemakrCipher(t *testing.T) {
+func TestIsPeacemakrCiphertext(t *testing.T) {
 	if err := os.MkdirAll("/tmp/test/cipher", os.ModePerm); err != nil {
 		t.Fatal(err)
 	}
@@ -203,12 +203,12 @@ func TestIsPeacemakrCipher(t *testing.T) {
 	}
 
 	// Validate the ciphertext is a Peacemakr ciphertext
-	assert.True(t, peacemakrSDK.IsPeacemakrCipher(encryptedBlob))
+	assert.True(t, peacemakrSDK.IsPeacemakrCiphertext(encryptedBlob))
 
 	// Validate the ciphertext is not a Peacemakr ciphertext
 	randomBytes := make([]byte, messageSize)
 	_, _ = rand.Read(randomBytes)
-	assert.False(t, peacemakrSDK.IsPeacemakrCipher(randomBytes))
+	assert.False(t, peacemakrSDK.IsPeacemakrCiphertext(randomBytes))
 }
 
 // Benchmarks for the API functions
