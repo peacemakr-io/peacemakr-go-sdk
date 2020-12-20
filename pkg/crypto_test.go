@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"testing"
@@ -167,6 +168,47 @@ func TestEncrypt(t *testing.T) {
 			t.Fatalf("Decryption failed on byte %d, mismatch %v vs %v", i, bytes[i], decryptedBytes[i])
 		}
 	}
+}
+
+func TestIsPeacemakrCiphertext(t *testing.T) {
+	if err := os.MkdirAll("/tmp/test/cipher", os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = os.Remove("/tmp/test/cipher")
+	}()
+
+	persister := utils.GetDiskPersister("/tmp/test/cipher")
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &peacemakrUrl, persister, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := peacemakrSDK.Register(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := peacemakrSDK.Sync(); err != nil {
+		log.Fatal(err)
+	}
+
+	bytes := make([]byte, messageSize)
+	if _, err := rand.Read(bytes); err != nil {
+		t.Fatal(err)
+	}
+
+	encryptedBlob, err := peacemakrSDK.Encrypt(bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Validate the ciphertext is a Peacemakr ciphertext
+	assert.True(t, peacemakrSDK.IsPeacemakrCiphertext(encryptedBlob))
+
+	// Validate the ciphertext is not a Peacemakr ciphertext
+	randomBytes := make([]byte, messageSize)
+	_, _ = rand.Read(randomBytes)
+	assert.False(t, peacemakrSDK.IsPeacemakrCiphertext(randomBytes))
 }
 
 // Benchmarks for the API functions
