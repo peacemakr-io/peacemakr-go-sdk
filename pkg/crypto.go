@@ -141,8 +141,13 @@ func GetPeacemakrSDKWithAuth(auth auth.Authenticator, clientName string, peacema
 func GetPeacemakrSDK(apiKey, clientName string, peacemakrURL *string, persister utils.Persister, optionalLogger SDKLogger) (PeacemakrSDK, error) {
 
 	// Create the authenticator
-	auth := &auth.APIKeyAuthenticator{Key: apiKey}
+	var a auth.Authenticator
+	if apiKey == "" {
+		a = nil
+	} else {
+		a = &auth.APIKeyAuthenticator{Key: apiKey}
+	}
 
 	// And delegate to the other function
-	return GetPeacemakrSDKWithAuth(auth, clientName, peacemakrURL, persister, optionalLogger)
+	return GetPeacemakrSDKWithAuth(a, clientName, peacemakrURL, persister, optionalLogger)
 }

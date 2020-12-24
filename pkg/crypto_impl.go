@@ -22,6 +22,7 @@ import (
 )
 
 type sdkPersister struct {
+	prefix    string
 	persister utils.Persister
 }
 
@@ -30,23 +31,23 @@ func (p *sdkPersister) valid() bool {
 }
 
 func (p *sdkPersister) getPublicKey() (string, error) {
-	return p.persister.Load("io.peacemakr.pub")
+	return p.persister.Load(p.prefix + "io.peacemakr.pub")
 }
 
 func (p *sdkPersister) setPublicKey(pem string) error {
-	return p.persister.Save("io.peacemakr.pub", pem)
+	return p.persister.Save(p.prefix + "io.peacemakr.pub", pem)
 }
 
 func (p *sdkPersister) getPrivateKey() (string, error) {
-	return p.persister.Load("io.peacemakr.priv")
+	return p.persister.Load(p.prefix + "io.peacemakr.priv")
 }
 
 func (p *sdkPersister) setPrivateKey(pem string) error {
-	return p.persister.Save("io.peacemakr.priv", pem)
+	return p.persister.Save(p.prefix + "io.peacemakr.priv", pem)
 }
 
 func (p *sdkPersister) getKeyCreationTime() (time.Time, error) {
-	t, err := p.persister.Load("io.peacemakr.key_creation_time")
+	t, err := p.persister.Load(p.prefix + "io.peacemakr.key_creation_time")
 	if err != nil {
 		return time.Now(), err
 	}
@@ -60,59 +61,59 @@ func (p *sdkPersister) getKeyCreationTime() (time.Time, error) {
 }
 
 func (p *sdkPersister) setKeyCreationTime(time time.Time) error {
-	return p.persister.Save("io.peacemakr.key_creation_time", strconv.FormatInt(time.Unix(), 16))
+	return p.persister.Save(p.prefix + "io.peacemakr.key_creation_time", strconv.FormatInt(time.Unix(), 16))
 }
 
 func (p *sdkPersister) getPublicKeyID() (string, error) {
-	return p.persister.Load("io.peacemakr.keyId")
+	return p.persister.Load(p.prefix + "io.peacemakr.keyId")
 }
 
 func (p *sdkPersister) setPublicKeyID(id string) error {
-	return p.persister.Save("io.peacemakr.keyId", id)
+	return p.persister.Save(p.prefix + "io.peacemakr.keyId", id)
 }
 
 func (p *sdkPersister) getClientID() (string, error) {
-	return p.persister.Load("io.peacemakr.clientId")
+	return p.persister.Load(p.prefix + "io.peacemakr.clientId")
 }
 
 func (p *sdkPersister) setClientID(id string) error {
-	return p.persister.Save("io.peacemakr.clientId", id)
+	return p.persister.Save(p.prefix + "io.peacemakr.clientId", id)
 }
 
 func (p *sdkPersister) hasRegistrationObjects() bool {
-	return p.persister.Exists("io.peacemakr.priv") &&
-		p.persister.Exists("io.peacemakr.pub") &&
-		p.persister.Exists("io.peacemakr.keyId") &&
-		p.persister.Exists("io.peacemakr.clientId")
+	return p.persister.Exists(p.prefix + "io.peacemakr.priv") &&
+		p.persister.Exists(p.prefix + "io.peacemakr.pub") &&
+		p.persister.Exists(p.prefix + "io.peacemakr.keyId") &&
+		p.persister.Exists(p.prefix + "io.peacemakr.clientId")
 }
 
 func (p *sdkPersister) hasAsymmetricKeys() bool {
-	return p.persister.Exists("io.peacemakr.priv") &&
-		p.persister.Exists("io.peacemakr.pub")
+	return p.persister.Exists(p.prefix + "io.peacemakr.priv") &&
+		p.persister.Exists(p.prefix + "io.peacemakr.pub")
 }
 
 func (p *sdkPersister) hasKey(id string) bool {
-	return p.persister.Exists(fmt.Sprintf("io.peacemakr.symmetric.%s", id))
+	return p.persister.Exists(fmt.Sprintf("%sio.peacemakr.symmetric.%s", p.prefix, id))
 }
 
 func (p *sdkPersister) getKey(id string) (string, error) {
-	return p.persister.Load(fmt.Sprintf("io.peacemakr.symmetric.%s", id))
+	return p.persister.Load(fmt.Sprintf("%sio.peacemakr.symmetric.%s", p.prefix, id))
 }
 
 func (p *sdkPersister) setKey(id string, key string) error {
-	return p.persister.Save(fmt.Sprintf("io.peacemakr.symmetric.%s", id), key)
+	return p.persister.Save(fmt.Sprintf("%sio.peacemakr.symmetric.%s", p.prefix, id), key)
 }
 
 func (p *sdkPersister) hasAsymmetricKey(id string) bool {
-	return p.persister.Exists(fmt.Sprintf("io.peacemakr.asymmetric.%s", id))
+	return p.persister.Exists(fmt.Sprintf("%sio.peacemakr.asymmetric.%s", p.prefix, id))
 }
 
 func (p *sdkPersister) getAsymmetricKey(id string) (string, error) {
-	return p.persister.Load(fmt.Sprintf("io.peacemakr.asymmetric.%s", id))
+	return p.persister.Load(fmt.Sprintf("%sio.peacemakr.asymmetric.%s", p.prefix, id))
 }
 
 func (p *sdkPersister) setAsymmetricKey(id string, key string) error {
-	return p.persister.Save(fmt.Sprintf("io.peacemakr.asymmetric.%s", id), key)
+	return p.persister.Save(fmt.Sprintf("%sio.peacemakr.asymmetric.%s", p.prefix, id), key)
 }
 
 type standardPeacemakrSDK struct {
@@ -1071,6 +1072,7 @@ func (sdk *standardPeacemakrSDK) Register() error {
 
 	if sdk.auth == nil {
 		sdk.logString("Using local-only test settings for client because there is no API key")
+		sdk.persister.prefix = "local-only."
 		if err := sdk.persister.setPublicKeyID("my-public-key-id"); err != nil {
 			return err
 		}

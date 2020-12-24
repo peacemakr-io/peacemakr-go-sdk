@@ -14,7 +14,7 @@ import (
 func getURL() string {
 	envHostname, isSet := os.LookupEnv("PEACEMAKR_TEST_URL")
 	if !isSet {
-		return "https://api.peacemakr.io"
+		return ""
 	}
 	return envHostname
 }
@@ -22,7 +22,7 @@ func getURL() string {
 func getAPIKey() string {
 	envApiKey, isSet := os.LookupEnv("PEACEMAKR_TEST_API_KEY")
 	if !isSet {
-		return "SQTCdQxcHqLciaWJ2nEQeAEnDb/i6LQjq0RZeqXwcGM="
+		return ""
 	}
 	return envApiKey
 }
