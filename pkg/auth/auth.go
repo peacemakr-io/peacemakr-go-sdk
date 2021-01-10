@@ -17,14 +17,16 @@ type SecretFetcher func() (string, error)
 
 type OIDCAuthenticator struct {
 	Issuer         string
+	Scopes		   []string
 	ClientID       string
 	Secret         SecretFetcher
 	PeacemakrOrgID string
 }
 
-func GetOIDCAuthenticator(issuer, clientId string, secret SecretFetcher, orgId string) Authenticator {
+func GetOIDCAuthenticator(issuer string, scopes []string, clientId string, secret SecretFetcher, orgId string) Authenticator {
 	return &OIDCAuthenticator{
 		Issuer:         issuer,
+		Scopes:         scopes,
 		ClientID:       clientId,
 		Secret:         secret,
 		PeacemakrOrgID: orgId,

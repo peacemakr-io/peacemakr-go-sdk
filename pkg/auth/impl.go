@@ -30,7 +30,7 @@ func (a *OIDCAuthenticator) GetAuthToken() (string, error) {
 		ClientID:       a.ClientID,
 		ClientSecret:   secret,
 		TokenURL:       endpoint.TokenURL,
-		Scopes:         []string{"openid", "email"},
+		Scopes:         []string{},
 		EndpointParams: nil,
 		AuthStyle:      endpoint.AuthStyle,
 	}
