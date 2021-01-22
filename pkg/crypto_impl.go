@@ -114,6 +114,32 @@ func (p *sdkPersister) setAsymmetricKey(id string, key string) error {
 	return p.persister.Save(fmt.Sprintf("io.peacemakr.asymmetric.%s", id), key)
 }
 
+type useDomainInfo struct {
+	id      string
+	name    string
+	ownerid string
+}
+
+func (ud useDomainInfo) GetID() string {
+	return ud.id
+}
+
+func (ud useDomainInfo) GetOwnerID() string {
+	return ud.ownerid
+}
+
+func (ud useDomainInfo) GetName() string {
+	return ud.name
+}
+
+func getUseDomainInfo(domain *models.SymmetricKeyUseDomain) useDomainInfo {
+	return useDomainInfo{
+		id:      *domain.ID,
+		name:    domain.Name,
+		ownerid: *domain.OwnerOrgID,
+	}
+}
+
 type standardPeacemakrSDK struct {
 	clientName         string
 	apiKey             string
@@ -601,7 +627,7 @@ func findViableEncryptionUseDomains(useDomains []*models.SymmetricKeyUseDomain, 
 	return availableDomain
 }
 
-func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models.SymmetricKeyUseDomain, error) {
+func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainID *string) (*models.SymmetricKeyUseDomain, error) {
 
 	if len(sdk.cryptoConfig.SymmetricKeyUseDomains) <= 0 {
 		err := errors.New("no available useDomains to select")
@@ -611,7 +637,7 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 
 	var selectedDomain *models.SymmetricKeyUseDomain = nil
 
-	if useDomainName == nil {
+	if useDomainID == nil {
 		// Only select a use domain that belongs to the client's encompassing org
 		viableUseDomain := findViableEncryptionUseDomains(sdk.cryptoConfig.SymmetricKeyUseDomains, *sdk.cryptoConfig.OwnerOrgID)
 		if len(viableUseDomain) == 0 {
@@ -627,12 +653,12 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 		selectedDomain = viableUseDomain[selectedDomainIdx]
 	} else {
 		for _, domain := range sdk.cryptoConfig.SymmetricKeyUseDomains {
-			if domain.Name == *useDomainName && isUseDomainEncryptionViable(domain, "") {
+			if *domain.ID == *useDomainID && isUseDomainEncryptionViable(domain, "") {
 				return domain, nil
 			}
 		}
 
-		sdk.logString(fmt.Sprintf("Unable to find use domain %s, falling back to a known good use domain", *useDomainName))
+		sdk.logString(fmt.Sprintf("Unable to find use domain %s, falling back to a known good use domain", *useDomainID))
 		// Else just fall back on a well known domain.
 		viableUseDomain := findViableEncryptionUseDomains(sdk.cryptoConfig.SymmetricKeyUseDomains, *sdk.cryptoConfig.OwnerOrgID)
 		if len(viableUseDomain) == 0 {
@@ -640,7 +666,7 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 			numSelectedUseDomains := len(sdk.cryptoConfig.SymmetricKeyUseDomains)
 			selectedDomainIdx := rand.Intn(numSelectedUseDomains)
 			selectedDomain = sdk.cryptoConfig.SymmetricKeyUseDomains[selectedDomainIdx]
-			sdk.logString(fmt.Sprintf("no viable use domains encryption for use domain %s", *useDomainName))
+			sdk.logString(fmt.Sprintf("no viable use domains encryption for use domain %s", *useDomainID))
 			return selectedDomain, nil
 		}
 		numSelectedUseDomains := len(viableUseDomain)
@@ -651,7 +677,7 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 	return selectedDomain, nil
 }
 
-func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (string, *coreCrypto.CryptoConfig, error) {
+func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainID *string) (string, *coreCrypto.CryptoConfig, error) {
 
 	if sdk.apiKey == "" {
 		sdk.logString("Returning local-only test key because there is no API Key")
@@ -664,7 +690,7 @@ func (sdk *standardPeacemakrSDK) selectEncryptionKey(useDomainName *string) (str
 	}
 
 	// Select a use domain.
-	selectedDomain, err := sdk.selectUseDomain(useDomainName)
+	selectedDomain, err := sdk.selectUseDomain(useDomainID)
 	if err != nil {
 		return "", nil, err
 	}
@@ -737,9 +763,9 @@ type PeacemakrAAD struct {
 	SenderKeyID string `json:"senderKeyID"`
 }
 
-func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainName *string) ([]byte, error) {
+func (sdk *standardPeacemakrSDK) encrypt(plaintext []byte, useDomainID *string) ([]byte, error) {
 
-	keyId, cfg, err := sdk.selectEncryptionKey(useDomainName)
+	keyId, cfg, err := sdk.selectEncryptionKey(useDomainID)
 	if err != nil {
 		sdk.logError(err)
 		return nil, err
@@ -814,20 +840,20 @@ func (sdk *standardPeacemakrSDK) Encrypt(plaintext []byte) ([]byte, error) {
 	return sdk.encrypt(plaintext, nil)
 }
 
-func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, useDomainName string) ([]byte, error) {
+func (sdk *standardPeacemakrSDK) EncryptInDomain(plaintext []byte, selector UseDomainSelector) ([]byte, error) {
 	if sdk.apiKey != "" {
 		err := sdk.verifyRegistrationAndInit()
 		if err != nil {
 			return nil, err
 		}
-
-		err = sdk.verifyUserSelectedUseDomain(useDomainName)
-		if err != nil {
-			return nil, err
-		}
 	}
 
-	return sdk.encrypt(plaintext, &useDomainName)
+	ud, err := sdk.verifyUserSelectedUseDomain(selector)
+	if err != nil {
+		return nil, err
+	}
+
+	return sdk.encrypt(plaintext, &ud)
 }
 
 func (sdk *standardPeacemakrSDK) getKeyIdFromCiphertext(ciphertext []byte) (*PeacemakrAAD, error) {
@@ -1452,24 +1478,24 @@ func clearAllMetadata(sdk *standardPeacemakrSDK) {
 	sdk.lastUpdatedAt = 0
 }
 
-func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomainName string) error {
+func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(selector UseDomainSelector) (string, error) {
 
 	err := sdk.populateCryptoConfig()
 	if err != nil {
 		e := errors.New("failed to populate use doamins from crypto config id")
 		sdk.logError(e)
-		return e
+		return "", e
 	}
 
 	for _, domain := range sdk.cryptoConfig.SymmetricKeyUseDomains {
-		if domain.Name == useDomainName {
-			return nil
+		if selector(getUseDomainInfo(domain)) {
+			return *domain.ID, nil
 		}
 	}
 
-	err = errors.New(fmt.Sprintf("unknown use doamin: %s", useDomainName))
+	err = errors.New("could not find use domain")
 	sdk.logError(err)
-	return err
+	return "", err
 }
 
 func (sdk *standardPeacemakrSDK) ReleaseMemory() {
