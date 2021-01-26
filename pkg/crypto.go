@@ -13,6 +13,14 @@ type SDKLogger interface {
 	Printf(format string, args ...interface{})
 }
 
+type UseDomainInfo interface {
+	GetID() string
+	GetOwnerID() string
+	GetName() string
+}
+
+type UseDomainSelector func(info UseDomainInfo) bool
+
 type PeacemakrSDK interface {
 
 	//
@@ -42,8 +50,8 @@ type PeacemakrSDK interface {
 	Encrypt(plaintext []byte) ([]byte, error)
 
 	//
-	// Encrypt a byte array, but restrict which keys may be used to a Use Domain of this specific name. Names of Use
-	// Domains are not unique, and this non-unique property of your Organization's Use Domains allows for graceful
+	// Encrypt a byte array, but restrict which keys may be used to a Use Domain for which selector returns true. Names
+	// of Use Domains are not unique, and this non-unique property of your Organization's Use Domains allows for graceful
 	// rotation of encryption keys off of old (retiring, stale, or compromised) Use Domains, simply by creating a new
 	// Use Domain with the same name. The transitional purity, both Use Domains may be selected for encryption use by
 	// clients restricted to one particular name. Then, retiring of one of the two Use Domains is possible without
@@ -51,7 +59,7 @@ type PeacemakrSDK interface {
 	//
 	// Returns a ciphertext blob on success, else returns a non-nil error.
 	//
-	EncryptInDomain(plaintext []byte, useDomainName string) ([]byte, error)
+	EncryptInDomain(plaintext []byte, selector UseDomainSelector) ([]byte, error)
 
 	//
 	// Decrypt the ciphertexts. Returns original byte array on success, else returns a non-nil error.
