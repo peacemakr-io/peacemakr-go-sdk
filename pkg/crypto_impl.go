@@ -632,20 +632,7 @@ func (sdk *standardPeacemakrSDK) selectUseDomain(useDomainName *string) (*models
 			}
 		}
 
-		sdk.logString(fmt.Sprintf("Unable to find use domain %s, falling back to a known good use domain", *useDomainName))
-		// Else just fall back on a well known domain.
-		viableUseDomain := findViableEncryptionUseDomains(sdk.cryptoConfig.SymmetricKeyUseDomains, *sdk.cryptoConfig.OwnerOrgID)
-		if len(viableUseDomain) == 0 {
-			// We only have invalid domains ... but we can't just fail. Just use something.
-			numSelectedUseDomains := len(sdk.cryptoConfig.SymmetricKeyUseDomains)
-			selectedDomainIdx := rand.Intn(numSelectedUseDomains)
-			selectedDomain = sdk.cryptoConfig.SymmetricKeyUseDomains[selectedDomainIdx]
-			sdk.logString(fmt.Sprintf("no viable use domains encryption for use domain %s", *useDomainName))
-			return selectedDomain, nil
-		}
-		numSelectedUseDomains := len(viableUseDomain)
-		selectedDomainIdx := rand.Intn(numSelectedUseDomains)
-		selectedDomain = viableUseDomain[selectedDomainIdx]
+		return nil, errors.New(fmt.Sprintf("useDomainName %s is not viable for encryption", *useDomainName))
 	}
 
 	return selectedDomain, nil
