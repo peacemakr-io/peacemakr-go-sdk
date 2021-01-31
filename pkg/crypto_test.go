@@ -170,7 +170,7 @@ func TestEncrypt(t *testing.T) {
 	}
 }
 
-func TestSigneOnly(t *testing.T) {
+func TestSignedOnly(t *testing.T) {
 	if err := os.MkdirAll("/tmp/test/signedOnly", os.ModePerm); err != nil {
 		t.Fatal(err)
 	}
@@ -229,8 +229,6 @@ func TestSigneOnly(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestIsPeacemakrCiphertext(t *testing.T) {
 	if err := os.MkdirAll("/tmp/test/cipher", os.ModePerm); err != nil {

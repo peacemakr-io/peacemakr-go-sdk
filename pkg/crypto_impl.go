@@ -935,7 +935,7 @@ func (sdk *standardPeacemakrSDK) SignOnly(message []byte) ([]byte, error) {
 	}
 
 	// Construct aad
-	aad := PeacemakrAAD {
+	aad := PeacemakrAAD{
 		CryptoKeyID: "",
 		SenderKeyID: pubKeyId,
 	}
@@ -946,7 +946,7 @@ func (sdk *standardPeacemakrSDK) SignOnly(message []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	plaintext := coreCrypto.Plaintext {
+	plaintext := coreCrypto.Plaintext{
 		Data: message,
 		Aad:  aadStr,
 	}
@@ -990,7 +990,6 @@ func (sdk *standardPeacemakrSDK) VerifyOnly(signedBlob []byte) ([]byte, error) {
 		return signedBlob, nil
 	}
 
-
 	// obtain aad from signedBlob
 	aad, err := sdk.getKeyIdFromCiphertext(signedBlob)
 	if err != nil {
@@ -1004,7 +1003,6 @@ func (sdk *standardPeacemakrSDK) VerifyOnly(signedBlob []byte) ([]byte, error) {
 		sdk.logError(err)
 		return nil, err
 	}
-
 
 	// Verify
 	plaintext, err := coreCrypto.ExtractPlaintextFromBlob(blob)

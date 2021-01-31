@@ -291,7 +291,7 @@ func TestAsymmetricEncryptFromRandomPem(t *testing.T) {
 		t.Fatalf("Unable to successfully start and seed the CSPRNG")
 	}
 	for i := RSA_2048; i <= RSA_4096; i++ {
-		go func (i int) {
+		go func(i int) {
 			cfg := CryptoConfig{
 				Mode:             ASYMMETRIC,
 				AsymmetricCipher: AsymmetricCipher(i),
@@ -407,7 +407,6 @@ func TestSymmetricEncrypt(t *testing.T) {
 
 			key = NewPeacemakrKeyFromBytes(SymmetricCipher(j), b)
 		}
-
 
 		ciphertext, err := Encrypt(key, plaintextIn, randomDevice)
 		if err != nil && len(plaintextIn.Data) == 0 {
@@ -843,51 +842,51 @@ func TestIssueNumber27FailToDecrypt(t *testing.T) {
 }
 
 func TestSignOnly(t *testing.T) {
-  if !PeacemakrInit() {
-    t.Fatalf("Unable to successfully start and seed the CSPRNG")
-  }
+	if !PeacemakrInit() {
+		t.Fatalf("Unable to successfully start and seed the CSPRNG")
+	}
 
-  randomDevice := NewRandomDevice()
+	randomDevice := NewRandomDevice()
 
-  key := NewPeacemakrKeyAsymmetric(ECDH_P256, CHACHA20_POLY1305, randomDevice)
-  defer key.Destroy()
+	key := NewPeacemakrKeyAsymmetric(ECDH_P256, CHACHA20_POLY1305, randomDevice)
+	defer key.Destroy()
 
-  plaintextIn := SetUpPlaintext()
-  pblob, err := GetPlaintextBlob(plaintextIn)
-  if err != nil {
-    t.Fatalf("%v", err)
-  }
+	plaintextIn := SetUpPlaintext()
+	pblob, err := GetPlaintextBlob(plaintextIn)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-  err = Sign(key, plaintextIn, SHA_256, pblob)
-  if err != nil {
-    t.Fatalf("%v", err)
-  }
+	err = Sign(key, plaintextIn, SHA_256, pblob)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-  serialized, err := Serialize(SHA_256, pblob)
-  if err != nil {
-    t.Fatalf("%v", err)
-  }
+	serialized, err := Serialize(SHA_256, pblob)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-  deserialized, _, err := Deserialize(serialized)
-  if err != nil {
-    t.Fatalf("%v", err)
-  }
+	deserialized, _, err := Deserialize(serialized)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-  plaintextOut, err := ExtractPlaintextFromBlob(deserialized)
-  if err != nil {
-    t.Fatalf("%v", err)
-  }
+	plaintextOut, err := ExtractPlaintextFromBlob(deserialized)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-  err = Verify(key, &plaintextOut, deserialized)
-  if err != nil {
-    t.Fatalf("%v", err)
-  }
+	err = Verify(key, &plaintextOut, deserialized)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-  if !bytes.Equal(plaintextIn.Data, plaintextOut.Data) {
-    t.Fatalf("plaintext data did not match")
-  }
+	if !bytes.Equal(plaintextIn.Data, plaintextOut.Data) {
+		t.Fatalf("plaintext data did not match")
+	}
 
-  if !bytes.Equal(plaintextIn.Aad, plaintextOut.Aad) {
-    t.Fatalf("plaintext data did not match")
-  }
+	if !bytes.Equal(plaintextIn.Aad, plaintextOut.Aad) {
+		t.Fatalf("plaintext data did not match")
+	}
 }

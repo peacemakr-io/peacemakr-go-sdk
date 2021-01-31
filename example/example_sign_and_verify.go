@@ -18,7 +18,6 @@ func (l *CustomLogger) Printf(format string, args ...interface{}) {
 	log.Printf(format, args...)
 }
 
-
 func generateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
@@ -31,7 +30,7 @@ func generateRandomBytes(n int) ([]byte, error) {
 }
 
 func main() {
-	apiKey := flag.String("apiKey", "Qn2fUGTEQLvCxF8IZyffib9uiQNXdT0SDcy+iwRiPA0=", "apiKey")
+	apiKey := flag.String("apiKey", "", "apiKey")
 	peacemakrUrl := flag.String("peacemakrUrl", "https://api.peacemakr.io", "URL of Peacemakr cloud services")
 	verbose := flag.Bool("verbose", false, "Verbosity of the program")
 
@@ -80,7 +79,6 @@ func main() {
 	if *verbose {
 		log.Println("signed blob:\n" + string(signedBlob))
 	}
-
 
 	verifiedPlainText, err := sdk.VerifyOnly(signedBlob)
 
