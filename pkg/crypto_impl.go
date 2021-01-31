@@ -924,7 +924,9 @@ func (sdk *standardPeacemakrSDK) SignOnly(message []byte) ([]byte, error) {
 	}
 
 	if len(message) == 0 {
-		return message, nil
+		err := errors.New("expect non-empty input message")
+		sdk.logError(err)
+		return nil, err
 	}
 
 	// obtain pubKeyId used for verifying
@@ -987,7 +989,9 @@ func (sdk *standardPeacemakrSDK) VerifyOnly(signedBlob []byte) ([]byte, error) {
 	}
 
 	if len(signedBlob) == 0 {
-		return signedBlob, nil
+		err := errors.New("expect non-empty input blob")
+		sdk.logError(err)
+		return nil, err
 	}
 
 	// obtain aad from signedBlob
