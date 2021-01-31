@@ -145,7 +145,7 @@ func TestEncrypt(t *testing.T) {
 	}
 
 	if err := peacemakrSDK.Sync(); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	bytes := make([]byte, messageSize)
@@ -190,7 +190,7 @@ func TestSignedOnly(t *testing.T) {
 	testClient := client.NewHTTPClientWithConfig(nil, &cfg)
 	ok, err := testClient.Org.GetTestOrganizationAPIKey(nil)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	purl = "https://api.peacemakr.io"
@@ -205,7 +205,7 @@ func TestSignedOnly(t *testing.T) {
 	}
 
 	if err := peacemakrSDK.Sync(); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	bytes := make([]byte, messageSize)
@@ -249,7 +249,7 @@ func TestIsPeacemakrCiphertext(t *testing.T) {
 	}
 
 	if err := peacemakrSDK.Sync(); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	bytes := make([]byte, messageSize)
