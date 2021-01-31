@@ -59,6 +59,17 @@ type PeacemakrSDK interface {
 	Decrypt(ciphertext []byte) ([]byte, error)
 
 	//
+	// Sign the message. Returns the signed blob upon success, else returns a non-nil error
+	//
+	SignOnly(message []byte) ([]byte, error)
+
+	//
+	// Verify the signed blob. Returns message upon success, else returns a non-nil error
+	// VerifyOnly only works on blob returned by the result of SignOnly()
+	//
+	VerifyOnly(signedBlob []byte) ([]byte, error)
+
+	//
 	// Verifies the ciphertext. Returns true if the ciphertext is a Peacemakr ciphertext, else false.
 	//
 	IsPeacemakrCiphertext(ciphertext []byte) bool

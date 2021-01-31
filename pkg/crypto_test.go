@@ -170,6 +170,68 @@ func TestEncrypt(t *testing.T) {
 	}
 }
 
+func TestSigneOnly(t *testing.T) {
+	if err := os.MkdirAll("/tmp/test/signedOnly", os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = os.Remove("/tmp/test/signedOnly")
+	}()
+
+	persister := utils.GetDiskPersister("/tmp/test/signedOnly")
+	purl := "api.peacemakr.io"
+
+	cfg := client.TransportConfig{
+		Host:     purl,
+		BasePath: client.DefaultBasePath,
+		Schemes:  []string{"https"},
+	}
+
+	testClient := client.NewHTTPClientWithConfig(nil, &cfg)
+	ok, err := testClient.Org.GetTestOrganizationAPIKey(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	purl = "https://api.peacemakr.io"
+	apiKey = *ok.Payload.Key
+	peacemakrSDK, err := GetPeacemakrSDK(apiKey, "go-sdk-test-client", &purl, persister, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := peacemakrSDK.Register(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := peacemakrSDK.Sync(); err != nil {
+		log.Fatal(err)
+	}
+
+	bytes := make([]byte, messageSize)
+	if _, err := rand.Read(bytes); err != nil {
+		t.Fatal(err)
+	}
+
+	signedBlob, err := peacemakrSDK.SignOnly(bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	verifiedBlob, err := peacemakrSDK.VerifyOnly(signedBlob)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < len(bytes); i++ {
+		if bytes[i] != verifiedBlob[i] {
+			t.Fatalf("Verification failed on byte %d, mismatch %v vs %v", i, bytes[i], verifiedBlob[i])
+		}
+	}
+}
+
+
+
 func TestIsPeacemakrCiphertext(t *testing.T) {
 	if err := os.MkdirAll("/tmp/test/cipher", os.ModePerm); err != nil {
 		t.Fatal(err)

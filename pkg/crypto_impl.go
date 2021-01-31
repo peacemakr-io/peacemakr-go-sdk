@@ -914,6 +914,128 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 	return plaintext.Data, nil
 }
 
+func (sdk *standardPeacemakrSDK) SignOnly(message []byte) ([]byte, error) {
+
+	if sdk.apiKey != "" {
+		err := sdk.verifyRegistrationAndInit()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(message) == 0 {
+		return message, nil
+	}
+
+	// obtain pubKeyId used for verifying
+	pubKeyId, err := sdk.persister.getPublicKeyID()
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	// Construct aad
+	aad := PeacemakrAAD {
+		CryptoKeyID: "",
+		SenderKeyID: pubKeyId,
+	}
+
+	aadStr, err := json.Marshal(aad)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	plaintext := coreCrypto.Plaintext {
+		Data: message,
+		Aad:  aadStr,
+	}
+
+	blob, err := coreCrypto.GetPlaintextBlob(plaintext)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	myPrivKeyStr, err := sdk.persister.getPrivateKey()
+
+	key, err := coreCrypto.NewPrivateKeyFromPEM(coreCrypto.CHACHA20_POLY1305, myPrivKeyStr)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	defer key.Destroy()
+
+	// Sign the plaintext using key with SHA_256. Store the result in blob
+	err = coreCrypto.Sign(key, plaintext, coreCrypto.SHA_256, blob)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	return coreCrypto.Serialize(coreCrypto.SHA_256, blob)
+}
+
+func (sdk *standardPeacemakrSDK) VerifyOnly(signedBlob []byte) ([]byte, error) {
+
+	if sdk.apiKey != "" {
+		err := sdk.verifyRegistrationAndInit()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(signedBlob) == 0 {
+		return signedBlob, nil
+	}
+
+
+	// obtain aad from signedBlob
+	aad, err := sdk.getKeyIdFromCiphertext(signedBlob)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	// obtain cipherTextBlob, cipherTextConfig(ignored)
+	blob, _, err := coreCrypto.Deserialize(signedBlob)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+
+	// Verify
+	plaintext, err := coreCrypto.ExtractPlaintextFromBlob(blob)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	senderKeyStr, err := sdk.getPublicKey(aad.SenderKeyID)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	senderKey, err := coreCrypto.NewPublicKeyFromPEM(coreCrypto.CHACHA20_POLY1305, senderKeyStr)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	defer senderKey.Destroy()
+
+	err = coreCrypto.Verify(senderKey, &plaintext, blob)
+	if err != nil {
+		sdk.logError(err)
+		return nil, err
+	}
+
+	return plaintext.Data, nil
+}
+
 func (sdk *standardPeacemakrSDK) IsPeacemakrCiphertext(ciphertext []byte) bool {
 	_, _, err := coreCrypto.Deserialize(ciphertext)
 	return err == nil

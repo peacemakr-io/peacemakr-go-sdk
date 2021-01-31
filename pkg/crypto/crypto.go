@@ -96,32 +96,32 @@ type SymmetricCipher int
 
 const (
 	SYMMETRIC_UNSPECIFIED SymmetricCipher = 0
-	AES_128_GCM           SymmetricCipher = 1
-	AES_192_GCM           SymmetricCipher = 2
-	AES_256_GCM           SymmetricCipher = 3
-	CHACHA20_POLY1305     SymmetricCipher = 4
+	AES_128_GCM       SymmetricCipher = 1
+	AES_192_GCM       SymmetricCipher = 2
+	AES_256_GCM       SymmetricCipher = 3
+	CHACHA20_POLY1305 SymmetricCipher = 4
 )
 
 type AsymmetricCipher int
 
 const (
-	ASYMMETRIC_UNSPECIFIED AsymmetricCipher = 0
-	RSA_2048               AsymmetricCipher = 1
-	RSA_4096               AsymmetricCipher = 2
-	ECDH_P256              AsymmetricCipher = 3
-	ECDH_P384              AsymmetricCipher = 4
-	ECDH_P521              AsymmetricCipher = 5
-	ECDH_SECP256K1         AsymmetricCipher = 6
+	ASYMMETRIC_UNSPECIFIED     AsymmetricCipher = 0
+	RSA_2048 AsymmetricCipher = 1
+	RSA_4096 AsymmetricCipher = 2
+	ECDH_P256 AsymmetricCipher = 3
+	ECDH_P384 AsymmetricCipher = 4
+	ECDH_P521 AsymmetricCipher = 5
+	ECDH_SECP256K1 AsymmetricCipher = 6
 )
 
 type MessageDigestAlgorithm int
 
 const (
 	DIGEST_UNSPECIFIED MessageDigestAlgorithm = 0
-	SHA_224            MessageDigestAlgorithm = 1
-	SHA_256            MessageDigestAlgorithm = 2
-	SHA_384            MessageDigestAlgorithm = 3
-	SHA_512            MessageDigestAlgorithm = 4
+	SHA_224  MessageDigestAlgorithm = 1
+	SHA_256  MessageDigestAlgorithm = 2
+	SHA_384  MessageDigestAlgorithm = 3
+	SHA_512  MessageDigestAlgorithm = 4
 )
 
 type EncryptionMode int
@@ -235,8 +235,8 @@ func newPeacemakrKeyFromPassword(cipher SymmetricCipher, digest MessageDigestAlg
 	defer C.free(unsafe.Pointer(cSalt))
 	cNumSalt := (C.size_t)(len(salt))
 
-	return &PeacemakrKey{
-		key: C.peacemakr_key_new_from_password((C.symmetric_cipher)(cipher), (C.message_digest_algorithm)(digest), cBytes, cNumBytes, cSalt, cNumSalt, (C.size_t)(iterationCount)),
+	return &PeacemakrKey {
+	    key: C.peacemakr_key_new_from_password((C.symmetric_cipher)(cipher), (C.message_digest_algorithm)(digest), cBytes, cNumBytes, cSalt, cNumSalt, (C.size_t)(iterationCount)),
 	}
 }
 
@@ -430,7 +430,7 @@ func NewSymmetricKeyFromPassword(keylenBits int, passwordStr string, iterationCo
 		return nil, nil, errors.New("unknown length for keylenBits, acceptable values are 128, 192, 256")
 	}
 
-	salt := make([]byte, 256/8)
+	salt := make([]byte, 256 / 8)
 	_, err := rand.Read(salt)
 	if err != nil {
 		return nil, nil, errors.New("unable to read salt from random string")
@@ -457,6 +457,7 @@ func SymmetricKeyFromPasswordAndSalt(keylenBits int, passwordStr string, salt []
 	outKey := newPeacemakrKeyFromPassword(cipher, SHA_256, passwordStr, salt, iterationCount)
 	return outKey, nil
 }
+
 
 func NewPublicKeyFromPEM(symm SymmetricCipher, contents string) (*PeacemakrKey, error) {
 	return newPeacemakrKeyFromPubPem(symm, []byte(contents)), nil
@@ -501,12 +502,12 @@ func (k *PeacemakrKey) Config() (CryptoConfig, error) {
 }
 
 func (k *PeacemakrKey) Bytes() ([]byte, error) {
-	if !k.IsValid() {
-		return []byte{}, errors.New("invalid key passed to GetKeyConfig")
-	}
+    if !k.IsValid() {
+        return []byte{}, errors.New("invalid key passed to GetKeyConfig")
+    }
 
 	var buf *byte
-	defer C.free(unsafe.Pointer(buf))
+    defer C.free(unsafe.Pointer(buf))
 	var bufSize C.size_t
 
 	success := C.peacemakr_key_get_bytes(k.key, (**C.uint8_t)(unsafe.Pointer(&buf)), (*C.size_t)(&bufSize))
@@ -522,6 +523,7 @@ func (k *PeacemakrKey) Destroy() {
 		return
 	}
 	C.peacemakr_key_free((*C.peacemakr_key_t)(k.key))
+	k.key = nil
 }
 
 // ========================= Core APIs =========================
@@ -543,6 +545,35 @@ func Encrypt(key *PeacemakrKey, plaintext Plaintext, rand RandomDevice) (*Cipher
 	return &CiphertextBlob{
 		blob: blob,
 	}, nil
+}
+
+func GetPlaintextBlob(plaintext Plaintext) (*CiphertextBlob, error) {
+  cPlaintext := plaintextToInternal(plaintext)
+  defer freeInternalPlaintext(&cPlaintext)
+
+  blob := C.peacemakr_get_plaintext_blob((*C.plaintext_t)(unsafe.Pointer(&cPlaintext)))
+  if blob == nil {
+    return nil, errors.New("unable to get plaintext blob")
+  }
+
+  return &CiphertextBlob{
+    blob: blob,
+  }, nil
+}
+
+func ExtractPlaintextFromBlob(blob *CiphertextBlob) (Plaintext, error) {
+  var plaintext C.plaintext_t
+  defer freeInternalPlaintext(&plaintext)
+
+  if !C.peacemakr_extract_plaintext_blob(blob.blob, (*C.plaintext_t)(unsafe.Pointer(&plaintext))) {
+    return Plaintext{}, errors.New("failed to extract plaintext blob")
+  }
+
+    // the C.GoBytes functions make copies of the underlying data so it's OK to free the original ptr
+  return Plaintext{
+    Data: C.GoBytes(unsafe.Pointer(plaintext.data), C.int(plaintext.data_len)),
+    Aad:  C.GoBytes(unsafe.Pointer(plaintext.aad), C.int(plaintext.aad_len)),
+  }, nil
 }
 
 func Serialize(digest MessageDigestAlgorithm, blob *CiphertextBlob) ([]byte, error) {
@@ -581,7 +612,7 @@ func Sign(senderKey *PeacemakrKey, plaintext Plaintext, digest MessageDigestAlgo
 	defer freeInternalPlaintext(&cPlaintext)
 
 	if !C.peacemakr_sign(senderKey.key, (*C.plaintext_t)(unsafe.Pointer(&cPlaintext)), (C.message_digest_algorithm)(digest), ciphertext.blob) {
-		return errors.New("signing failed")
+	  return errors.New("signing failed")
 	}
 
 	return nil
@@ -608,11 +639,10 @@ func ExtractUnverifiedAAD(ciphertext []byte) ([]byte, error) {
 }
 
 type DecryptCode int
-
 const (
-	DECRYPT_SUCCESS     DecryptCode = 0
-	DECRYPT_NEED_VERIFY DecryptCode = 1
-	DECRYPT_FAILED      DecryptCode = 2
+	DECRYPT_SUCCESS       DecryptCode = 0
+	DECRYPT_NEED_VERIFY   DecryptCode = 1
+	DECRYPT_FAILED        DecryptCode = 2
 )
 
 func Decrypt(key *PeacemakrKey, ciphertext *CiphertextBlob) (*Plaintext, bool, error) {
@@ -630,10 +660,10 @@ func Decrypt(key *PeacemakrKey, ciphertext *CiphertextBlob) (*Plaintext, bool, e
 
 	needVerify := false
 	if decryptCode == DECRYPT_NEED_VERIFY {
-		needVerify = true
+	    needVerify = true
 	}
 
-	// the C.GoBytes functions make copies of the underlying data so it's OK to free the original ptr
+    // the C.GoBytes functions make copies of the underlying data so it's OK to free the original ptr
 	return &Plaintext{
 		Data: C.GoBytes(unsafe.Pointer(plaintext.data), C.int(plaintext.data_len)),
 		Aad:  C.GoBytes(unsafe.Pointer(plaintext.aad), C.int(plaintext.aad_len)),
@@ -645,8 +675,8 @@ func Verify(senderKey *PeacemakrKey, plaintext *Plaintext, ciphertext *Ciphertex
 		return errors.New("invalid key passed to Encrypt")
 	}
 
-	cPlaintext := plaintextToInternal(*plaintext)
-	defer freeInternalPlaintext(&cPlaintext)
+    cPlaintext := plaintextToInternal(*plaintext)
+    defer freeInternalPlaintext(&cPlaintext)
 
 	verified := C.peacemakr_verify(senderKey.key, (*C.plaintext_t)(unsafe.Pointer(&cPlaintext)), ciphertext.blob)
 	if !verified {
@@ -657,16 +687,16 @@ func Verify(senderKey *PeacemakrKey, plaintext *Plaintext, ciphertext *Ciphertex
 }
 
 func HMAC(algo MessageDigestAlgorithm, key *PeacemakrKey, buf []byte) ([]byte, error) {
-	if !key.IsValid() {
-		return nil, errors.New("invalid key")
-	}
+    if !key.IsValid() {
+        return nil, errors.New("invalid key")
+    }
 
-	var outSize C.size_t
-	hmac := C.peacemakr_hmac(C.message_digest_algorithm(algo), key.key, (*C.uint8_t)(C.CBytes(buf)), C.size_t(len(buf)), (*C.size_t)(unsafe.Pointer(&outSize)))
-	if hmac == nil {
-		return nil, errors.New("hmac failed")
-	}
+    var outSize C.size_t
+    hmac := C.peacemakr_hmac(C.message_digest_algorithm(algo), key.key, (*C.uint8_t)(C.CBytes(buf)), C.size_t(len(buf)), (*C.size_t)(unsafe.Pointer(&outSize)))
+    if hmac == nil {
+        return nil, errors.New("hmac failed")
+    }
 
-	return C.GoBytes(unsafe.Pointer(hmac), C.int(outSize)), nil
+    return C.GoBytes(unsafe.Pointer(hmac), C.int(outSize)), nil
 
 }
