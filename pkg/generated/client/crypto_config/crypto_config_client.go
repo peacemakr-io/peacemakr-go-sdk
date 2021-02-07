@@ -25,6 +25,35 @@ type Client struct {
 }
 
 /*
+AddCollaborator adds a collaborating org
+*/
+func (a *Client) AddCollaborator(params *AddCollaboratorParams, authInfo runtime.ClientAuthInfoWriter) (*AddCollaboratorOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewAddCollaboratorParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "addCollaborator",
+		Method:             "POST",
+		PathPattern:        "/crypto/useDomain/{useDomainId}/collaborator",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &AddCollaboratorReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*AddCollaboratorOK), nil
+
+}
+
+/*
 AddExistingUseDomain adds an existing use domain to another crypto config
 */
 func (a *Client) AddExistingUseDomain(params *AddExistingUseDomainParams, authInfo runtime.ClientAuthInfoWriter) (*AddExistingUseDomainOK, error) {
@@ -137,6 +166,35 @@ func (a *Client) RapidRotationUseDomain(params *RapidRotationUseDomainParams, au
 		return nil, err
 	}
 	return result.(*RapidRotationUseDomainOK), nil
+
+}
+
+/*
+RemoveCollaborator removes a collaborating org
+*/
+func (a *Client) RemoveCollaborator(params *RemoveCollaboratorParams, authInfo runtime.ClientAuthInfoWriter) (*RemoveCollaboratorOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewRemoveCollaboratorParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "removeCollaborator",
+		Method:             "DELETE",
+		PathPattern:        "/crypto/useDomain/{useDomainId}/collaborator",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &RemoveCollaboratorReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*RemoveCollaboratorOK), nil
 
 }
 

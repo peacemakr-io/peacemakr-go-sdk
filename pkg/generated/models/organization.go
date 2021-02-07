@@ -39,12 +39,18 @@ type Organization struct {
 	// Required: true
 	ID *string `json:"id"`
 
+	// Array of manual auth params registered to this org
+	ManualParams []*ManualAuthNParameters `json:"manualParams"`
+
 	// name
 	// Required: true
 	Name *string `json:"name"`
 
 	// Number of registered clients to this org
 	NumberOfRegisteredClients int64 `json:"numberOfRegisteredClients,omitempty"`
+
+	// Array of OIDC params registered to this org
+	OidcParams []*OIDCAuthNParameters `json:"oidcParams"`
 
 	// Identifies the the customer in Stripe associated with this org
 	// Required: true
@@ -75,7 +81,15 @@ func (m *Organization) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateManualParams(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateName(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateOidcParams(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -166,10 +180,60 @@ func (m *Organization) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *Organization) validateManualParams(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.ManualParams) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.ManualParams); i++ {
+		if swag.IsZero(m.ManualParams[i]) { // not required
+			continue
+		}
+
+		if m.ManualParams[i] != nil {
+			if err := m.ManualParams[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("manualParams" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
 func (m *Organization) validateName(formats strfmt.Registry) error {
 
 	if err := validate.Required("name", "body", m.Name); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (m *Organization) validateOidcParams(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.OidcParams) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.OidcParams); i++ {
+		if swag.IsZero(m.OidcParams[i]) { // not required
+			continue
+		}
+
+		if m.OidcParams[i] != nil {
+			if err := m.OidcParams[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("oidcParams" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
 	}
 
 	return nil

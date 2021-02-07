@@ -29,25 +29,86 @@ tags:
     description: Register, lookup, or disband key derivation services
   - name: ServerManagement
   - name: PhoneHome
+  - name: Billing
+    description: Update billing, Peacemakr internal use only
 schemes:
   - http
 paths:
   /health:
     get:
       tags:
-      - ServerManagement
+        - ServerManagement
       summary: See if the server is healthy
       description: Returns 200 if the server is healthy
       responses:
         '200':
           description: Everythings fine.
 
+  /billing/{orgId}:
+    post:
+      tags:
+        - Billing
+      security:
+        - header: [ ]
+      summary: Update the pricing plan for an org
+      description: Returns 200 on successful pricing plan update
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          type: string
+        - in: body
+          name: newPlan
+          required: true
+          schema:
+            $ref: '#/definitions/PricingPlan'
+      responses:
+        '200':
+          description: Update successful
+        '400':
+          description: Unable to process request
+        '401':
+          description: Unauthorized request
+        '500':
+          description: Internal server error
+    get:
+      tags:
+        - Billing
+      security:
+        - header: [ ]
+      summary: Get the pricing plan for an org
+      description: Returns the current pricing plan
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Update successful
+          schema:
+            $ref: '#/definitions/PricingPlan'
+        '400':
+          description: Unable to process request
+        '401':
+          description: Unauthorized request
+        '500':
+          description: Internal server error
+
   /log:
     post:
       tags:
-      - PhoneHome
+        - PhoneHome
       security:
-        - header: []
+        - header: [ ]
       summary: Used to report back to server a logged event
       description: Returns 200 ok if successfully persisted
       consumes:
@@ -95,7 +156,7 @@ paths:
       tags:
         - Login
       security:
-      - header: []
+        - header: [ ]
       summary: Invite (bind) an existing user that is not already bound to an org, to your org
       operationId: loginInviteUser
       consumes:
@@ -118,7 +179,7 @@ paths:
       tags:
         - Login
       security:
-      - header: []
+        - header: [ ]
       summary: Uninvite (remove) an existing user that is part of your org
       operationId: loginUninviteUser
       consumes:
@@ -141,7 +202,7 @@ paths:
   /org:
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - Org
       summary: Create a new organization. Must be an authenticated request with a valid id_token from a trusted IdP.
@@ -164,10 +225,10 @@ paths:
           required: true
           type: string
         - in: body
-          name: contact
+          name: params
           required: true
           schema:
-            $ref: '#/definitions/Contact'
+            $ref: '#/definitions/AddOrganizationParameters'
       responses:
         '200':
           description: Successful construction of an organization. Returns the actual organization which was registered. (Org includes an APIToken)
@@ -178,7 +239,7 @@ paths:
   /org/{orgId}:
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - Org
       summary: Get an existing organization
@@ -201,7 +262,7 @@ paths:
           description: Unable to process request
     delete:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - Org
       summary: Remove an existing organization
@@ -225,20 +286,20 @@ paths:
   /org/key/{apikey}:
     get:
       security:
-      - header: []
+        - header: [ ]
       tags:
-      - Org
+        - Org
       summary: Get an existing Organization
       operationId: getOrganizationFromAPIKey
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
-      - in: path
-        name: apikey
-        required: true
-        type: string
+        - in: path
+          name: apikey
+          required: true
+          type: string
       responses:
         '200':
           description: Returns the Org requested
@@ -250,20 +311,20 @@ paths:
           description: Not authenticated to perform request
     delete:
       security:
-      - header: []
+        - header: [ ]
       tags:
-      - Org
+        - Org
       summary: Remove an existing API Key
       operationId: deleteAPIKeyFromOrg
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
-      - in: path
-        name: apikey
-        required: true
-        type: string
+        - in: path
+          name: apikey
+          required: true
+          type: string
       responses:
         '200':
           description: Successful deletion of an existing API key.
@@ -293,7 +354,7 @@ paths:
   /org/key/sharedCloud:
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - Org
       summary: Get an access key for the peacemakr shared cloud org (all cloud key derivers must use this)
@@ -316,15 +377,15 @@ paths:
   /org/key:
     post:
       security:
-      - header: []
+        - header: [ ]
       tags:
-      - Org
+        - Org
       summary: Add a new API Key to an org
       operationId: addAPIKeyToOrg
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       responses:
         '200':
           description: Successful addition of an API Key to its org
@@ -337,20 +398,20 @@ paths:
   /org/admin/{email}:
     delete:
       security:
-      - header: []
+        - header: [ ]
       tags:
-      - Org
+        - Org
       summary: Remove an existing admin from the org (You can not remove the last admin. It will faile with a Bad Request response.)
       operationId: deleteAdminFromOrg
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
-      - in: path
-        name: email
-        required: true
-        type: string
+        - in: path
+          name: email
+          required: true
+          type: string
       responses:
         '200':
           description: Successful deletion of an existing admin from org.
@@ -367,15 +428,15 @@ paths:
   /org/admin:
     post:
       security:
-      - header: []
+        - header: [ ]
       tags:
-      - Org
+        - Org
       summary: Add a new admin to this org
       operationId: addAdminToOrg
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
         - in: body
           name: contact
@@ -400,20 +461,20 @@ paths:
   /org/stripeId:
     post:
       security:
-      - header: []
+        - header: [ ]
       tags:
-      - Org
+        - Org
       summary: Update the stripe customer Id associated with this account
       operationId: updateStripeCustomerId
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
-      - in: query
-        name: stripeCustomerId
-        required: true
-        type: string
+        - in: query
+          name: stripeCustomerId
+          required: true
+          type: string
       responses:
         '200':
           description: Successfully updated stripe customer id
@@ -427,7 +488,7 @@ paths:
   /client:
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - Client
       summary: Register a new client
@@ -457,7 +518,7 @@ paths:
           description: Internal server error
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - Client
       summary: Returns a page of clientIds that belong to the authenticated org
@@ -490,10 +551,48 @@ paths:
           description: Not authorized
         '500':
           description: Internal server error
+  '/client/multiple':
+    get:
+      security:
+        - header: [ ]
+      tags:
+        - Client
+      summary: Returns a page of client objects that belong to the authenticated org
+      operationId: returnPagedClients
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: page
+          required: true
+          type: integer
+          format: int64
+        - in: query
+          name: pageSize
+          required: true
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: A list of clients in the requested page.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Client'
+        '400':
+          description: Unable to process request
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal server error
   '/client/{clientId}':
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - Client
       summary: Get an existing client
@@ -522,7 +621,7 @@ paths:
           description: Internal server error
     delete:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - Client
       summary: Remove an existing organization
@@ -552,7 +651,7 @@ paths:
   '/client/{clientId}/addPublicKey':
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - Client
       summary: Register a new public key for the client
@@ -584,14 +683,14 @@ paths:
           description: Not authorized
         '500':
           description: Internal server error
-# See:
-# get /crypto/asymmetric/{keyID}
-# for public key retrieval
+  # See:
+  # get /crypto/asymmetric/{keyID}
+  # for public key retrieval
 
   '/crypto/config/{cryptoConfigId}':
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - CryptoConfig
       summary: Get the crypto configurations
@@ -614,7 +713,7 @@ paths:
           description: Unable to process request
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - CryptoConfig
       summary: Update the crypto configuration, ONLY the clientKeyType clientKeyBitlength, and clientKeyTTL fields.
@@ -643,7 +742,7 @@ paths:
   '/crypto/config/{cryptoConfigId}/domainSelectorScheme':
     put:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - CryptoConfig
       summary: Update an existing crypto config's domainSelectorScheme
@@ -669,7 +768,7 @@ paths:
   '/crypto/config/{cryptoConfigId}/useDomain':
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - CryptoConfig
       summary: Add a new active use domain and attached it to the crypto config.
@@ -698,7 +797,7 @@ paths:
   '/crypto/config/{cryptoConfigId}/useDomain/{useDomainId}':
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - CryptoConfig
       summary: Add an existing use domain to another crypto config.
@@ -724,7 +823,7 @@ paths:
   '/crypto/useDomain/{useDomainId}':
     delete:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - CryptoConfig
       summary: Delete a fully expired use domain
@@ -756,7 +855,7 @@ paths:
   '/crypto/useDomain/{useDomainId}/rapidRotation':
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - CryptoConfig
       summary: Rapid expiration of existing use doamin and immediately replacment with an identical use domain containing fresh keys
@@ -792,7 +891,7 @@ paths:
   '/crypto/useDomain/{useDomainId}/updateExpire':
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - CryptoConfig
       summary: Chnage expiration of a use domain
@@ -837,10 +936,91 @@ paths:
           description: Unrecoverable internal error
           schema:
             $ref: '#/definitions/ErrorResponse'
+  '/crypto/useDomain/{useDomainId}/collaborator':
+    delete:
+      security:
+        - header: [ ]
+      tags:
+        - CryptoConfig
+      summary: Remove a collaborating org
+      operationId: removeCollaborator
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: useDomainId
+          required: true
+          type: string
+        - in: query
+          name: collaboratingOrgId
+          required: true
+          type: string
+        - in: query
+          name: idToken
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successfully removed collaborator
+        '400':
+          description: Unable to process request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        '401':
+          description: Not authenticated to perform request
+        '403':
+          description: Not authorized to perform request
+        '500':
+          description: Unrecoverable internal error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+    post:
+      security:
+        - header: [ ]
+      tags:
+        - CryptoConfig
+      summary: Add a collaborating org
+      operationId: addCollaborator
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: useDomainId
+          required: true
+          type: string
+        - in: query
+          name: collaboratingOrgId
+          required: true
+          type: string
+        - in: query
+          name: idToken
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successfully added collaborator
+          schema:
+            $ref: '#/definitions/TinyOrg'
+        '400':
+          description: Unable to process request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        '401':
+          description: Not authenticated to perform request
+        '403':
+          description: Not authorized to perform request
+        '500':
+          description: Unrecoverable internal error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
   '/crypto/useDomain/{useDomainId}/enableKDSFallbackToCloud':
     put:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - CryptoConfig
       summary: Update an existing crypto config's asymmetricKeyTTL
@@ -867,7 +1047,7 @@ paths:
   '/crypto/symmetric/{encryptingKeyId}':
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - KeyService
       summary: Get all encrypted symmetric keys that are encrypted with this encrypting keyId, optionally limiting the request to a set of symmetric key domains
@@ -898,7 +1078,7 @@ paths:
           description: Unable to process request
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - KeyService
       summary: Add a new encrypted key. The encrypting key that protects the encrypted key is identified with encryptingKeyId. Request must come from a registered key manager.
@@ -927,7 +1107,7 @@ paths:
   '/crypto/asymmetric/{keyID}':
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - KeyService
       summary: Get the public key associated with the passed-in key ID
@@ -959,7 +1139,7 @@ paths:
   '/crypto/deriver/instance':
     post:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - KeyDerivationServiceRegistry
       summary: Register a new KeyDerivationServiceInstance
@@ -990,7 +1170,7 @@ paths:
   '/crypto/deriver/instance/{keyDerivationInstanceId}':
     delete:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - KeyDerivationServiceRegistry
       summary: Activate or deactivate an existing KeyDerivationServiceInstance
@@ -1015,7 +1195,7 @@ paths:
           description: Unable to process request
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - KeyDerivationServiceRegistry
       summary: Get the keyderiver details by id
@@ -1039,7 +1219,7 @@ paths:
   '/crypto/deriver/instance/{keyDerivationInstanceId}/heartbeat':
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - KeyDerivationServiceRegistry
       summary: Heatbeat from the given key derivation service instance
@@ -1063,7 +1243,7 @@ paths:
   '/crypto/deriver/all-org-instances':
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - KeyDerivationServiceRegistry
       summary: Get the all key derivers registerd to org
@@ -1088,7 +1268,7 @@ paths:
   '/crypto/deriver/all-shared-instances':
     get:
       security:
-        - header: []
+        - header: [ ]
       tags:
         - KeyDerivationServiceRegistry
       summary: Get the all key derivers that the org has access to - including shared cloud instances
@@ -1114,6 +1294,41 @@ paths:
 
 
 definitions:
+
+  OIDCAuthNParameters:
+    type: object
+    required:
+      - url
+      - clientId
+    properties:
+      url:
+        type: string
+      clientId:
+        type: string
+
+  ManualAuthNParameters:
+    type: object
+    required:
+      - publicKey
+    properties:
+      publicKey:
+        $ref: '#/definitions/PublicKey'
+
+  AddOrganizationParameters:
+    type: object
+    required:
+      - contact
+    properties:
+      oidcParams:
+        type: array
+        items:
+          $ref: '#/definitions/OIDCAuthNParameters'
+      manualParams:
+        type: array
+        items:
+          $ref: '#/definitions/ManualAuthNParameters'
+      contact:
+        $ref: '#/definitions/Contact'
 
   LoginResponse:
     type: object
@@ -1159,6 +1374,16 @@ definitions:
         description: Array of api keys registered to this org
         items:
           $ref: '#/definitions/APIKey'
+      oidcParams:
+        type: array
+        description: Array of OIDC params registered to this org
+        items:
+          $ref: '#/definitions/OIDCAuthNParameters'
+      manualParams:
+        type: array
+        description: Array of manual auth params registered to this org
+        items:
+          $ref: '#/definitions/ManualAuthNParameters'
       cryptoConfigId:
         type: string
         description: cryptoconfigId of this org
@@ -1278,12 +1503,23 @@ definitions:
         description: the TTL on the client's local asymetric key
         type: integer
 
+  TinyOrg:
+    type: object
+    required:
+      - id
+      - name
+    properties:
+      id:
+        type: string
+      name:
+        type: string
 
   SymmetricKeyUseDomain:
     type: object
     required:
       - id
       - ownerOrgId
+      - collaboratingOrgs
       - creationTime
       - symmetricKeyInceptionTTL
       - symmetricKeyEncryptionUseTTL
@@ -1302,6 +1538,11 @@ definitions:
       ownerOrgId:
         description: the org id of the organization that owns these symmetric keys
         type: string
+      collaboratingOrgs:
+        description: orgs other than the owner that are allowed to use this use domain
+        type: array
+        items:
+          $ref: '#/definitions/TinyOrg'
       name:
         type: string
       creationTime:
@@ -1330,7 +1571,7 @@ definitions:
       symmetricKeyEncryptionAlg:
         description: the specific encryption alg to encrypt new plaintexts for application layer encryption operations
         type: string
-        default: "CHACHA20_POLY1305"
+        default: "Peacemakr.Symmetric.CHACHA20_POLY1305"
       encryptingPackagedCiphertextVersion:
         description: after encrypting new plaintexts, package the ciphertext with this version of the packaged ciphertext
         type: integer
@@ -1351,7 +1592,7 @@ definitions:
       digestAlgorithm:
         description: The digest algorithm to use for signing messages in this use domain
         type: string
-        default: "SHA_256"
+        default: "Peacemakr.Digest.SHA_256"
 
   EncryptedSymmetricKey:
     type: object
@@ -1492,3 +1733,23 @@ definitions:
     properties:
       msg:
         type: string
+
+  PricingPlan:
+    type: object
+    required:
+      - stripeProductID
+      - stripePlanID
+      - numberOfKeysIncluded
+      - price
+      - billingIntervalSeconds
+    properties:
+      stripeProductID:
+        type: string
+      stripePlanID:
+        type: string
+      numberOfKeysIncluded:
+        type: integer
+      price:
+        type: integer
+      billingIntervalSeconds:
+        type: integer

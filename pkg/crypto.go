@@ -2,6 +2,7 @@ package peacemakr_go_sdk
 
 import (
 	"errors"
+	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/auth"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"log"
 	"net/url"
@@ -115,8 +116,7 @@ type PeacemakrSDK interface {
 //
 // printStackTrace changes the behavior of the SDK's logging; if true then each log message will print a stack trace. Good for debugging
 // when something goes sideways, but can usually be left off.
-func GetPeacemakrSDK(apiKey, clientName string, peacemakrURL *string, persister utils.Persister, optionalLogger SDKLogger) (PeacemakrSDK, error) {
-
+func GetPeacemakrSDKWithAuth(auth auth.Authenticator, clientName string, peacemakrURL *string, persister utils.Persister, optionalLogger SDKLogger) (PeacemakrSDK, error) {
 	if persister == nil {
 		return nil, errors.New("persister is required")
 	}
@@ -139,10 +139,10 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrURL *string, persister 
 
 	sdk := &standardPeacemakrSDK{
 		clientName,
-		apiKey,
+		auth,
 		nil,
 		nil,
-		utils.GetAuthWriter(apiKey),
+		utils.GetAuthWriter(auth),
 		"0.0.1",
 		peacemakrHost,
 		peacemakrScheme,
@@ -154,4 +154,18 @@ func GetPeacemakrSDK(apiKey, clientName string, peacemakrURL *string, persister 
 		loggerToUse,
 	}
 	return PeacemakrSDK(sdk), nil
+}
+
+func GetPeacemakrSDK(apiKey, clientName string, peacemakrURL *string, persister utils.Persister, optionalLogger SDKLogger) (PeacemakrSDK, error) {
+
+	// Create the authenticator
+	var a auth.Authenticator
+	if apiKey == "" {
+		a = nil
+	} else {
+		a = &auth.APIKeyAuthenticator{Key: apiKey}
+	}
+
+	// And delegate to the other function
+	return GetPeacemakrSDKWithAuth(a, clientName, peacemakrURL, persister, optionalLogger)
 }

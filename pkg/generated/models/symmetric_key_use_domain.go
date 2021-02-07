@@ -6,6 +6,8 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"strconv"
+
 	strfmt "github.com/go-openapi/strfmt"
 
 	"github.com/go-openapi/errors"
@@ -16,6 +18,10 @@ import (
 // SymmetricKeyUseDomain symmetric key use domain
 // swagger:model SymmetricKeyUseDomain
 type SymmetricKeyUseDomain struct {
+
+	// orgs other than the owner that are allowed to use this use domain
+	// Required: true
+	CollaboratingOrgs []*TinyOrg `json:"collaboratingOrgs"`
 
 	// creation time
 	// Required: true
@@ -90,6 +96,10 @@ type SymmetricKeyUseDomain struct {
 func (m *SymmetricKeyUseDomain) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateCollaboratingOrgs(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateCreationTime(formats); err != nil {
 		res = append(res, err)
 	}
@@ -149,6 +159,31 @@ func (m *SymmetricKeyUseDomain) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *SymmetricKeyUseDomain) validateCollaboratingOrgs(formats strfmt.Registry) error {
+
+	if err := validate.Required("collaboratingOrgs", "body", m.CollaboratingOrgs); err != nil {
+		return err
+	}
+
+	for i := 0; i < len(m.CollaboratingOrgs); i++ {
+		if swag.IsZero(m.CollaboratingOrgs[i]) { // not required
+			continue
+		}
+
+		if m.CollaboratingOrgs[i] != nil {
+			if err := m.CollaboratingOrgs[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("collaboratingOrgs" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 

@@ -7,7 +7,6 @@ package client
 
 import (
 	"github.com/go-openapi/runtime"
-
 	strfmt "github.com/go-openapi/strfmt"
 )
 
@@ -166,6 +165,35 @@ func (a *Client) ReturnPagedClientIds(params *ReturnPagedClientIdsParams, authIn
 		return nil, err
 	}
 	return result.(*ReturnPagedClientIdsOK), nil
+
+}
+
+/*
+ReturnPagedClients returns a page of client objects that belong to the authenticated org
+*/
+func (a *Client) ReturnPagedClients(params *ReturnPagedClientsParams, authInfo runtime.ClientAuthInfoWriter) (*ReturnPagedClientsOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewReturnPagedClientsParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "returnPagedClients",
+		Method:             "GET",
+		PathPattern:        "/client/multiple",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &ReturnPagedClientsReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*ReturnPagedClientsOK), nil
 
 }
 

@@ -11,6 +11,7 @@ import (
 
 	peacemakr_go_sdk "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
+	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/auth"
 )
 
 type TestMessage struct {
@@ -25,10 +26,10 @@ func (l *CustomLogger) Printf(format string, args ...interface{}) {
 	log.Printf(format, args...)
 }
 
-func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns int, encrypted chan *TestMessage, wg *sync.WaitGroup, useDomainName string) {
+func runEncryptingClient(clientNum int, auth auth.Authenticator, hostname string, numRuns int, encrypted chan *TestMessage, wg *sync.WaitGroup, useDomainName string) {
 
 	log.Printf("Getting Peacemakr SDK for encrypting client %d...\n", clientNum)
-	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), &CustomLogger{})
+	sdk, err := peacemakr_go_sdk.GetPeacemakrSDKWithAuth(auth, "test encrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), &CustomLogger{})
 	if err != nil {
 		wg.Done()
 		log.Fatalf("Encrypting client %d%s getting peacemakr sdk failed %s", clientNum, useDomainName, err)
@@ -102,10 +103,10 @@ func runEncryptingClient(clientNum int, apiKey string, hostname string, numRuns 
 	wg.Done()
 }
 
-func runDecryptingClient(clientNum int, apiKey string, hostname string, encrypted chan *TestMessage, wg *sync.WaitGroup) {
+func runDecryptingClient(clientNum int, auth auth.Authenticator, hostname string, encrypted chan *TestMessage, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.Printf("Getting Peacemakr SDK for decrypting client %d...\n", clientNum)
-	sdk, err := peacemakr_go_sdk.GetPeacemakrSDK(apiKey, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), log.New(os.Stdout, "DecryptingClient", log.LstdFlags))
+	sdk, err := peacemakr_go_sdk.GetPeacemakrSDKWithAuth(auth, "test decrypting client "+string(clientNum), &hostname, utils.GetDiskPersister("/tmp/"), log.New(os.Stdout, "DecryptingClient", log.LstdFlags))
 	if err != nil {
 		log.Fatalf("Decrypting client %d, fetching peacemakr sdk failed %s", clientNum, err)
 	}
@@ -150,19 +151,45 @@ func generateRandomBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
+func GetClientSecret() (string, error) {
+	return "your-client-secret-here", nil
+}
+
 func main() {
 	apiKey := flag.String("apiKey", "", "apiKey")
+	oidcIssuer := flag.String("oidcIssuer", "", "oidcIssuer")
+	oidcClientID := flag.String("oidcClientID", "", "oidcClientID")
 	peacemakrUrl := flag.String("peacemakrUrl", "https://api.peacemakr.io", "URL of Peacemakr cloud services")
 	numCryptoTrips := flag.Int("numCryptoTrips", 1, "Total number of example encrypt and decrypt operations.")
 	numEncryptThreads := flag.Int("numEncryptClients", 1, "Total number of encryption clients. (1)")
 	numDecryptThreads := flag.Int("numDecryptClients", 10, "Total number of decryption clients. (10)")
 	useDomainName := flag.String("useDomainName", "", "The specific and enforced Use Domain's name for encryption")
 	flag.Parse()
-	if apiKey == nil || *apiKey == "" {
-		log.Fatal("You are missing an API Key.")
+
+	var authenticator auth.Authenticator
+
+	if (apiKey != nil || *apiKey == "") &&
+	   (oidcIssuer != nil || *oidcIssuer == "" || oidcClientID != nil || *oidcClientID == "") {
+		log.Fatal("Missing either API Key or oidc auth configuration")
+	}
+
+	// setup authenticator
+	if (*apiKey) != "" {
+		authenticator = &auth.APIKeyAuthenticator{Key: *apiKey}
+	} else if (*oidcIssuer != "" && *oidcClientID != "") {
+		var secretFetcher auth.SecretFetcher = GetClientSecret
+		authenticator = &auth.OIDCAuthenticator{
+			Issuer:         *oidcIssuer,
+			Scopes:         []string{}, // when empty, oidc provider will uses the default scope.
+			ClientID:       *oidcClientID,
+			Secret:         secretFetcher,
+			PeacemakrOrgID: "",
+		}
 	}
 
 	log.Println("apiKey:", *apiKey)
+	log.Println("oidcIssuer:", *oidcIssuer)
+	log.Println("oidcClientID:", *oidcClientID)
 	log.Println("peacemakrUrl:", *peacemakrUrl)
 	log.Println("numCryptoTrips:", *numCryptoTrips)
 	log.Println("numEncryptThreads:", *numEncryptThreads)
@@ -178,7 +205,7 @@ func main() {
 
 	for i := 0; i < *numDecryptThreads; i++ {
 		decryptorWork.Add(1)
-		go runDecryptingClient(i, *apiKey, *peacemakrUrl, encrypted, &decryptorWork)
+		go runDecryptingClient(i, authenticator, *peacemakrUrl, encrypted, &decryptorWork)
 	}
 
 	// Fire up the encryption clients.
@@ -186,12 +213,12 @@ func main() {
 
 		// Do it once with indiscriminate useDomains.
 		encryptionWork.Add(1)
-		go runEncryptingClient(i, *apiKey, *peacemakrUrl, *numCryptoTrips, encrypted, &encryptionWork, "")
+		go runEncryptingClient(i, authenticator, *peacemakrUrl, *numCryptoTrips, encrypted, &encryptionWork, "")
 
 		// And, again with a specific useDomain.
 		if len(*useDomainName) > 0 {
 			encryptionWork.Add(1)
-			go runEncryptingClient(i, *apiKey, *peacemakrUrl, *numCryptoTrips, encrypted, &encryptionWork, *useDomainName)
+			go runEncryptingClient(i, authenticator, *peacemakrUrl, *numCryptoTrips, encrypted, &encryptionWork, *useDomainName)
 		}
 
 		// Why Sleep? The number of clients can't just explode, need to give them a chance to spin up,

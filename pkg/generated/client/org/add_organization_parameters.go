@@ -64,12 +64,12 @@ for the add organization operation typically these are written to a http.Request
 */
 type AddOrganizationParams struct {
 
-	/*Contact*/
-	Contact *models.Contact
 	/*IDToken*/
 	IDToken string
 	/*OrgName*/
 	OrgName string
+	/*Params*/
+	Params *models.AddOrganizationParameters
 	/*StripeCustomerID*/
 	StripeCustomerID string
 
@@ -111,17 +111,6 @@ func (o *AddOrganizationParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
-// WithContact adds the contact to the add organization params
-func (o *AddOrganizationParams) WithContact(contact *models.Contact) *AddOrganizationParams {
-	o.SetContact(contact)
-	return o
-}
-
-// SetContact adds the contact to the add organization params
-func (o *AddOrganizationParams) SetContact(contact *models.Contact) {
-	o.Contact = contact
-}
-
 // WithIDToken adds the iDToken to the add organization params
 func (o *AddOrganizationParams) WithIDToken(iDToken string) *AddOrganizationParams {
 	o.SetIDToken(iDToken)
@@ -144,6 +133,17 @@ func (o *AddOrganizationParams) SetOrgName(orgName string) {
 	o.OrgName = orgName
 }
 
+// WithParams adds the params to the add organization params
+func (o *AddOrganizationParams) WithParams(params *models.AddOrganizationParameters) *AddOrganizationParams {
+	o.SetParams(params)
+	return o
+}
+
+// SetParams adds the params to the add organization params
+func (o *AddOrganizationParams) SetParams(params *models.AddOrganizationParameters) {
+	o.Params = params
+}
+
 // WithStripeCustomerID adds the stripeCustomerID to the add organization params
 func (o *AddOrganizationParams) WithStripeCustomerID(stripeCustomerID string) *AddOrganizationParams {
 	o.SetStripeCustomerID(stripeCustomerID)
@@ -163,12 +163,6 @@ func (o *AddOrganizationParams) WriteToRequest(r runtime.ClientRequest, reg strf
 	}
 	var res []error
 
-	if o.Contact != nil {
-		if err := r.SetBodyParam(o.Contact); err != nil {
-			return err
-		}
-	}
-
 	// query param id_token
 	qrIDToken := o.IDToken
 	qIDToken := qrIDToken
@@ -183,6 +177,12 @@ func (o *AddOrganizationParams) WriteToRequest(r runtime.ClientRequest, reg strf
 	qOrgName := qrOrgName
 	if qOrgName != "" {
 		if err := r.SetQueryParam("orgName", qOrgName); err != nil {
+			return err
+		}
+	}
+
+	if o.Params != nil {
+		if err := r.SetBodyParam(o.Params); err != nil {
 			return err
 		}
 	}
