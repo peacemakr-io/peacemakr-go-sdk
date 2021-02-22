@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -12,6 +13,8 @@ import (
 	peacemakr_go_sdk "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/auth"
+	jwt "github.com/dgrijalva/jwt-go"
+
 )
 
 type TestMessage struct {
@@ -38,6 +41,7 @@ func runEncryptingClient(clientNum int, auth auth.Authenticator, hostname string
 	log.Printf("Encrypting client %d%s: registering to host %s", clientNum, useDomainName, hostname)
 	for err = sdk.Register(); err != nil; {
 		log.Println("Encrypting client,", clientNum, "failed to register, trying again...")
+
 	}
 	log.Printf("Encrypting client %d%s: starting %d registered.  Starting crypto round trips ...", clientNum, useDomainName, numRuns)
 
@@ -155,8 +159,43 @@ func GetClientSecret() (string, error) {
 	return "your-client-secret-here", nil
 }
 
+func generateJwtToken() string {
+	privKeyPath := "privateKey.path"
+	keyId := "YOUR_KEY_ID_HERE"
+
+	signBytes, err := ioutil.ReadFile(privKeyPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	signKey, err := jwt.ParseRSAPrivateKeyFromPEM(signBytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	t := jwt.New(jwt.GetSigningMethod("RS256"))
+	t.Header["kid"] = keyId
+
+	claims := make(jwt.MapClaims)
+
+	// set the expire time
+	claims["exp"] = time.Now().Add(time.Minute * 1).Unix()
+	claims["iss"] = "peacemakr.io/keypair"
+	claims["aud"] = "peacemakr.io/keypair"
+	t.Claims = claims
+	tokenString, err := t.SignedString(signKey)
+	if err != nil {
+		log.Printf("Token Signing error: %v\n", err)
+		return ""
+	}
+	log.Println("Token is ... $v\n", tokenString)
+	return tokenString
+
+}
+
 func main() {
 	apiKey := flag.String("apiKey", "", "apiKey")
+	useJwt := flag.Bool("useJwt", false, "Use jwt for apiKey")
 	oidcIssuer := flag.String("oidcIssuer", "", "oidcIssuer")
 	oidcClientID := flag.String("oidcClientID", "", "oidcClientID")
 	peacemakrUrl := flag.String("peacemakrUrl", "https://api.peacemakr.io", "URL of Peacemakr cloud services")
@@ -168,8 +207,12 @@ func main() {
 
 	var authenticator auth.Authenticator
 
-	if (apiKey != nil || *apiKey == "") &&
-	   (oidcIssuer != nil || *oidcIssuer == "" || oidcClientID != nil || *oidcClientID == "") {
+	if *useJwt {
+		*apiKey = generateJwtToken()
+	}
+
+	if (*apiKey == "") &&
+	   (*oidcIssuer == "" || *oidcClientID == "") {
 		log.Fatal("Missing either API Key or oidc auth configuration")
 	}
 
