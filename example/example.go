@@ -9,6 +9,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"errors"
 
 	peacemakr_go_sdk "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
@@ -20,6 +21,13 @@ import (
 type TestMessage struct {
 	encrypted []byte
 	plaintext []byte
+}
+
+type PubKeyAuthenticator struct {
+	PrivateKeyPath string
+	KeyId string
+	Issuer string
+	Audience string
 }
 
 // Simple custom logger
@@ -41,6 +49,7 @@ func runEncryptingClient(clientNum int, auth auth.Authenticator, hostname string
 	log.Printf("Encrypting client %d%s: registering to host %s", clientNum, useDomainName, hostname)
 	for err = sdk.Register(); err != nil; {
 		log.Println("Encrypting client,", clientNum, "failed to register, trying again...")
+		break
 
 	}
 	log.Printf("Encrypting client %d%s: starting %d registered.  Starting crypto round trips ...", clientNum, useDomainName, numRuns)
@@ -159,38 +168,37 @@ func GetClientSecret() (string, error) {
 	return "your-client-secret-here", nil
 }
 
-func generateJwtToken() string {
-	privKeyPath := "privateKey.path"
-	keyId := "YOUR_KEY_ID_HERE"
+func (p *PubKeyAuthenticator) GetAuthToken() (string, error) {
+	privKeyPath := p.PrivateKeyPath
+	keyId := p.KeyId
 
 	signBytes, err := ioutil.ReadFile(privKeyPath)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	signKey, err := jwt.ParseRSAPrivateKeyFromPEM(signBytes)
+	signKey, err := jwt.ParseECPrivateKeyFromPEM(signBytes)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	t := jwt.New(jwt.GetSigningMethod("RS256"))
+	t := jwt.New(jwt.GetSigningMethod("ES256"))
 	t.Header["kid"] = keyId
 
 	claims := make(jwt.MapClaims)
 
 	// set the expire time
 	claims["exp"] = time.Now().Add(time.Minute * 1).Unix()
-	claims["iss"] = "peacemakr.io/keypair"
-	claims["aud"] = "peacemakr.io/keypair"
+	claims["iss"] = p.Issuer
+	claims["aud"] = p.Audience
 	t.Claims = claims
 	tokenString, err := t.SignedString(signKey)
 	if err != nil {
 		log.Printf("Token Signing error: %v\n", err)
-		return ""
+		return "", errors.New("Token Signed Error")
 	}
 	log.Println("Token is ... $v\n", tokenString)
-	return tokenString
-
+	return tokenString, nil
 }
 
 func main() {
@@ -207,13 +215,10 @@ func main() {
 
 	var authenticator auth.Authenticator
 
-	if *useJwt {
-		*apiKey = generateJwtToken()
-	}
-
 	if (*apiKey == "") &&
-	   (*oidcIssuer == "" || *oidcClientID == "") {
-		log.Fatal("Missing either API Key or oidc auth configuration")
+	   (*oidcIssuer == "" || *oidcClientID == "") &&
+	   !(*useJwt) {
+		log.Fatal("Missing either API Key, oidc auth, or pubkey auth configuration")
 	}
 
 	// setup authenticator
@@ -227,6 +232,13 @@ func main() {
 			ClientID:       *oidcClientID,
 			Secret:         secretFetcher,
 			PeacemakrOrgID: "",
+		}
+	} else if (*useJwt) {
+		authenticator = &PubKeyAuthenticator{
+			PrivateKeyPath: "privateKeyPath", // local path to private key used to sign the jwt
+			KeyId: "keyId", // keyId of public key entry on admin portal
+			Issuer: "peacemakr.io/keypair",
+			Audience: "https://api.peacemakr.io",
 		}
 	}
 
