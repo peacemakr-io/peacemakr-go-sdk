@@ -923,7 +923,7 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 
 func (sdk *standardPeacemakrSDK) SignOnly(message []byte) ([]byte, error) {
 
-	if sdk.apiKey != "" {
+	if sdk.auth != nil {
 		err := sdk.verifyRegistrationAndInit()
 		if err != nil {
 			return nil, err
@@ -988,7 +988,7 @@ func (sdk *standardPeacemakrSDK) SignOnly(message []byte) ([]byte, error) {
 
 func (sdk *standardPeacemakrSDK) VerifyOnly(signedBlob []byte) ([]byte, error) {
 
-	if sdk.apiKey != "" {
+	if sdk.auth != nil {
 		err := sdk.verifyRegistrationAndInit()
 		if err != nil {
 			return nil, err
