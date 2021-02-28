@@ -3,19 +3,15 @@ package main
 import (
 	"bytes"
 	"flag"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"sync"
 	"time"
-	"errors"
 
 	peacemakr_go_sdk "github.com/peacemakr-io/peacemakr-go-sdk/pkg"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/auth"
-	jwt "github.com/dgrijalva/jwt-go"
-
 )
 
 type TestMessage struct {
