@@ -197,8 +197,6 @@ func main() {
 			KeyId: "your-key-id",
 			KeyType: "key-type", // Example: ES256, RS256
 			Expiration: time.Minute*1,
-			Issuer: "peacemakr.io/keypair",
-			Audience: "https://api.peacemakr.io",
 		}
 	}
 

@@ -32,8 +32,6 @@ type PubKeyAuthenticator struct {
 	KeyId string
 	KeyType string
 	Expiration time.Duration
-	Issuer string
-	Audience string
 }
 
 func GetOIDCAuthenticator(issuer string, scopes []string, clientId string, secret SecretFetcher, orgId string) Authenticator {

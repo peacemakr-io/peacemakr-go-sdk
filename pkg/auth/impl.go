@@ -78,8 +78,8 @@ func (p *PubKeyAuthenticator) GetAuthToken() (string, error) {
 
 	// set the expire time
 	claims["exp"] = time.Now().Add(p.Expiration).Unix()
-	claims["iss"] = p.Issuer
-	claims["aud"] = p.Audience
+	claims["iss"] = "peacemakr.io/keypair"
+	claims["aud"] = "https://api.peacemakr.io"
 	t.Claims = claims
 	tokenString, err := t.SignedString(signKey)
 	if err != nil {
