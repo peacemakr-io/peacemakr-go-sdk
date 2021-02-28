@@ -23,13 +23,6 @@ type TestMessage struct {
 	plaintext []byte
 }
 
-type PubKeyAuthenticator struct {
-	PrivateKeyPath string
-	KeyId string
-	Issuer string
-	Audience string
-}
-
 // Simple custom logger
 type CustomLogger struct{}
 
