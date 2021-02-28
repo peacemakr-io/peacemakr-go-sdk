@@ -49,8 +49,6 @@ func runEncryptingClient(clientNum int, auth auth.Authenticator, hostname string
 	log.Printf("Encrypting client %d%s: registering to host %s", clientNum, useDomainName, hostname)
 	for err = sdk.Register(); err != nil; {
 		log.Println("Encrypting client,", clientNum, "failed to register, trying again...")
-		break
-
 	}
 	log.Printf("Encrypting client %d%s: starting %d registered.  Starting crypto round trips ...", clientNum, useDomainName, numRuns)
 
@@ -166,39 +164,6 @@ func generateRandomBytes(n int) ([]byte, error) {
 
 func GetClientSecret() (string, error) {
 	return "your-client-secret-here", nil
-}
-
-func (p *PubKeyAuthenticator) GetAuthToken() (string, error) {
-	privKeyPath := p.PrivateKeyPath
-	keyId := p.KeyId
-
-	signBytes, err := ioutil.ReadFile(privKeyPath)
-	if err != nil {
-		return "", err
-	}
-
-	signKey, err := jwt.ParseECPrivateKeyFromPEM(signBytes)
-	if err != nil {
-		return "", err
-	}
-
-	t := jwt.New(jwt.GetSigningMethod("ES256"))
-	t.Header["kid"] = keyId
-
-	claims := make(jwt.MapClaims)
-
-	// set the expire time
-	claims["exp"] = time.Now().Add(time.Minute * 1).Unix()
-	claims["iss"] = p.Issuer
-	claims["aud"] = p.Audience
-	t.Claims = claims
-	tokenString, err := t.SignedString(signKey)
-	if err != nil {
-		log.Printf("Token Signing error: %v\n", err)
-		return "", errors.New("Token Signed Error")
-	}
-	log.Println("Token is ... $v\n", tokenString)
-	return tokenString, nil
 }
 
 func main() {

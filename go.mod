@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/coreos/go-oidc v2.0.0+incompatible
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-openapi/analysis v0.19.0 // indirect
 	github.com/go-openapi/errors v0.17.0
 	github.com/go-openapi/jsonpointer v0.19.0 // indirect
@@ -21,7 +22,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pquerna/cachecontrol v0.0.0-20200921180117-858c6e7e6b7e // indirect
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.6.1
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
