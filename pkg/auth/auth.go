@@ -1,5 +1,9 @@
 package auth
 
+import (
+	"time"
+)
+
 // This must be provided to get the token to be used for API authentication. This can be an API key
 // or an OpenID Connect token.
 type Authenticator interface {
@@ -21,6 +25,15 @@ type OIDCAuthenticator struct {
 	ClientID       string
 	Secret         SecretFetcher
 	PeacemakrOrgID string
+}
+
+type PubKeyAuthenticator struct {
+	PrivateKeyPath string
+	KeyId string
+	KeyType string
+	Expiration time.Duration
+	Issuer string
+	Audience string
 }
 
 func GetOIDCAuthenticator(issuer string, scopes []string, clientId string, secret SecretFetcher, orgId string) Authenticator {

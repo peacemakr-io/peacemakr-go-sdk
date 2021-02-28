@@ -234,9 +234,11 @@ func main() {
 			PeacemakrOrgID: "",
 		}
 	} else if (*useJwt) {
-		authenticator = &PubKeyAuthenticator{
-			PrivateKeyPath: "privateKeyPath", // local path to private key used to sign the jwt
-			KeyId: "keyId", // keyId of public key entry on admin portal
+		authenticator = &auth.PubKeyAuthenticator{
+			PrivateKeyPath: "private-key-file-path",
+			KeyId: "your-key-id",
+			KeyType: "key-type", // Example: ES256, RS256
+			Expiration: time.Minute*1,
 			Issuer: "peacemakr.io/keypair",
 			Audience: "https://api.peacemakr.io",
 		}

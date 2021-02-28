@@ -2,8 +2,12 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"time"
+	"io/ioutil"
 	"github.com/coreos/go-oidc"
 	"golang.org/x/oauth2/clientcredentials"
+	jwt "github.com/dgrijalva/jwt-go"
 )
 
 func (a *APIKeyAuthenticator) GetAuthToken() (string, error) {
@@ -42,4 +46,45 @@ func (a *OIDCAuthenticator) GetAuthToken() (string, error) {
 
 	// Return the access token
 	return token.AccessToken, nil
+}
+
+
+func (p *PubKeyAuthenticator) GetAuthToken() (string, error) {
+	privKeyPath := p.PrivateKeyPath
+	keyId := p.KeyId
+
+	signBytes, err := ioutil.ReadFile(privKeyPath)
+	if err != nil {
+		return "", err
+	}
+
+	var signKey interface{}
+	if (p.KeyType[:2] == "ES") {
+		signKey, err = jwt.ParseECPrivateKeyFromPEM(signBytes)
+		if err != nil {
+			return "", err
+		}
+	} else if (p.KeyType[:2] == "RS") {
+		signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	t := jwt.New(jwt.GetSigningMethod(p.KeyType))
+	t.Header["kid"] = keyId
+
+	claims := make(jwt.MapClaims)
+
+	// set the expire time
+	claims["exp"] = time.Now().Add(p.Expiration).Unix()
+	claims["iss"] = p.Issuer
+	claims["aud"] = p.Audience
+	t.Claims = claims
+	tokenString, err := t.SignedString(signKey)
+	if err != nil {
+		return "", errors.New("Token Signed Error: " + err.Error())
+	}
+
+	return tokenString, nil
 }
