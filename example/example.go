@@ -157,6 +157,7 @@ func GetClientSecret() (string, error) {
 
 func main() {
 	apiKey := flag.String("apiKey", "", "apiKey")
+	useJwt := flag.Bool("useJwt", false, "Use jwt for apiKey")
 	oidcIssuer := flag.String("oidcIssuer", "", "oidcIssuer")
 	oidcClientID := flag.String("oidcClientID", "", "oidcClientID")
 	peacemakrUrl := flag.String("peacemakrUrl", "https://api.peacemakr.io", "URL of Peacemakr cloud services")
@@ -168,9 +169,10 @@ func main() {
 
 	var authenticator auth.Authenticator
 
-	if (apiKey != nil || *apiKey == "") &&
-	   (oidcIssuer != nil || *oidcIssuer == "" || oidcClientID != nil || *oidcClientID == "") {
-		log.Fatal("Missing either API Key or oidc auth configuration")
+	if (*apiKey == "") &&
+	   (*oidcIssuer == "" || *oidcClientID == "") &&
+	   !(*useJwt) {
+		log.Fatal("Missing either API Key, oidc auth, or pubkey auth configuration")
 	}
 
 	// setup authenticator
@@ -184,6 +186,13 @@ func main() {
 			ClientID:       *oidcClientID,
 			Secret:         secretFetcher,
 			PeacemakrOrgID: "",
+		}
+	} else if (*useJwt) {
+		authenticator = &auth.PubKeyAuthenticator{
+			PrivateKeyPath: "private-key-file-path",
+			KeyId: "your-key-id",
+			KeyType: "key-type", // Example: ES256, RS256
+			Expiration: time.Minute*1,
 		}
 	}
 
