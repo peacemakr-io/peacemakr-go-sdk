@@ -185,28 +185,6 @@ func (p *sdkPersister) setAsymmetricKey(id string, key string) error {
 	return p.persister.Save(fmt.Sprintf("%sio.peacemakr.asymmetric.%s", p.prefix, id), key)
 }
 
-func (p *sdkPersister) getLastUpdated() (time.Time, error) {
-	t, err := p.persister.Load(p.prefix + "io.peacemakr.last_updated")
-	if err != nil {
-		return time.Now(), err
-	}
-
-	parsed, err := strconv.ParseInt(t, 16, 64)
-	if err != nil {
-		return time.Now(), err
-	}
-
-	return time.Unix(parsed, 0), nil
-}
-
-func (p *sdkPersister) setLastUpdated(time time.Time) error {
-	return p.persister.Save(p.prefix+"io.peacemakr.last_updated", strconv.FormatInt(time.Unix(), 16))
-}
-
-func (p *sdkPersister) clearLastUpdated() error {
-	return p.persister.Save(p.prefix+"io.peacemakr.last_updated", "")
-}
-
 type standardPeacemakrSDK struct {
 	clientName        string
 	auth              auth2.Authenticator
@@ -468,14 +446,6 @@ func (sdk *standardPeacemakrSDK) canReachCloud() bool {
 }
 
 func (sdk *standardPeacemakrSDK) isLocalStateValid() bool {
-	// Pull in the last updated time
-	var err error
-	sdk.lastUpdatedAt, err = sdk.persister.getLastUpdated()
-	if err != nil {
-		sdk.logError(err)
-		return false
-	}
-
 	// If we can't reach the cloud, assume the local state is valid
 	if !sdk.canReachCloud() {
 		return true
@@ -579,10 +549,6 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 
 	sdk.cryptoConfig = ret.Payload
 	sdk.lastUpdatedAt = time.Now()
-	// If there was an issue writing the time, just log it and move on, it's not a critical failure.
-	if err := sdk.persister.setLastUpdated(sdk.lastUpdatedAt); err != nil {
-		sdk.logError(err)
-	}
 
 	if *sdk.cryptoConfig.ClientKeyTTL == 0 {
 		oneYear, err := time.ParseDuration("8760h")
@@ -1528,11 +1494,6 @@ func (sdk *standardPeacemakrSDK) init() error {
 	}
 
 	sdk.lastUpdatedAt = time.Now()
-	err = sdk.persister.setLastUpdated(sdk.lastUpdatedAt)
-	if err != nil {
-		sdk.logError(err)
-		return err
-	}
 
 	return nil
 }
@@ -1733,7 +1694,6 @@ func clearAllMetadata(sdk *standardPeacemakrSDK) {
 	sdk.org = nil
 	_ = sdk.persister.clearOrg()
 	sdk.lastUpdatedAt = time.Unix(0, 0)
-	_ = sdk.persister.clearLastUpdated()
 }
 
 func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomainName string) error {
