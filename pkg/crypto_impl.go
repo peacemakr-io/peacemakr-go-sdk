@@ -684,7 +684,7 @@ func (sdk *standardPeacemakrSDK) isUseDomainEncryptionViable(useDomain *models.S
 	// If myOrg is specified, then it has to match the useDomain's owner ID. Otherwise, it doesn't have to match
 	isAllowed := useDomain.SymmetricKeyEncryptionAllowed
 	if !sdk.canReachCloud() {
-		isAllowed = *useDomain.CreationTime + *useDomain.SymmetricKeyEncryptionUseTTL < time.Now().Unix()
+		isAllowed = *useDomain.CreationTime + *useDomain.SymmetricKeyEncryptionUseTTL > time.Now().Unix()
 	}
 
 	return isAllowed && (*useDomain.OwnerOrgID == myOrg || myOrg == "")
@@ -739,7 +739,7 @@ func (sdk *standardPeacemakrSDK) isKeyIdDecryptionViable(keyId string) bool {
 
 func (sdk *standardPeacemakrSDK) isUseDomainDecryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
 	if !sdk.canReachCloud() {
-		return *useDomain.CreationTime + *useDomain.SymmetricKeyDecryptionUseTTL < time.Now().Unix()
+		return *useDomain.CreationTime + *useDomain.SymmetricKeyDecryptionUseTTL > time.Now().Unix()
 	}
 
 	return useDomain.SymmetricKeyDecryptionAllowed
