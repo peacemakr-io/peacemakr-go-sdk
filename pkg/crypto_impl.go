@@ -14,6 +14,7 @@ import (
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client/crypto_config"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client/key_service"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client/org"
+	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/client/server_management"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/generated/models"
 	"github.com/peacemakr-io/peacemakr-go-sdk/pkg/utils"
 	"math/rand"
@@ -456,6 +457,16 @@ func (sdk *standardPeacemakrSDK) logError(err error) {
 	sdk.sysLog.Printf("[%s: %d] %s : %v", file, line, debugInfo, err)
 }
 
+func (sdk *standardPeacemakrSDK) canReachCloud() bool {
+	_, err := sdk.getClient().ServerManagement.GetHealth(server_management.NewGetHealthParams())
+	if err != nil {
+		sdk.logError(err)
+		return false
+	}
+
+	return true
+}
+
 func (sdk *standardPeacemakrSDK) isLocalStateValid() bool {
 	// Pull in the last updated time
 	var err error
@@ -463,6 +474,11 @@ func (sdk *standardPeacemakrSDK) isLocalStateValid() bool {
 	if err != nil {
 		sdk.logError(err)
 		return false
+	}
+
+	// If we can't reach the cloud, assume the local state is valid
+	if !sdk.canReachCloud() {
+		return true
 	}
 
 	return time.Now().Sub(sdk.lastUpdatedAt) < sdk.timeTillRefresh
