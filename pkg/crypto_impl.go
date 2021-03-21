@@ -1,6 +1,7 @@
 package peacemakr_go_sdk
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -35,7 +36,7 @@ func (p *sdkPersister) getPublicKey() (string, error) {
 }
 
 func (p *sdkPersister) setPublicKey(pem string) error {
-	return p.persister.Save(p.prefix + "io.peacemakr.pub", pem)
+	return p.persister.Save(p.prefix+"io.peacemakr.pub", pem)
 }
 
 func (p *sdkPersister) getPrivateKey() (string, error) {
@@ -43,7 +44,7 @@ func (p *sdkPersister) getPrivateKey() (string, error) {
 }
 
 func (p *sdkPersister) setPrivateKey(pem string) error {
-	return p.persister.Save(p.prefix + "io.peacemakr.priv", pem)
+	return p.persister.Save(p.prefix+"io.peacemakr.priv", pem)
 }
 
 func (p *sdkPersister) getKeyCreationTime() (time.Time, error) {
@@ -61,7 +62,7 @@ func (p *sdkPersister) getKeyCreationTime() (time.Time, error) {
 }
 
 func (p *sdkPersister) setKeyCreationTime(time time.Time) error {
-	return p.persister.Save(p.prefix + "io.peacemakr.key_creation_time", strconv.FormatInt(time.Unix(), 16))
+	return p.persister.Save(p.prefix+"io.peacemakr.key_creation_time", strconv.FormatInt(time.Unix(), 16))
 }
 
 func (p *sdkPersister) getPublicKeyID() (string, error) {
@@ -69,7 +70,7 @@ func (p *sdkPersister) getPublicKeyID() (string, error) {
 }
 
 func (p *sdkPersister) setPublicKeyID(id string) error {
-	return p.persister.Save(p.prefix + "io.peacemakr.keyId", id)
+	return p.persister.Save(p.prefix+"io.peacemakr.keyId", id)
 }
 
 func (p *sdkPersister) getClientID() (string, error) {
@@ -77,19 +78,86 @@ func (p *sdkPersister) getClientID() (string, error) {
 }
 
 func (p *sdkPersister) setClientID(id string) error {
-	return p.persister.Save(p.prefix + "io.peacemakr.clientId", id)
+	return p.persister.Save(p.prefix+"io.peacemakr.clientId", id)
+}
+
+func (p *sdkPersister) getOrg() (*models.Organization, error) {
+	str, err := p.persister.Load(p.prefix + "io.peacemakr.org")
+	if err != nil {
+		return nil, err
+	}
+
+	buffer := bytes.NewBufferString(str)
+	decoder := json.NewDecoder(buffer)
+	var o models.Organization
+	err = decoder.Decode(&o)
+	if err != nil {
+		return nil, err
+	}
+
+	return &o, nil
+}
+
+func (p *sdkPersister) setOrg(org *models.Organization) error {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	err := encoder.Encode(*org)
+	if err != nil {
+		return err
+	}
+
+	return p.persister.Save(p.prefix+"io.peacemakr.org", buffer.String())
+}
+
+func (p *sdkPersister) clearOrg() error {
+	return p.persister.Save(p.prefix+"io.peacemakr.org", "")
+}
+
+func (p *sdkPersister) getCryptoConfig() (*models.CryptoConfig, error) {
+	str, err := p.persister.Load(p.prefix + "io.peacemakr.crypto_config")
+	if err != nil {
+		return nil, err
+	}
+
+	buffer := bytes.NewBufferString(str)
+	decoder := json.NewDecoder(buffer)
+	var cc models.CryptoConfig
+	err = decoder.Decode(&cc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cc, nil
+}
+
+func (p *sdkPersister) setCryptoConfig(cc *models.CryptoConfig) error {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	err := encoder.Encode(*cc)
+	if err != nil {
+		return err
+	}
+
+	return p.persister.Save(p.prefix+"io.peacemakr.crypto_config", buffer.String())
+}
+
+func (p *sdkPersister) clearCryptoConfig() error {
+	return p.persister.Save(p.prefix+"io.peacemakr.crypto_config", "")
 }
 
 func (p *sdkPersister) hasRegistrationObjects() bool {
-	return p.persister.Exists(p.prefix + "io.peacemakr.priv") &&
-		p.persister.Exists(p.prefix + "io.peacemakr.pub") &&
-		p.persister.Exists(p.prefix + "io.peacemakr.keyId") &&
-		p.persister.Exists(p.prefix + "io.peacemakr.clientId")
+	return p.persister.Exists(p.prefix+"io.peacemakr.priv") &&
+		p.persister.Exists(p.prefix+"io.peacemakr.pub") &&
+		p.persister.Exists(p.prefix+"io.peacemakr.keyId") &&
+		p.persister.Exists(p.prefix+"io.peacemakr.clientId") &&
+		p.persister.Exists(p.prefix+"io.peacemakr.last_updated") &&
+		p.persister.Exists(p.prefix+"io.peacemakr.org") &&
+		p.persister.Exists(p.prefix+"io.peacemakr.crypto_config")
 }
 
 func (p *sdkPersister) hasAsymmetricKeys() bool {
-	return p.persister.Exists(p.prefix + "io.peacemakr.priv") &&
-		p.persister.Exists(p.prefix + "io.peacemakr.pub")
+	return p.persister.Exists(p.prefix+"io.peacemakr.priv") &&
+		p.persister.Exists(p.prefix+"io.peacemakr.pub")
 }
 
 func (p *sdkPersister) hasKey(id string) bool {
@@ -116,21 +184,43 @@ func (p *sdkPersister) setAsymmetricKey(id string, key string) error {
 	return p.persister.Save(fmt.Sprintf("%sio.peacemakr.asymmetric.%s", p.prefix, id), key)
 }
 
+func (p *sdkPersister) getLastUpdated() (time.Time, error) {
+	t, err := p.persister.Load(p.prefix + "io.peacemakr.last_updated")
+	if err != nil {
+		return time.Now(), err
+	}
+
+	parsed, err := strconv.ParseInt(t, 16, 64)
+	if err != nil {
+		return time.Now(), err
+	}
+
+	return time.Unix(parsed, 0), nil
+}
+
+func (p *sdkPersister) setLastUpdated(time time.Time) error {
+	return p.persister.Save(p.prefix+"io.peacemakr.last_updated", strconv.FormatInt(time.Unix(), 16))
+}
+
+func (p *sdkPersister) clearLastUpdated() error {
+	return p.persister.Save(p.prefix+"io.peacemakr.last_updated", "")
+}
+
 type standardPeacemakrSDK struct {
-	clientName         string
-	auth               auth2.Authenticator
-	org                *models.Organization
-	cryptoConfig       *models.CryptoConfig
-	authInfo           runtime.ClientAuthInfoWriter
-	version            string
-	peacemakrHostname  string
-	peacemakrScheme    string
-	persister          sdkPersister
-	isRegisteredCache  bool
-	lastUpdatedAt      int64
-	secondsTillRefresh int64
-	symKeyCache        map[string][]byte
-	sysLog             SDKLogger
+	clientName        string
+	auth              auth2.Authenticator
+	org               *models.Organization
+	cryptoConfig      *models.CryptoConfig
+	authInfo          runtime.ClientAuthInfoWriter
+	version           string
+	peacemakrHostname string
+	peacemakrScheme   string
+	persister         sdkPersister
+	isRegisteredCache bool
+	lastUpdatedAt     time.Time
+	timeTillRefresh   time.Duration
+	symKeyCache       map[string][]byte
+	sysLog            SDKLogger
 }
 
 // Named constants, so we can change them everywhere at the same time
@@ -278,12 +368,12 @@ func (sdk *standardPeacemakrSDK) downloadAndSaveAllKeys(keyIds []string) error {
 
 			// Derive the shared symmetric secret between this client at the key deriver. This was used to encrypt
 			// the bundle of delivered keys.
-			// TODO: make this lighting wicked fast, by caching and lookup up this instead of commputing it.
+			// TODO: make this lighting wicked fast, by caching and lookup up this instead of computing it.
 			decryptionDeliveredKey = privateKey.ECDHKeygen(kdKeyConfig.SymmetricCipher, kdPeacemakrKey)
 			kdPeacemakrKey.Destroy()
 		} else {
 			// TODO: should we de-register client and re-register a new key?
-			err = errors.New("unkonwn key type detected, can not decrypt incoming keys")
+			err = errors.New("unknown key type detected, can not decrypt incoming keys")
 			sdk.logError(err)
 			return err
 		}
@@ -367,7 +457,15 @@ func (sdk *standardPeacemakrSDK) logError(err error) {
 }
 
 func (sdk *standardPeacemakrSDK) isLocalStateValid() bool {
-	return time.Now().Unix()-sdk.lastUpdatedAt < sdk.secondsTillRefresh
+	// Pull in the last updated time
+	var err error
+	sdk.lastUpdatedAt, err = sdk.persister.getLastUpdated()
+	if err != nil {
+		sdk.logError(err)
+		return false
+	}
+
+	return time.Now().Sub(sdk.lastUpdatedAt) < sdk.timeTillRefresh
 }
 
 func (sdk *standardPeacemakrSDK) populateOrg() error {
@@ -375,6 +473,16 @@ func (sdk *standardPeacemakrSDK) populateOrg() error {
 
 	// Early exit if we've done this already and it's not time to refresh
 	if sdk.org != nil && sdk.isLocalStateValid() {
+		return nil
+	}
+
+	if sdk.persister.hasRegistrationObjects() && sdk.isLocalStateValid() {
+		// Get the org from the persister
+		var err error
+		sdk.org, err = sdk.persister.getOrg()
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -399,6 +507,11 @@ func (sdk *standardPeacemakrSDK) populateOrg() error {
 	}
 
 	sdk.org = ret.Payload
+	err = sdk.persister.setOrg(sdk.org)
+	if err != nil {
+		sdk.logError(err)
+		return err
+	}
 
 	return nil
 }
@@ -421,6 +534,16 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 		return nil
 	}
 
+	if sdk.persister.hasRegistrationObjects() && sdk.isLocalStateValid() {
+		// Get the crypto config from the persister
+		var err error
+		sdk.cryptoConfig, err = sdk.persister.getCryptoConfig()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	pmClient := sdk.getClient()
 
 	var err error
@@ -439,7 +562,11 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 	}
 
 	sdk.cryptoConfig = ret.Payload
-	sdk.lastUpdatedAt = time.Now().Unix()
+	sdk.lastUpdatedAt = time.Now()
+	// If there was an issue writing the time, just log it and move on, it's not a critical failure.
+	if err := sdk.persister.setLastUpdated(sdk.lastUpdatedAt); err != nil {
+		sdk.logError(err)
+	}
 
 	if *sdk.cryptoConfig.ClientKeyTTL == 0 {
 		oneYear, err := time.ParseDuration("8760h")
@@ -449,6 +576,12 @@ func (sdk *standardPeacemakrSDK) populateCryptoConfig() error {
 
 		oneYearInSec := int64(oneYear.Seconds())
 		sdk.cryptoConfig.ClientKeyTTL = &oneYearInSec
+	}
+
+	err = sdk.persister.setCryptoConfig(sdk.cryptoConfig)
+	if err != nil {
+		sdk.logError(err)
+		return err
 	}
 
 	return nil
@@ -588,7 +721,7 @@ func isUseDomainDecryptionViable(useDomain *models.SymmetricKeyUseDomain) bool {
 }
 
 func (sdk *standardPeacemakrSDK) findViableDecryptionUseDomains() []*models.SymmetricKeyUseDomain {
-	availableDomains := []*models.SymmetricKeyUseDomain{}
+	var availableDomains []*models.SymmetricKeyUseDomain
 	for _, useDomain := range sdk.cryptoConfig.SymmetricKeyUseDomains {
 		if isUseDomainDecryptionViable(useDomain) {
 			availableDomains = append(availableDomains, useDomain)
@@ -598,7 +731,7 @@ func (sdk *standardPeacemakrSDK) findViableDecryptionUseDomains() []*models.Symm
 }
 
 func findViableEncryptionUseDomains(useDomains []*models.SymmetricKeyUseDomain, myOrg string) []*models.SymmetricKeyUseDomain {
-	availableDomain := []*models.SymmetricKeyUseDomain{}
+	var availableDomain []*models.SymmetricKeyUseDomain
 
 	for _, useDomain := range useDomains {
 		if isUseDomainEncryptionViable(useDomain, myOrg) {
@@ -1123,7 +1256,7 @@ func (sdk *standardPeacemakrSDK) createUseDomain(numKeys int, name string) error
 
 	t := time.Now().Unix()
 
-	keyIds := []string{}
+	var keyIds []string
 	for i := 0; i < numKeys; i++ {
 		keyId, err := utils.GenerateRandomString(32)
 		if err != nil {
@@ -1369,6 +1502,13 @@ func (sdk *standardPeacemakrSDK) init() error {
 		return err
 	}
 
+	sdk.lastUpdatedAt = time.Now()
+	err = sdk.persister.setLastUpdated(sdk.lastUpdatedAt)
+	if err != nil {
+		sdk.logError(err)
+		return err
+	}
+
 	return nil
 }
 
@@ -1429,9 +1569,7 @@ func (sdk *standardPeacemakrSDK) asymKeysAreStale() bool {
 		return false
 	}
 
-	keyCreationUnix := keyCreationTime.Unix()
-
-	return time.Now().Unix()-keyCreationUnix > *sdk.cryptoConfig.ClientKeyTTL
+	return time.Now().Sub(keyCreationTime) > time.Second*time.Duration(*sdk.cryptoConfig.ClientKeyTTL)
 }
 
 func (sdk *standardPeacemakrSDK) rotateClientKeyIfNeeded() error {
@@ -1564,18 +1702,20 @@ func (sdk *standardPeacemakrSDK) verifyRegistrationAndInit() error {
 }
 
 func clearAllMetadata(sdk *standardPeacemakrSDK) {
-	// Clear populateOrg
+	// Clear the metadata from the persister and from the SDK's local mem
 	sdk.cryptoConfig = nil
+	_ = sdk.persister.clearCryptoConfig()
 	sdk.org = nil
-	// Clear populateCryptoConfig
-	sdk.lastUpdatedAt = 0
+	_ = sdk.persister.clearOrg()
+	sdk.lastUpdatedAt = time.Unix(0, 0)
+	_ = sdk.persister.clearLastUpdated()
 }
 
 func (sdk *standardPeacemakrSDK) verifyUserSelectedUseDomain(useDomainName string) error {
 
 	err := sdk.populateCryptoConfig()
 	if err != nil {
-		e := errors.New("failed to populate use doamins from crypto config id")
+		e := errors.New("failed to populate use domains from crypto config id")
 		sdk.logError(e)
 		return e
 	}

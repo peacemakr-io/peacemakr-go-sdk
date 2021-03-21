@@ -148,8 +148,8 @@ func GetPeacemakrSDKWithAuth(auth auth.Authenticator, clientName string, peacema
 		peacemakrScheme,
 		sdkPersister{persister: persister},
 		false,
-		0,
-		int64(time.Duration(time.Hour * 24)),
+		time.Unix(0, 0),
+		time.Hour * 24,
 		map[string][]byte{},
 		loggerToUse,
 	}
