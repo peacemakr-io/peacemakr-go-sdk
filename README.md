@@ -1,15 +1,26 @@
 <p align="center">
   <br>
-    <img src="https://admin.peacemakr.io/images/PeacemakrP-Golden.png" width="150"/>
+    <img src="https://admin.peacemakr.io/p_logo.png" width="150"/>
   <br>
 </p>
 
-# Peacemakr Go SDK
+# Peacemakr E2E-Encryption-as-a-Service Golang SDK
 [![CircleCI](https://circleci.com/gh/peacemakr-io/peacemakr-go-sdk/tree/master.svg?style=svg&circle-token=a5e0dd516384638b6e97cd79c7963d8081873df2)](https://circleci.com/gh/peacemakr-io/peacemakr-go-sdk/tree/master)
+
+Peacemakr's E2E-Encryption-as-a-Service SDK simplifies your data security with E2E-Encryption service and automated key lifecycle management.
+
+You can easily encrypt your data without worrying about backward compatibility, cross platform portability, or changing security requirements.
+
+Our Zero-Trust capability allows you to customize your security strength to meet the highest standard without having to place your trust in Peacemakr as we don’t have the capacity to get your keys and decrypt your data.
 
 We take security and trust very seriously. If you believe you have found a security issue, please responsibly disclose by [contacting us](mailto:security@peacemakr.io).
 
-### Getting Started
+## License
+
+The content of this SDK is open source under [Apache License 2.0](https://github.com/peacemakr-io/peacemakr-go-sdk/blob/master/LICENSE).
+
+
+## Getting Started
 
 To install
 ```shell script
@@ -27,7 +38,7 @@ require (
 )
 ```
 
-### Why Peacemakr
+## Why Peacemakr
 We know what it's like to have your PM come to you late on a Friday and ask you for something
 complicated. That's why we want to make it simple - to let you go home on that Friday night.
 You can start encrypting messages in half an hour and get home in time for dinner.
@@ -74,7 +85,7 @@ func (m *MySDK) DecryptMessage(message *MyMessage) error {
 
 ```
 
-### Contributing
+## Contributing
 We appreciate all contributions. Some basic guidelines are here, for more informaton
 see CONTRIBUTING.md
 
