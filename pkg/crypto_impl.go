@@ -1024,6 +1024,10 @@ func (sdk *standardPeacemakrSDK) Decrypt(ciphertext []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	if aad.CryptoKeyID == "" {
+		return nil, errors.New("can't decrypt a SignOnly blob, try VerifyOnly")
+	}
+
 	if !sdk.isKeyIdDecryptionViable(aad.CryptoKeyID) {
 		sdk.logString("key is no longer viable for decryption")
 		return nil, errors.New("ciphertext is no longer viable for decryption")
