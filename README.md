@@ -97,3 +97,9 @@ Issues:
 PRs:
 - All PRs must be reviewed and pass CI
 
+## Testing
+
+We use the usual fork and PR mechanisms, and in this section, here are some basic guidelines on how to set up 
+a development environment. Without being a member of Peacemakr, you will not have full access to the testing 
+infrastructure required for complete code coverage, but our CircleCI build and test pipeline can be used to provide 
+this level of visibility and provide feedback.
