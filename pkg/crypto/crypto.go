@@ -244,7 +244,7 @@ func newPeacemakrKeyFromPubPem(symm SymmetricCipher, contents []byte) *Peacemakr
 	cBytes := (*C.char)(C.CBytes(contents))
 	defer C.free(unsafe.Pointer(cBytes))
 	return &PeacemakrKey{
-		key: C.peacemakr_key_new_pem_pub((C.symmetric_cipher)(symm), cBytes, C.size_t(len(contents))),
+		key: C.peacemakr_key_new_pem_pub((C.symmetric_cipher)(symm), cBytes, C.size_t(len(contents)), nil, 0),
 	}
 }
 
